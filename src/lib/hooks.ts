@@ -23,17 +23,21 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (data.session?.user) {
+        try { await ensureProfile(data.session.user.id) } catch {}
+      }
       setSession(data.session)
-      if (data.session?.user) ensureProfile(data.session.user.id)
       setLoading(false)
     })
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        try { await ensureProfile(session.user.id) } catch {}
+      }
       setSession(session)
-      if (session?.user) ensureProfile(session.user.id)
     })
 
     return () => subscription.unsubscribe()
@@ -94,8 +98,7 @@ export function useProfile(userId: string | undefined) {
 
     const { error } = await supabase
       .from("profiles")
-      .update(updates)
-      .eq("id", userId)
+      .upsert({ id: userId, ...updates })
 
     if (!error) await fetchProfile()
     return { error }
@@ -162,7 +165,22 @@ export function useCircles(userId: string | undefined) {
     return error
   }
 
-  return { circles, loading, createCircle, joinCircle, refetch: fetchCircles }
+  const updateCircle = async (
+    circleId: string,
+    updates: { about?: string | null; rules?: string | null }
+  ) => {
+    const { data, error } = await supabase
+      .from("circles")
+      .update(updates)
+      .eq("id", circleId)
+      .select()
+      .single()
+
+    if (!error) await fetchCircles()
+    return { data: data as Circle | null, error }
+  }
+
+  return { circles, loading, createCircle, joinCircle, updateCircle, refetch: fetchCircles }
 }
 
 // ─── Posts ───────────────────────────────────────────

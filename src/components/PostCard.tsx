@@ -2,6 +2,7 @@ import { useMemo } from "react"
 import { Pin, Clock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { Post } from "@/types"
+import { avatarUrl } from "@/types"
 
 interface PostCardProps {
   post: Post
@@ -54,16 +55,18 @@ export function PostCard({ post }: PostCardProps) {
   const bgClass = useMemo(() => getAgeTint(post), [post])
 
   const authorName = post.profiles?.display_name ?? "Neighbor"
-  const authorEmoji = post.profiles?.avatar_emoji ?? "🏠"
+  const authorAvatar = post.profiles?.avatar_emoji ?? "house"
 
   return (
     <div className={`rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
       {/* Header */}
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-lg" role="img" aria-label="avatar">
-            {authorEmoji}
-          </span>
+          <img
+            src={avatarUrl(authorAvatar)}
+            alt="avatar"
+            className="h-7 w-7 rounded-full object-cover"
+          />
           <span className="text-sm font-medium text-quiet-slate">
             {authorName}
           </span>

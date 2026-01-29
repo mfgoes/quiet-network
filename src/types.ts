@@ -25,6 +25,8 @@ export interface Circle {
   id: string
   name: string
   description: string | null
+  about: string | null
+  rules: string | null
   latitude: number | null
   longitude: number | null
   radius_km: number
@@ -37,6 +39,14 @@ export const DURATION_OPTIONS = [
   { label: "7 days", seconds: 7 * 24 * 60 * 60 },
   { label: "30 days", seconds: 30 * 24 * 60 * 60 },
 ] as const
+
+export const AVATAR_OPTIONS = [
+  "house", "fox", "hills", "man", "roof", "woman",
+] as const
+
+export function avatarUrl(avatar: string): string {
+  return `/images/avatars/${avatar}.jpg`
+}
 
 export const POST_SPARKS = [
   "Best coffee nearby?",

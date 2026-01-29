@@ -8,7 +8,7 @@
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null default 'Neighbor',
-  avatar_emoji text not null default '🏠',
+  avatar_emoji text not null default 'house',
   bio text not null default '',
   created_at timestamptz not null default now()
 );
@@ -52,6 +52,8 @@ create table if not exists circles (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   description text,
+  about text,
+  rules text,
   latitude double precision,
   longitude double precision,
   radius_km double precision not null default 1.5,
@@ -70,6 +72,11 @@ create policy "Authenticated users can create circles"
   on circles for insert
   to authenticated
   with check (created_by = auth.uid());
+
+create policy "Circle creators can update their circles"
+  on circles for update
+  to authenticated
+  using (created_by = auth.uid());
 
 
 -- ============================================

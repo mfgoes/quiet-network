@@ -1,11 +1,6 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-
-const AVATAR_OPTIONS = [
-  "🏠", "🌳", "🌻", "🐕", "🐈", "☕", "📚", "🎵",
-  "🌙", "🌿", "🍂", "🧑‍🌾", "🚲", "🎨", "🌸", "🦉",
-  "🏔️", "🌊", "🍞", "🧘",
-]
+import { AVATAR_OPTIONS, avatarUrl } from "@/types"
 
 interface ProfileSetupProps {
   onComplete: (profile: {
@@ -17,7 +12,7 @@ interface ProfileSetupProps {
 
 export function ProfileSetup({ onComplete }: ProfileSetupProps) {
   const [displayName, setDisplayName] = useState("")
-  const [avatar, setAvatar] = useState("🏠")
+  const [avatar, setAvatar] = useState("house")
   const [bio, setBio] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -67,19 +62,23 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
 
         <div>
           <span className="mb-2 block text-sm text-quiet-muted">Avatar</span>
-          <div className="grid grid-cols-10 gap-1">
-            {AVATAR_OPTIONS.map((emoji) => (
+          <div className="grid grid-cols-6 gap-2">
+            {AVATAR_OPTIONS.map((name) => (
               <button
-                key={emoji}
+                key={name}
                 type="button"
-                onClick={() => setAvatar(emoji)}
-                className={`flex h-9 w-9 items-center justify-center rounded-md text-lg transition-colors ${
-                  avatar === emoji
-                    ? "bg-quiet-accent/15 ring-2 ring-quiet-accent"
+                onClick={() => setAvatar(name)}
+                className={`flex items-center justify-center rounded-md p-1 transition-colors ${
+                  avatar === name
+                    ? "ring-2 ring-quiet-accent bg-quiet-accent/15"
                     : "hover:bg-quiet-border/50"
                 }`}
               >
-                {emoji}
+                <img
+                  src={avatarUrl(name)}
+                  alt={name}
+                  className="h-10 w-10 rounded-full object-cover"
+                />
               </button>
             ))}
           </div>
