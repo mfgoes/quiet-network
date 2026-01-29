@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import type { Post, Circle } from "@/types"
+import type { Profile, Post, Circle } from "@/types"
 
 // ─── Auth ────────────────────────────────────────────
 
@@ -59,6 +59,51 @@ export function useAuth() {
   }
 
   return { session, user, loading, signUp, signIn, signOut }
+}
+
+// ─── Profile ────────────────────────────────────────
+
+export function useProfile(userId: string | undefined) {
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const fetchProfile = useCallback(async () => {
+    if (!userId) return
+    setLoading(true)
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single()
+
+    if (data) setProfile(data as Profile)
+    setLoading(false)
+  }, [userId])
+
+  useEffect(() => {
+    fetchProfile()
+  }, [fetchProfile])
+
+  const updateProfile = async (updates: {
+    display_name: string
+    avatar_emoji: string
+    bio: string
+  }) => {
+    if (!userId) return { error: new Error("No user") }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", userId)
+
+    if (!error) await fetchProfile()
+    return { error }
+  }
+
+  const needsSetup = profile?.display_name === "Neighbor"
+
+  return { profile, loading, needsSetup, updateProfile, refetch: fetchProfile }
 }
 
 // ─── Circles ─────────────────────────────────────────

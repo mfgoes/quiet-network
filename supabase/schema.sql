@@ -9,6 +9,7 @@ create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null default 'Neighbor',
   avatar_emoji text not null default '🏠',
+  bio text not null default '',
   created_at timestamptz not null default now()
 );
 

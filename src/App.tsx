@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { LogOut, ArrowLeft } from "lucide-react"
-import { useAuth, useCircles, usePosts } from "@/lib/hooks"
+import { useAuth, useProfile, useCircles, usePosts } from "@/lib/hooks"
 import { AuthForm } from "@/components/AuthForm"
+import { ProfileSetup } from "@/components/ProfileSetup"
 import { CirclePicker } from "@/components/CirclePicker"
 import { PostComposer } from "@/components/PostComposer"
 import { PostCard } from "@/components/PostCard"
@@ -11,6 +12,12 @@ import type { Circle } from "@/types"
 function App() {
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth()
   const {
+    profile,
+    loading: profileLoading,
+    needsSetup,
+    updateProfile,
+  } = useProfile(user?.id)
+  const {
     circles,
     loading: circlesLoading,
     createCircle,
@@ -18,7 +25,7 @@ function App() {
   const [activeCircle, setActiveCircle] = useState<Circle | null>(null)
 
   // Auth loading
-  if (authLoading) {
+  if (authLoading || (user && profileLoading)) {
     return (
       <Shell>
         <p className="text-center text-sm text-quiet-muted">Loading...</p>
@@ -31,6 +38,20 @@ function App() {
     return (
       <Shell>
         <AuthForm onSignIn={signIn} onSignUp={signUp} />
+      </Shell>
+    )
+  }
+
+  // Profile setup needed
+  if (needsSetup) {
+    return (
+      <Shell>
+        <ProfileSetup
+          onComplete={async (updates) => {
+            const { error } = await updateProfile(updates)
+            if (error) throw error
+          }}
+        />
       </Shell>
     )
   }

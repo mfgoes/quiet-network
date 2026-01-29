@@ -1,3 +1,11 @@
+export interface Profile {
+  id: string
+  display_name: string
+  avatar_emoji: string
+  bio: string
+  created_at: string
+}
+
 export interface Post {
   id: string
   circle_id: string

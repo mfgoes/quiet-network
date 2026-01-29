@@ -52,8 +52,7 @@ Quiet Network fills the gap between high-noise platforms like Nextdoor and shall
 
 ## 4. Revised 7-Week Roadmap
 * **Weeks 1-2:** Foundation & Auth. Setting up the Haarlem and Amsterdam-West circles.
-* **Week 3:** Feed & Composer. **NEW:** Build the duration slider and the "Post Ideas" lightbulb.
-* **Week 4:** Visual Decay. **NEW:** Implement the variable-duration fading logic.
+* **Week 3-4:** Feed & Composer. **NEW:** Build the duration slider and the "Post Ideas" lightbulb.
 * **Week 5:** Mobile Polishing. Ensuring the "Quiet" experience feels great on a phone.
 * **Week 6:** Haarlem Beta. Recruiting 20-30 residents to seed the first "sparks."
 * **Week 7:** Soft Launch & Refinement.
