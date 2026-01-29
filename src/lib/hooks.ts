@@ -1,0 +1,208 @@
+import { useEffect, useState, useCallback } from "react"
+import type { Session, User } from "@supabase/supabase-js"
+import { supabase } from "@/lib/supabase"
+import type { Post, Circle } from "@/types"
+
+// ─── Auth ────────────────────────────────────────────
+
+/** Ensure a profile row exists for the given user (fallback if DB trigger fails) */
+async function ensureProfile(userId: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .single()
+
+  if (!data) {
+    await supabase.from("profiles").insert({ id: userId })
+  }
+}
+
+export function useAuth() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      if (data.session?.user) ensureProfile(data.session.user.id)
+      setLoading(false)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      if (session?.user) ensureProfile(session.user.id)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const user: User | null = session?.user ?? null
+
+  const signUp = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({ email, password })
+    return error
+  }
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    return error
+  }
+
+  const signOut = async () => {
+    await supabase.auth.signOut()
+  }
+
+  return { session, user, loading, signUp, signIn, signOut }
+}
+
+// ─── Circles ─────────────────────────────────────────
+
+export function useCircles(userId: string | undefined) {
+  const [circles, setCircles] = useState<Circle[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchCircles = useCallback(async () => {
+    if (!userId) return
+    setLoading(true)
+
+    // Fetch circles the user is a member of
+    const { data, error } = await supabase
+      .from("circle_members")
+      .select("circle_id, circles(*)")
+      .eq("user_id", userId)
+
+    if (!error && data) {
+      const mapped = data
+        .map((row) => row.circles as unknown as Circle)
+        .filter(Boolean)
+      setCircles(mapped)
+    }
+    setLoading(false)
+  }, [userId])
+
+  useEffect(() => {
+    fetchCircles()
+  }, [fetchCircles])
+
+  const createCircle = async (name: string, description?: string) => {
+    const { data, error } = await supabase
+      .from("circles")
+      .insert({ name, description, created_by: userId })
+      .select()
+      .single()
+
+    if (error || !data) return { error }
+
+    // Auto-join the creator
+    await supabase
+      .from("circle_members")
+      .insert({ circle_id: data.id, user_id: userId })
+
+    await fetchCircles()
+    return { data, error: null }
+  }
+
+  const joinCircle = async (circleId: string) => {
+    const { error } = await supabase
+      .from("circle_members")
+      .insert({ circle_id: circleId, user_id: userId })
+
+    if (!error) await fetchCircles()
+    return error
+  }
+
+  return { circles, loading, createCircle, joinCircle, refetch: fetchCircles }
+}
+
+// ─── Posts ───────────────────────────────────────────
+
+export function usePosts(circleId: string | undefined) {
+  const [posts, setPosts] = useState<Post[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchPosts = useCallback(async () => {
+    if (!circleId) return
+    setLoading(true)
+
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*, profiles(display_name, avatar_emoji)")
+      .eq("circle_id", circleId)
+      .or(`is_welcome.eq.true,expires_at.gt.${new Date().toISOString()}`)
+      .order("is_welcome", { ascending: false })
+      .order("created_at", { ascending: false })
+
+    if (!error && data) {
+      setPosts(data as Post[])
+    }
+    setLoading(false)
+  }, [circleId])
+
+  useEffect(() => {
+    fetchPosts()
+  }, [fetchPosts])
+
+  // Subscribe to realtime inserts
+  useEffect(() => {
+    if (!circleId) return
+
+    const channel = supabase
+      .channel(`posts:${circleId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "posts",
+          filter: `circle_id=eq.${circleId}`,
+        },
+        async (payload) => {
+          // Fetch the full post with profile join
+          const { data } = await supabase
+            .from("posts")
+            .select("*, profiles(display_name, avatar_emoji)")
+            .eq("id", payload.new.id)
+            .single()
+
+          if (data) {
+            setPosts((prev) => {
+              if (prev.some((p) => p.id === data.id)) return prev
+              return [data as Post, ...prev]
+            })
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [circleId])
+
+  const createPost = async (
+    content: string,
+    durationSeconds: number,
+    authorId: string
+  ) => {
+    const now = new Date()
+    const expiresAt = new Date(now.getTime() + durationSeconds * 1000)
+
+    const { error } = await supabase.from("posts").insert({
+      circle_id: circleId,
+      author_id: authorId,
+      content,
+      expires_at: expiresAt.toISOString(),
+      original_duration_seconds: durationSeconds,
+    })
+
+    return error
+  }
+
+  return { posts, loading, createPost, refetch: fetchPosts }
+}
