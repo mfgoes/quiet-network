@@ -145,6 +145,11 @@ create policy "Authenticated users can create posts in their circles"
     )
   );
 
+create policy "Users can delete their own posts"
+  on posts for delete
+  to authenticated
+  using (author_id = auth.uid());
+
 -- Index for efficient expired-post cleanup
 create index if not exists idx_posts_expires_at on posts (expires_at)
   where is_welcome = false;

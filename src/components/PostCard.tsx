@@ -1,12 +1,14 @@
 import { useMemo } from "react"
-import { Pin, Clock, ChevronUp } from "lucide-react"
+import { Pin, Clock, ChevronUp, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { Post } from "@/types"
 import { avatarUrl } from "@/types"
 
 interface PostCardProps {
   post: Post
+  userId?: string
   onUpvote?: (postId: string) => void
+  onDelete?: (postId: string) => void
 }
 
 function formatRelativeAge(createdAt: string): string {
@@ -50,16 +52,17 @@ function getAgeTint(post: Post): string {
   return "bg-quiet-aged"
 }
 
-export function PostCard({ post, onUpvote }: PostCardProps) {
+export function PostCard({ post, userId, onUpvote, onDelete }: PostCardProps) {
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
   const bgClass = useMemo(() => getAgeTint(post), [post])
 
   const authorName = post.profiles?.display_name ?? "Neighbor"
   const authorAvatar = post.profiles?.avatar_emoji ?? "house"
+  const isOwn = userId === post.author_id
 
   return (
-    <div className={`rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
+    <div className={`group relative rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
       {/* Header */}
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -86,6 +89,15 @@ export function PostCard({ post, onUpvote }: PostCardProps) {
               {expiry.isUrgent && <Clock className="mr-1 h-3 w-3" />}
               {expiry.label}
             </Badge>
+          )}
+          {isOwn && onDelete && !post.is_welcome && (
+            <button
+              onClick={() => onDelete(post.id)}
+              className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-warm group-hover:inline-flex"
+              aria-label="Delete post"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           )}
         </div>
       </div>

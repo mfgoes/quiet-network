@@ -384,5 +384,18 @@ export function usePosts(circleId: string | undefined, userId?: string) {
     return error
   }
 
-  return { posts, loading, createPost, toggleUpvote, refetch: fetchPosts }
+  const deletePost = async (postId: string) => {
+    // Optimistic removal
+    setPosts((prev) => prev.filter((p) => p.id !== postId))
+
+    const { error } = await supabase
+      .from("posts")
+      .delete()
+      .eq("id", postId)
+
+    if (error) await fetchPosts()
+    return error
+  }
+
+  return { posts, loading, createPost, deletePost, toggleUpvote, refetch: fetchPosts }
 }

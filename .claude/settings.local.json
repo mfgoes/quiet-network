@@ -9,7 +9,8 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd circle about/rules sidebar, bottom nav, profile page, image avatars, and about page\n\n- Add collapsible About/Rules section per circle with Reddit-style desktop sidebar layout\n- Replace emoji avatars with image-based avatars \\(house, fox, hills, man, roof, woman\\)\n- Add bottom navigation bar for mobile with circles/feed/profile tabs\n- Extract profile page with edit support and about link\n- Add About Quiet Network page\n- Extend circles schema with about, rules fields and creator update policy\n- Add @radix-ui/react-collapsible for collapsible UI primitive\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd circle about/rules sidebar, bottom nav, profile page, image avatars, and about page\n\n- Add collapsible About/Rules section per circle with Reddit-style desktop sidebar layout\n- Replace emoji avatars with image-based avatars \\(house, fox, hills, man, roof, woman\\)\n- Add bottom navigation bar for mobile with circles/feed/profile tabs\n- Extract profile page with edit support and about link\n- Add About Quiet Network page\n- Extend circles schema with about, rules fields and creator update policy\n- Add @radix-ui/react-collapsible for collapsible UI primitive\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(ls:*)"
     ]
   }
 }

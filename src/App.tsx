@@ -71,9 +71,51 @@ function App() {
   // Not signed in
   if (!user) {
     return (
-      <Shell>
-        <AuthForm onSignIn={signIn} onSignUp={signUp} />
-      </Shell>
+      <div className="min-h-screen bg-quiet-offwhite">
+        {/* Mobile: stacked */}
+        <div className="md:hidden">
+          <img
+            src="/images/landscape_with_boats.jpg"
+            alt="Quiet neighborhood"
+            className="h-48 w-full object-cover"
+          />
+          <div className="px-6 py-8">
+            <div className="mb-8 text-center">
+              <h1 className="text-2xl font-semibold text-quiet-slate">
+                Quiet Network
+              </h1>
+              <p className="mt-1 text-sm text-quiet-muted">
+                Your neighborhood, without the noise
+              </p>
+            </div>
+            <AuthForm onSignIn={signIn} onSignUp={signUp} />
+          </div>
+        </div>
+
+        {/* Desktop: side-by-side */}
+        <div className="hidden md:flex md:min-h-screen">
+          <div className="relative w-1/2">
+            <img
+              src="/images/landscape_with_boats.jpg"
+              alt="Quiet neighborhood"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </div>
+          <div className="flex w-1/2 items-center justify-center px-12">
+            <div className="w-full max-w-sm">
+              <div className="mb-10 text-center">
+                <h1 className="text-3xl font-semibold text-quiet-slate">
+                  Quiet Network
+                </h1>
+                <p className="mt-2 text-sm text-quiet-muted">
+                  Your neighborhood, without the noise
+                </p>
+              </div>
+              <AuthForm onSignIn={signIn} onSignUp={signUp} />
+            </div>
+          </div>
+        </div>
+      </div>
     )
   }
 
@@ -273,7 +315,7 @@ function CircleFeed({
   onUpdateCircle: (updates: { about?: string | null; rules?: string | null }) => Promise<void>
 }) {
   const circleId = circle.id
-  const { posts, loading, createPost, toggleUpvote } = usePosts(circleId, userId)
+  const { posts, loading, createPost, deletePost, toggleUpvote } = usePosts(circleId, userId)
 
   const handleNewPost = async (content: string, durationSeconds: number) => {
     await createPost(content, durationSeconds, userId)
@@ -298,7 +340,7 @@ function CircleFeed({
           ) : (
             <div className="mt-6 space-y-3">
               {posts.map((post) => (
-                <PostCard key={post.id} post={post} onUpvote={toggleUpvote} />
+                <PostCard key={post.id} post={post} userId={userId} onUpvote={toggleUpvote} onDelete={deletePost} />
               ))}
             </div>
           )}
