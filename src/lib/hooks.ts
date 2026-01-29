@@ -23,21 +23,22 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (data.session?.user) {
-        try { await ensureProfile(data.session.user.id) } catch {}
-      }
+    supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setLoading(false)
+      // Fire-and-forget — don't block auth on this
+      if (data.session?.user) {
+        ensureProfile(data.session.user.id).catch(() => {})
+      }
     })
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        try { await ensureProfile(session.user.id) } catch {}
-      }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
+      if (session?.user) {
+        ensureProfile(session.user.id).catch(() => {})
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -72,7 +73,10 @@ export function useProfile(userId: string | undefined) {
   const [loading, setLoading] = useState(true)
 
   const fetchProfile = useCallback(async () => {
-    if (!userId) return
+    if (!userId) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
 
     const { data } = await supabase
@@ -185,9 +189,61 @@ export function useCircles(userId: string | undefined) {
 
 // ─── Posts ───────────────────────────────────────────
 
-export function usePosts(circleId: string | undefined) {
+export function usePosts(circleId: string | undefined, userId?: string) {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+
+  const enrichWithUpvotes = useCallback(
+    async (rawPosts: Record<string, unknown>[]): Promise<Post[]> => {
+      // Default: posts with zeroed upvote fields
+      const fallback = rawPosts.map((p) => ({
+        ...p,
+        upvote_count: 0,
+        user_upvoted: false,
+      })) as Post[]
+
+      if (rawPosts.length === 0) return fallback
+
+      try {
+        const postIds = rawPosts.map((p) => p.id as string)
+
+        const [countsRes, userRes] = await Promise.all([
+          supabase
+            .from("post_upvotes")
+            .select("post_id")
+            .in("post_id", postIds),
+          userId
+            ? supabase
+                .from("post_upvotes")
+                .select("post_id")
+                .in("post_id", postIds)
+                .eq("user_id", userId)
+            : null,
+        ])
+
+        if (countsRes.error) return fallback
+
+        const countMap: Record<string, number> = {}
+        for (const row of countsRes.data ?? []) {
+          countMap[row.post_id] = (countMap[row.post_id] || 0) + 1
+        }
+
+        const userSet = new Set<string>()
+        for (const row of userRes?.data ?? []) {
+          userSet.add(row.post_id)
+        }
+
+        return rawPosts.map((p) => ({
+          ...p,
+          upvote_count: countMap[p.id as string] || 0,
+          user_upvoted: userSet.has(p.id as string),
+        })) as Post[]
+      } catch {
+        return fallback
+      }
+    },
+    [userId]
+  )
 
   const fetchPosts = useCallback(async () => {
     if (!circleId) return
@@ -195,17 +251,23 @@ export function usePosts(circleId: string | undefined) {
 
     const { data, error } = await supabase
       .from("posts")
-      .select("*, profiles(display_name, avatar_emoji)")
+      .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji)")
       .eq("circle_id", circleId)
       .or(`is_welcome.eq.true,expires_at.gt.${new Date().toISOString()}`)
       .order("is_welcome", { ascending: false })
       .order("created_at", { ascending: false })
 
+    console.log("[fetchPosts]", { circleId, error, rowCount: data?.length ?? 0 })
     if (!error && data) {
-      setPosts(data as Post[])
+      try {
+        const enriched = await enrichWithUpvotes(data)
+        setPosts(enriched)
+      } catch {
+        setPosts(data as Post[])
+      }
     }
     setLoading(false)
-  }, [circleId])
+  }, [circleId, enrichWithUpvotes])
 
   useEffect(() => {
     fetchPosts()
@@ -229,14 +291,21 @@ export function usePosts(circleId: string | undefined) {
           // Fetch the full post with profile join
           const { data } = await supabase
             .from("posts")
-            .select("*, profiles(display_name, avatar_emoji)")
+            .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji)")
             .eq("id", payload.new.id)
             .single()
 
           if (data) {
+            let post: Post
+            try {
+              const [enriched] = await enrichWithUpvotes([data])
+              post = enriched
+            } catch {
+              post = data as Post
+            }
             setPosts((prev) => {
-              if (prev.some((p) => p.id === data.id)) return prev
-              return [data as Post, ...prev]
+              if (prev.some((p) => p.id === post.id)) return prev
+              return [post, ...prev]
             })
           }
         }
@@ -246,7 +315,54 @@ export function usePosts(circleId: string | undefined) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [circleId])
+  }, [circleId, enrichWithUpvotes])
+
+  const toggleUpvote = async (postId: string) => {
+    if (!userId) return
+
+    const post = posts.find((p) => p.id === postId)
+    if (!post) return
+
+    const wasUpvoted = post.user_upvoted
+
+    // Optimistic update
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              user_upvoted: !wasUpvoted,
+              upvote_count: p.upvote_count + (wasUpvoted ? -1 : 1),
+            }
+          : p
+      )
+    )
+
+    const { error } = wasUpvoted
+      ? await supabase
+          .from("post_upvotes")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", userId)
+      : await supabase
+          .from("post_upvotes")
+          .insert({ post_id: postId, user_id: userId })
+
+    // Revert on error
+    if (error) {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                user_upvoted: wasUpvoted,
+                upvote_count: p.upvote_count + (wasUpvoted ? 1 : -1),
+              }
+            : p
+        )
+      )
+    }
+  }
 
   const createPost = async (
     content: string,
@@ -264,8 +380,9 @@ export function usePosts(circleId: string | undefined) {
       original_duration_seconds: durationSeconds,
     })
 
+    console.log("[createPost]", { circleId, authorId, error })
     return error
   }
 
-  return { posts, loading, createPost, refetch: fetchPosts }
+  return { posts, loading, createPost, toggleUpvote, refetch: fetchPosts }
 }

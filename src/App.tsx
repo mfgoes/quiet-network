@@ -1,6 +1,7 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ArrowLeft } from "lucide-react"
 import { avatarUrl } from "@/types"
+import { supabase } from "@/lib/supabase"
 import { useAuth, useProfile, useCircles, usePosts } from "@/lib/hooks"
 import { AuthForm } from "@/components/AuthForm"
 import { ProfileSetup } from "@/components/ProfileSetup"
@@ -31,6 +32,12 @@ function App() {
   const [activeCircle, setActiveCircle] = useState<Circle | null>(null)
   const [view, setView] = useState<View>("circles")
   const [showAbout, setShowAbout] = useState(false)
+  const [loadingStuck, setLoadingStuck] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoadingStuck(true), 5000)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleNavigate = (v: View) => {
     if (v === "circles") setActiveCircle(null)
@@ -41,7 +48,22 @@ function App() {
   if (authLoading || (user && profileLoading)) {
     return (
       <Shell>
-        <p className="text-center text-sm text-quiet-muted">Loading...</p>
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-sm text-quiet-muted">Loading...</p>
+          {loadingStuck && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-quiet-muted"
+              onClick={() => {
+                supabase.auth.signOut()
+                window.location.reload()
+              }}
+            >
+              Taking too long? Sign out
+            </Button>
+          )}
+        </div>
       </Shell>
     )
   }
@@ -51,6 +73,22 @@ function App() {
     return (
       <Shell>
         <AuthForm onSignIn={signIn} onSignUp={signUp} />
+      </Shell>
+    )
+  }
+
+  // Profile failed to load
+  if (!profile) {
+    return (
+      <Shell>
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-sm text-quiet-muted">
+            Something went wrong loading your profile.
+          </p>
+          <Button variant="ghost" size="sm" onClick={signOut}>
+            Sign out
+          </Button>
+        </div>
       </Shell>
     )
   }
@@ -235,7 +273,7 @@ function CircleFeed({
   onUpdateCircle: (updates: { about?: string | null; rules?: string | null }) => Promise<void>
 }) {
   const circleId = circle.id
-  const { posts, loading, createPost } = usePosts(circleId)
+  const { posts, loading, createPost, toggleUpvote } = usePosts(circleId, userId)
 
   const handleNewPost = async (content: string, durationSeconds: number) => {
     await createPost(content, durationSeconds, userId)
@@ -260,7 +298,7 @@ function CircleFeed({
           ) : (
             <div className="mt-6 space-y-3">
               {posts.map((post) => (
-                <PostCard key={post.id} post={post} />
+                <PostCard key={post.id} post={post} onUpvote={toggleUpvote} />
               ))}
             </div>
           )}

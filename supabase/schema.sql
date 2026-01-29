@@ -177,3 +177,46 @@ $$ language plpgsql security definer;
 create or replace trigger on_circle_created
   after insert on circles
   for each row execute function create_welcome_post();
+
+
+-- ============================================
+-- POST UPVOTES
+-- ============================================
+create table if not exists post_upvotes (
+  post_id uuid not null references posts(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+
+alter table post_upvotes enable row level security;
+
+create policy "Upvotes are viewable by circle members"
+  on post_upvotes for select
+  to authenticated
+  using (
+    exists (
+      select 1 from posts
+      join circle_members on circle_members.circle_id = posts.circle_id
+      where posts.id = post_upvotes.post_id
+        and circle_members.user_id = auth.uid()
+    )
+  );
+
+create policy "Users can upvote posts in their circles"
+  on post_upvotes for insert
+  to authenticated
+  with check (
+    user_id = auth.uid()
+    and exists (
+      select 1 from posts
+      join circle_members on circle_members.circle_id = posts.circle_id
+      where posts.id = post_upvotes.post_id
+        and circle_members.user_id = auth.uid()
+    )
+  );
+
+create policy "Users can remove their own upvotes"
+  on post_upvotes for delete
+  to authenticated
+  using (user_id = auth.uid());

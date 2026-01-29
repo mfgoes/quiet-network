@@ -1,11 +1,12 @@
 import { useMemo } from "react"
-import { Pin, Clock } from "lucide-react"
+import { Pin, Clock, ChevronUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { Post } from "@/types"
 import { avatarUrl } from "@/types"
 
 interface PostCardProps {
   post: Post
+  onUpvote?: (postId: string) => void
 }
 
 function formatRelativeAge(createdAt: string): string {
@@ -49,7 +50,7 @@ function getAgeTint(post: Post): string {
   return "bg-quiet-aged"
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, onUpvote }: PostCardProps) {
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
   const bgClass = useMemo(() => getAgeTint(post), [post])
@@ -93,6 +94,23 @@ export function PostCard({ post }: PostCardProps) {
       <p className="whitespace-pre-wrap text-sm leading-relaxed text-quiet-slate">
         {post.content}
       </p>
+
+      {/* Upvote */}
+      {onUpvote && !post.is_welcome && (
+        <div className="mt-3 flex items-center">
+          <button
+            onClick={() => onUpvote(post.id)}
+            className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${
+              post.user_upvoted
+                ? "bg-quiet-accent/15 text-quiet-slate"
+                : "text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-slate"
+            }`}
+          >
+            <ChevronUp className="h-4 w-4" />
+            {post.upvote_count > 0 && <span>{post.upvote_count}</span>}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

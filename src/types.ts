@@ -19,6 +19,8 @@ export interface Post {
     display_name: string
     avatar_emoji: string
   }
+  upvote_count: number
+  user_upvoted: boolean
 }
 
 export interface Circle {
