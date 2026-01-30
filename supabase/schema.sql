@@ -91,16 +91,10 @@ create table if not exists circle_members (
 
 alter table circle_members enable row level security;
 
-create policy "Members can view their circle's membership"
+create policy "Authenticated users can view circle membership"
   on circle_members for select
   to authenticated
-  using (
-    exists (
-      select 1 from circle_members as cm
-      where cm.circle_id = circle_members.circle_id
-        and cm.user_id = auth.uid()
-    )
-  );
+  using (true);
 
 create policy "Users can join circles"
   on circle_members for insert
@@ -236,3 +230,31 @@ create policy "Users can remove their own upvotes"
   on post_upvotes for delete
   to authenticated
   using (user_id = auth.uid());
+
+
+-- ============================================
+-- DELETE ACCOUNT (security definer function)
+-- ============================================
+-- Allows a user to delete all their own data and auth account.
+-- Runs as postgres (security definer) so it can call auth.users delete.
+-- Only deletes the calling user's data — auth.uid() is checked internally.
+
+create or replace function delete_own_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- Delete user's upvotes
+  delete from post_upvotes where user_id = auth.uid();
+  -- Delete user's posts
+  delete from posts where author_id = auth.uid();
+  -- Remove from all circles
+  delete from circle_members where user_id = auth.uid();
+  -- Delete profile
+  delete from profiles where id = auth.uid();
+  -- Delete auth user
+  delete from auth.users where id = auth.uid();
+end;
+$$;

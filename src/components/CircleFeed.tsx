@@ -136,7 +136,7 @@ export function CircleFeed({
 
         {/* Desktop: sidebar */}
         <div className="hidden lg:block">
-          <CircleAbout sidebar circle={circle} userId={userId} onUpdate={onUpdateCircle} />
+          <CircleAbout sidebar circle={circle} userId={userId} onUpdate={onUpdateCircle} onLeave={isMember ? onLeave : undefined} />
         </div>
       </div>
     </>

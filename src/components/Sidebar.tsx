@@ -1,7 +1,11 @@
-import { Home, Compass, User } from "lucide-react"
+import { useState } from "react"
+import { Home, Compass, User, ChevronDown } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { avatarUrl } from "@/types"
+import { CircleIcon } from "@/components/CircleIcon"
 import type { Circle, Profile } from "@/types"
+
+const INITIAL_SHOW = 3
 
 interface SidebarProps {
   profile: Profile
@@ -12,6 +16,7 @@ export function Sidebar({ profile, circles }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const path = location.pathname
+  const [expanded, setExpanded] = useState(false)
 
   const navItems = [
     { label: "Home", path: "/", icon: Home },
@@ -62,10 +67,10 @@ export function Sidebar({ profile, circles }: SidebarProps) {
       {circles.length > 0 && (
         <div className="mt-6 px-3 flex-1 min-h-0 overflow-y-auto">
           <p className="px-3 mb-1.5 text-xs font-medium text-quiet-muted uppercase tracking-wider">
-            Your circles
+            Recent Circles
           </p>
           <div className="space-y-0.5">
-            {circles.map((circle) => {
+            {(expanded ? circles : circles.slice(0, INITIAL_SHOW)).map((circle) => {
               const isActive = path === `/${circle.slug}`
               return (
                 <button
@@ -77,11 +82,22 @@ export function Sidebar({ profile, circles }: SidebarProps) {
                       : "text-quiet-muted hover:bg-quiet-aged hover:text-quiet-slate"
                   }`}
                 >
-                  <span className="h-2 w-2 rounded-full bg-quiet-accent shrink-0" />
+                  <CircleIcon name={circle.name} size="sm" />
                   <span className="truncate">{circle.name}</span>
                 </button>
               )
             })}
+            {circles.length > INITIAL_SHOW && (
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-quiet-muted hover:text-quiet-slate transition-colors"
+              >
+                <ChevronDown
+                  className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
+                />
+                {expanded ? "Show less" : `View all (${circles.length})`}
+              </button>
+            )}
           </div>
         </div>
       )}

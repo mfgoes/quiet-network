@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { CircleIcon } from "@/components/CircleIcon"
+import { circleColor } from "@/types"
 import type { Circle } from "@/types"
 
 interface CirclePickerProps {
@@ -25,6 +27,12 @@ export function CirclePicker({
   const [description, setDescription] = useState("")
   const [creating, setCreating] = useState(false)
   const [joiningId, setJoiningId] = useState<string | null>(null)
+  const [showAllOwn, setShowAllOwn] = useState(false)
+  const [showAllDiscover, setShowAllDiscover] = useState(false)
+
+  const INITIAL_SHOW = 10
+  const visibleCircles = showAllOwn ? circles : circles.slice(0, INITIAL_SHOW)
+  const visibleDiscoverable = showAllDiscover ? discoverableCircles : discoverableCircles.slice(0, INITIAL_SHOW)
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,64 +54,96 @@ export function CirclePicker({
   if (loading) {
     return (
       <p className="text-center text-sm text-quiet-muted">
-        Loading your circles...
+        Loading circles...
       </p>
     )
   }
 
   return (
-    <div className="mx-auto max-w-sm space-y-4">
+    <div className="space-y-6">
       {circles.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm text-quiet-muted">Your circles</p>
-          {circles.map((circle) => (
+          <p className="text-sm font-medium text-quiet-muted">Your circles</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {visibleCircles.map((circle) => {
+              const color = circleColor(circle.name)
+              return (
+                <button
+                  key={circle.id}
+                  onClick={() => onSelect(circle)}
+                  className="flex items-center gap-3 rounded-xl p-3 text-left transition-all hover:scale-[1.02] hover:shadow-sm"
+                  style={{ backgroundColor: `${color.bg}66` }}
+                >
+                  <CircleIcon name={circle.name} size="lg" />
+                  <div className="min-w-0">
+                    <span className="block text-sm font-medium text-quiet-slate">
+                      {circle.name}
+                    </span>
+                    {circle.description && (
+                      <span className="mt-0.5 block text-xs text-quiet-muted truncate">
+                        {circle.description}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          {circles.length > INITIAL_SHOW && (
             <button
-              key={circle.id}
-              onClick={() => onSelect(circle)}
-              className="w-full rounded-lg border border-quiet-border bg-white p-3 text-left transition-colors hover:border-quiet-accent"
+              onClick={() => setShowAllOwn(!showAllOwn)}
+              className="mt-1 text-xs text-quiet-muted hover:text-quiet-slate transition-colors"
             >
-              <span className="text-sm font-medium text-quiet-slate">
-                {circle.name}
-              </span>
-              {circle.description && (
-                <span className="mt-0.5 block text-xs text-quiet-muted">
-                  {circle.description}
-                </span>
-              )}
+              {showAllOwn ? "Show less" : `View more (${circles.length - INITIAL_SHOW} more)`}
             </button>
-          ))}
+          )}
         </div>
       )}
 
       {discoverableCircles.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm text-quiet-muted">Discover circles</p>
-          {discoverableCircles.map((circle) => (
-            <div
-              key={circle.id}
-              className="flex items-center justify-between rounded-lg border border-quiet-border bg-white p-3"
+          <p className="text-sm font-medium text-quiet-muted">Discover circles</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {visibleDiscoverable.map((circle) => {
+              const color = circleColor(circle.name)
+              return (
+                <div
+                  key={circle.id}
+                  className="flex items-center gap-3 rounded-xl p-3"
+                  style={{ backgroundColor: `${color.bg}66` }}
+                >
+                  <CircleIcon name={circle.name} size="lg" />
+                  <div className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-quiet-slate">
+                      {circle.name}
+                    </span>
+                    {circle.description && (
+                      <span className="mt-0.5 block text-xs text-quiet-muted truncate">
+                        {circle.description}
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={joiningId === circle.id}
+                    onClick={() => handleJoin(circle)}
+                    className="ml-2 shrink-0 bg-white/80"
+                  >
+                    {joiningId === circle.id ? "Joining..." : "Join"}
+                  </Button>
+                </div>
+              )
+            })}
+          </div>
+          {discoverableCircles.length > INITIAL_SHOW && (
+            <button
+              onClick={() => setShowAllDiscover(!showAllDiscover)}
+              className="mt-1 text-xs text-quiet-muted hover:text-quiet-slate transition-colors"
             >
-              <div className="min-w-0">
-                <span className="text-sm font-medium text-quiet-slate">
-                  {circle.name}
-                </span>
-                {circle.description && (
-                  <span className="mt-0.5 block text-xs text-quiet-muted">
-                    {circle.description}
-                  </span>
-                )}
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={joiningId === circle.id}
-                onClick={() => handleJoin(circle)}
-                className="ml-3 shrink-0"
-              >
-                {joiningId === circle.id ? "Joining..." : "Join"}
-              </Button>
-            </div>
-          ))}
+              {showAllDiscover ? "Show less" : `View more (${discoverableCircles.length - INITIAL_SHOW} more)`}
+            </button>
+          )}
         </div>
       )}
 

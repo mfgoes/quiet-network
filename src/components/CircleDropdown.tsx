@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react"
 import { ChevronDown } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { CircleIcon } from "@/components/CircleIcon"
 import type { Circle } from "@/types"
 
 interface CircleDropdownProps {
@@ -63,12 +64,13 @@ export function CircleDropdown({ circles, selectedSlug }: CircleDropdownProps) {
                 navigate(`/${circle.slug}`)
                 setOpen(false)
               }}
-              className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+              className={`flex w-full items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
                 selectedSlug === circle.slug
                   ? "bg-quiet-aged text-quiet-slate font-medium"
                   : "text-quiet-muted hover:bg-quiet-aged hover:text-quiet-slate"
               }`}
             >
+              <CircleIcon name={circle.name} size="sm" />
               {circle.name}
             </button>
           ))}

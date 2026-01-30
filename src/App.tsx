@@ -26,7 +26,7 @@ function App() {
 }
 
 function AppRoutes() {
-  const { user, loading: authLoading, signIn, signUp, signOut } = useAuth()
+  const { user, loading: authLoading, signIn, signUp, signOut, leaveAllCircles, deleteAccount } = useAuth()
   const {
     profile,
     loading: profileLoading,
@@ -230,6 +230,8 @@ function AppRoutes() {
               }}
               onSignOut={signOut}
               onAbout={() => navigate("/about")}
+              onLeaveAllCircles={leaveAllCircles}
+              onDeleteAccount={deleteAccount}
             />
           }
         />

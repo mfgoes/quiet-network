@@ -13,9 +13,12 @@ interface ExplorePageProps {
 export function ExplorePage(props: ExplorePageProps) {
   return (
     <div>
-      <h2 className="mb-4 text-lg font-semibold text-quiet-slate">
+      <h2 className="mb-1 text-lg font-semibold text-quiet-slate">
         Explore circles
       </h2>
+      <p className="mb-6 text-sm text-quiet-muted">
+        Join a circle to see posts from your neighborhood
+      </p>
       <CirclePicker {...props} />
     </div>
   )

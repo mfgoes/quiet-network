@@ -1,5 +1,11 @@
 import { useState } from "react"
-import { Info, LogOut, Pencil } from "lucide-react"
+import { ChevronDown, Info, LogOut, Pencil, Trash2, UserMinus } from "lucide-react"
+import { toast } from "sonner"
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
 import { AVATAR_OPTIONS, avatarUrl } from "@/types"
 import type { Profile } from "@/types"
@@ -14,9 +20,11 @@ interface ProfilePageProps {
   }) => Promise<void>
   onSignOut: () => void
   onAbout: () => void
+  onLeaveAllCircles: () => Promise<void>
+  onDeleteAccount: () => Promise<void>
 }
 
-export function ProfilePage({ profile, onSave, onSignOut, onAbout }: ProfilePageProps) {
+export function ProfilePage({ profile, onSave, onSignOut, onAbout, onLeaveAllCircles, onDeleteAccount }: ProfilePageProps) {
   const [editing, setEditing] = useState(false)
   const [displayName, setDisplayName] = useState(profile.display_name)
   const [username, setUsername] = useState(profile.username)
@@ -97,6 +105,11 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout }: ProfilePage
             Sign out
           </Button>
         </div>
+
+        <DangerZone
+          onLeaveAllCircles={onLeaveAllCircles}
+          onDeleteAccount={onDeleteAccount}
+        />
       </div>
     )
   }
@@ -220,5 +233,111 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout }: ProfilePage
         </div>
       </form>
     </div>
+  )
+}
+
+// ─── Danger zone ─────────────────────────────────────
+
+function DangerZone({
+  onLeaveAllCircles,
+  onDeleteAccount,
+}: {
+  onLeaveAllCircles: () => Promise<void>
+  onDeleteAccount: () => Promise<void>
+}) {
+  const [open, setOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState("")
+  const [busy, setBusy] = useState(false)
+
+  const handleLeaveAll = async () => {
+    if (!window.confirm("Leave all circles? You can rejoin them later.")) return
+    setBusy(true)
+    try {
+      await onLeaveAllCircles()
+      toast.success("Left all circles.")
+    } catch {
+      toast.error("Something went wrong.")
+    }
+    setBusy(false)
+  }
+
+  const handleDelete = async () => {
+    if (confirmDelete !== "DELETE") return
+    setBusy(true)
+    try {
+      await onDeleteAccount()
+    } catch {
+      toast.error("Something went wrong.")
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="mt-8">
+      <div className="rounded-lg border border-quiet-border">
+        <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-sm text-quiet-muted hover:text-quiet-slate transition-colors rounded-lg">
+          <span>Danger zone</span>
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <div className="border-t border-quiet-border px-4 py-4 space-y-4">
+            {/* Leave all circles */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-quiet-slate">Leave all circles</p>
+                <p className="text-xs text-quiet-muted">
+                  Remove yourself from every circle. You can rejoin later.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={handleLeaveAll}
+                className="shrink-0 text-quiet-muted"
+              >
+                <UserMinus className="mr-1.5 h-3.5 w-3.5" />
+                Leave all
+              </Button>
+            </div>
+
+            <hr className="border-quiet-border" />
+
+            {/* Delete account */}
+            <div>
+              <p className="text-sm font-medium text-quiet-slate">Delete account</p>
+              <p className="text-xs text-quiet-muted mt-1">
+                Permanently delete your account, posts, and all data. This cannot be undone.
+              </p>
+              <div className="mt-3 space-y-2">
+                <label className="block text-xs text-quiet-muted">
+                  Type <span className="font-mono font-semibold text-quiet-slate">DELETE</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={confirmDelete}
+                  onChange={(e) => setConfirmDelete(e.target.value)}
+                  placeholder="DELETE"
+                  className="w-full rounded-md border border-quiet-border bg-white p-2 text-sm text-quiet-slate placeholder:text-quiet-muted/40 focus:border-quiet-warm focus:outline-none"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={confirmDelete !== "DELETE" || busy}
+                  onClick={handleDelete}
+                  className="w-full text-quiet-warm border-quiet-warm/30 hover:bg-quiet-warm/5 disabled:opacity-40"
+                >
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                  {busy ? "Deleting..." : "Permanently delete account"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   )
 }

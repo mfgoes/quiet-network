@@ -151,7 +151,7 @@ function MembersSection({ circleId }: { circleId: string }) {
   const remaining = count - displayMembers.length
 
   return (
-    <div className="px-4 py-3 border-t border-quiet-border">
+    <div className="px-4 py-3">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-medium text-quiet-muted">Members</p>
         <span className="text-xs font-medium text-quiet-slate">{count}</span>
@@ -180,33 +180,29 @@ function LeaveButton({ onLeave }: { onLeave: () => Promise<void> }) {
   const [leaving, setLeaving] = useState(false)
 
   return (
-    <div className="px-4 py-3 border-t border-quiet-border flex justify-end">
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={leaving}
-        onClick={async () => {
-          setLeaving(true)
-          await onLeave()
-          setLeaving(false)
-        }}
-        className="gap-1 text-quiet-muted hover:text-quiet-slate"
-      >
-        <LogOut className="h-3 w-3" />
-        {leaving ? "Leaving..." : "Leave circle"}
-      </Button>
-    </div>
+    <button
+      disabled={leaving}
+      onClick={async () => {
+        setLeaving(true)
+        await onLeave()
+        setLeaving(false)
+      }}
+      className="flex items-center gap-1.5 text-sm text-quiet-muted hover:text-quiet-slate transition-colors disabled:opacity-50"
+    >
+      <LogOut className="h-3.5 w-3.5" />
+      {leaving ? "Leaving..." : "Leave circle"}
+    </button>
   )
 }
 
 export function CircleAbout({ circle, userId, onUpdate, onLeave, sidebar }: CircleAboutProps) {
   const [open, setOpen] = useState(false)
-  const isCreator = circle.created_by === userId
 
-  // Desktop sidebar: always-visible static card
+  // Desktop sidebar: separate cards
   if (sidebar) {
     return (
       <div className="sticky top-8 space-y-3">
+        {/* About / Rules card */}
         <div className="rounded-lg border border-quiet-border bg-white">
           <div className="px-4 py-3 border-b border-quiet-border">
             <h3 className="text-sm font-medium text-quiet-slate">About / Rules</h3>
@@ -214,9 +210,19 @@ export function CircleAbout({ circle, userId, onUpdate, onLeave, sidebar }: Circ
           <div className="px-4 py-3">
             <AboutContent circle={circle} userId={userId} onUpdate={onUpdate} />
           </div>
-          <MembersSection circleId={circle.id} />
-          {onLeave && !isCreator && <LeaveButton onLeave={onLeave} />}
         </div>
+
+        {/* Members card */}
+        <div className="rounded-lg border border-quiet-border bg-white">
+          <MembersSection circleId={circle.id} />
+        </div>
+
+        {/* Leave circle */}
+        {onLeave && (
+          <div className="rounded-lg border border-quiet-border bg-white px-4 py-3">
+            <LeaveButton onLeave={onLeave} />
+          </div>
+        )}
       </div>
     )
   }
@@ -238,8 +244,14 @@ export function CircleAbout({ circle, userId, onUpdate, onLeave, sidebar }: Circ
           <div className="border-t border-quiet-border px-4 py-3">
             <AboutContent circle={circle} userId={userId} onUpdate={onUpdate} />
           </div>
-          <MembersSection circleId={circle.id} />
-          {onLeave && !isCreator && <LeaveButton onLeave={onLeave} />}
+          <div className="border-t border-quiet-border">
+            <MembersSection circleId={circle.id} />
+          </div>
+          {onLeave && (
+            <div className="px-4 py-3 border-t border-quiet-border">
+              <LeaveButton onLeave={onLeave} />
+            </div>
+          )}
         </CollapsibleContent>
       </div>
     </Collapsible>

@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
+import { Link, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 function useFadeIn() {
@@ -73,6 +74,57 @@ const features = [
   },
 ]
 
+function InviteCard() {
+  const [copied, setCopied] = useState(false)
+  const inviteUrl = `${window.location.origin}/`
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // fallback
+      const input = document.createElement("input")
+      input.value = inviteUrl
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand("copy")
+      document.body.removeChild(input)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-gradient-to-br from-[#EDE9FE] to-[#DBEAFE] p-6 text-center space-y-3">
+      <h3 className="text-lg font-bold text-quiet-slate">
+        Invite Your People
+      </h3>
+      <p className="text-sm text-quiet-muted leading-relaxed max-w-md mx-auto">
+        Spread Quiet Network to your friends, neighbors, and like-minded folks
+        everywhere. More joiners = better, calmer connections for all. Who's next? ✨
+      </p>
+      <Button
+        onClick={handleCopy}
+        className="bg-quiet-slate text-quiet-offwhite hover:bg-quiet-accent transition-colors rounded-xl px-6"
+      >
+        {copied ? (
+          <>
+            <Check className="mr-1.5 h-4 w-4" />
+            Link copied!
+          </>
+        ) : (
+          <>
+            <Link className="mr-1.5 h-4 w-4" />
+            Copy invite link
+          </>
+        )}
+      </Button>
+    </div>
+  )
+}
+
 export function AboutPage({ onJoin }: { onJoin?: () => void }) {
   return (
     <div className="mx-auto max-w-3xl space-y-10 pb-8">
@@ -132,6 +184,11 @@ export function AboutPage({ onJoin }: { onJoin?: () => void }) {
           </div>
         </FadeIn>
       )}
+
+      {/* Invite card */}
+      <FadeIn>
+        <InviteCard />
+      </FadeIn>
 
       {/* Footer */}
       <FadeIn>

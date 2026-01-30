@@ -97,6 +97,31 @@ export function getTagDef(tagId: string): TagDef | undefined {
   return TAGS.find((t) => t.id === tagId)
 }
 
+// ─── Circle icon colors ─────────────────────────────
+
+const CIRCLE_PASTELS = [
+  { bg: "#DBEAFE", text: "#1E40AF" }, // blue
+  { bg: "#D1FAE5", text: "#065F46" }, // green
+  { bg: "#FEF3C7", text: "#92400E" }, // amber
+  { bg: "#FCE7F3", text: "#9D174D" }, // pink
+  { bg: "#EDE9FE", text: "#5B21B6" }, // purple
+  { bg: "#CFFAFE", text: "#155E75" }, // cyan
+  { bg: "#FEE2E2", text: "#991B1B" }, // red
+  { bg: "#E0E7FF", text: "#3730A3" }, // indigo
+] as const
+
+export function circleColor(name: string): { bg: string; text: string } {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return CIRCLE_PASTELS[Math.abs(hash) % CIRCLE_PASTELS.length]
+}
+
+export function circleInitial(name: string): string {
+  return (name[0] || "?").toUpperCase()
+}
+
 export const POST_SPARKS = [
   "Best coffee nearby?",
   "Anyone found lost items?",

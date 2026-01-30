@@ -64,7 +64,22 @@ export function useAuth() {
     await supabase.auth.signOut()
   }
 
-  return { session, user, loading, signUp, signIn, signOut }
+  const leaveAllCircles = async () => {
+    if (!user) return
+    const { error } = await supabase
+      .from("circle_members")
+      .delete()
+      .eq("user_id", user.id)
+    if (error) throw error
+  }
+
+  const deleteAccount = async () => {
+    const { error } = await supabase.rpc("delete_own_account")
+    if (error) throw error
+    await supabase.auth.signOut()
+  }
+
+  return { session, user, loading, signUp, signIn, signOut, leaveAllCircles, deleteAccount }
 }
 
 // ─── Profile ────────────────────────────────────────
