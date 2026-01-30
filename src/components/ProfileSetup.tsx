@@ -1,32 +1,61 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { AVATAR_OPTIONS, avatarUrl } from "@/types"
+import { AVATAR_OPTIONS, avatarUrl, slugify } from "@/types"
 
 interface ProfileSetupProps {
   onComplete: (profile: {
     display_name: string
     avatar_emoji: string
     bio: string
+    username: string
   }) => Promise<void>
 }
 
 export function ProfileSetup({ onComplete }: ProfileSetupProps) {
   const [displayName, setDisplayName] = useState("")
+  const [username, setUsername] = useState("")
+  const [editingUsername, setEditingUsername] = useState(false)
   const [avatar, setAvatar] = useState("house")
   const [bio, setBio] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  const usernameRegex = /^[a-z0-9][a-z0-9_-]{1,18}[a-z0-9]$/
+
+  // The effective username: manual override if editing, otherwise derived from display name
+  const derivedUsername = slugify(displayName)
+  const effectiveUsername = editingUsername ? username : derivedUsername
+
+  const handleDisplayNameChange = (value: string) => {
+    setDisplayName(value)
+    // If user hasn't manually edited, keep username in sync
+    if (!editingUsername) {
+      setUsername(slugify(value))
+    }
+  }
+
+  const handleEditUsername = () => {
+    setUsername(derivedUsername)
+    setEditingUsername(true)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    setSubmitting(true)
 
+    const trimmedUsername = effectiveUsername.trim()
+    if (!usernameRegex.test(trimmedUsername)) {
+      setError("Username must be 3-20 characters, lowercase letters, numbers, hyphens, or underscores.")
+      return
+    }
+
+    setSubmitting(true)
     try {
       await onComplete({
         display_name: displayName.trim(),
         avatar_emoji: avatar,
         bio: bio.trim(),
+        username: trimmedUsername,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
@@ -52,13 +81,52 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
             id="displayName"
             type="text"
             value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
+            onChange={(e) => handleDisplayNameChange(e.target.value)}
             required
             maxLength={30}
             placeholder="How should neighbors know you?"
             className="w-full rounded-md border border-quiet-border bg-white p-2.5 text-sm text-quiet-slate placeholder:text-quiet-muted/50 focus:border-quiet-accent focus:outline-none"
           />
+          {displayName.trim() && !editingUsername && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-quiet-muted/70">
+              <span>Your username will be <span className="text-quiet-slate">@{derivedUsername || "..."}</span></span>
+              <button
+                type="button"
+                onClick={handleEditUsername}
+                className="text-quiet-accent hover:text-quiet-slate transition-colors"
+              >
+                Edit
+              </button>
+            </p>
+          )}
         </div>
+
+        {editingUsername && (
+          <div>
+            <label
+              htmlFor="username"
+              className="mb-1 block text-sm text-quiet-muted"
+            >
+              Username
+            </label>
+            <div className="flex items-center gap-1">
+              <span className="text-sm text-quiet-muted">@</span>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
+                required
+                maxLength={20}
+                placeholder="your-username"
+                className="w-full rounded-md border border-quiet-border bg-white p-2.5 text-sm text-quiet-slate placeholder:text-quiet-muted/50 focus:border-quiet-accent focus:outline-none"
+              />
+            </div>
+            <p className="mt-1 text-xs text-quiet-muted/50">
+              Your shareable address: /user/{username || "..."}
+            </p>
+          </div>
+        )}
 
         <div>
           <span className="mb-2 block text-sm text-quiet-muted">Avatar</span>
@@ -109,7 +177,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
 
         <Button
           type="submit"
-          disabled={submitting || !displayName.trim()}
+          disabled={submitting || !displayName.trim() || !effectiveUsername.trim()}
           className="w-full"
         >
           Save &amp; continue

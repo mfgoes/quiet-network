@@ -1,8 +1,9 @@
 import { useMemo } from "react"
+import { Link } from "react-router-dom"
 import { Pin, Clock, ChevronUp, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { Post } from "@/types"
-import { avatarUrl } from "@/types"
+import { avatarUrl, getTagDef } from "@/types"
 
 interface PostCardProps {
   post: Post
@@ -59,6 +60,7 @@ export function PostCard({ post, userId, onUpvote, onDelete }: PostCardProps) {
 
   const authorName = post.profiles?.display_name ?? "Neighbor"
   const authorAvatar = post.profiles?.avatar_emoji ?? "house"
+  const authorUsername = post.profiles?.username
   const isOwn = userId === post.author_id
 
   return (
@@ -66,14 +68,29 @@ export function PostCard({ post, userId, onUpvote, onDelete }: PostCardProps) {
       {/* Header */}
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img
-            src={avatarUrl(authorAvatar)}
-            alt="avatar"
-            className="h-7 w-7 rounded-full object-cover"
-          />
-          <span className="text-sm font-medium text-quiet-slate">
-            {authorName}
-          </span>
+          {authorUsername ? (
+            <Link to={`/user/${authorUsername}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <img
+                src={avatarUrl(authorAvatar)}
+                alt="avatar"
+                className="h-7 w-7 rounded-full object-cover"
+              />
+              <span className="text-sm font-medium text-quiet-slate">
+                {authorName}
+              </span>
+            </Link>
+          ) : (
+            <>
+              <img
+                src={avatarUrl(authorAvatar)}
+                alt="avatar"
+                className="h-7 w-7 rounded-full object-cover"
+              />
+              <span className="text-sm font-medium text-quiet-slate">
+                {authorName}
+              </span>
+            </>
+          )}
           <span className="text-xs text-quiet-muted">{age}</span>
         </div>
 
@@ -107,18 +124,37 @@ export function PostCard({ post, userId, onUpvote, onDelete }: PostCardProps) {
         {post.content}
       </p>
 
+      {/* Tags */}
+      {post.tags && post.tags.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {post.tags.map((tagId) => {
+            const tag = getTagDef(tagId)
+            if (!tag) return null
+            return (
+              <span
+                key={tagId}
+                className="rounded-full px-2 py-0.5 text-[11px] text-quiet-slate"
+                style={{ backgroundColor: tag.color }}
+              >
+                {tag.label}
+              </span>
+            )
+          })}
+        </div>
+      )}
+
       {/* Upvote */}
       {onUpvote && !post.is_welcome && (
         <div className="mt-3 flex items-center">
           <button
             onClick={() => onUpvote(post.id)}
-            className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${
+            className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               post.user_upvoted
-                ? "bg-quiet-accent/15 text-quiet-slate"
-                : "text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-slate"
+                ? "bg-quiet-accent/20 text-quiet-slate"
+                : "bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
             }`}
           >
-            <ChevronUp className="h-4 w-4" />
+            <ChevronUp className="h-3.5 w-3.5" />
             {post.upvote_count > 0 && <span>{post.upvote_count}</span>}
           </button>
         </div>

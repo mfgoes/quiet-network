@@ -16,7 +16,7 @@ Quiet Network fills the gap between:
 - **Nextdoor** (hyperlocal but real-names, drama-filled, privacy nightmare)
 
 **Core differentiators**:
-1. Ephemeral by default — posts fade and disappear after 48h
+1. Ephemeral by default — posts auto delete after a given time period. 
 2. Pseudonymous identity — persistent display names, no real-name requirement
 3. Hyperlocal circles — geo-based communities (Haarlem, Amsterdam-West, etc.)
 4. Topic tags — lightweight categorization without full subreddit complexity

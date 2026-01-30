@@ -10,6 +10,7 @@ interface ProfilePageProps {
     display_name: string
     avatar_emoji: string
     bio: string
+    username: string
   }) => Promise<void>
   onSignOut: () => void
   onAbout: () => void
@@ -18,6 +19,7 @@ interface ProfilePageProps {
 export function ProfilePage({ profile, onSave, onSignOut, onAbout }: ProfilePageProps) {
   const [editing, setEditing] = useState(false)
   const [displayName, setDisplayName] = useState(profile.display_name)
+  const [username, setUsername] = useState(profile.username)
   const [avatar, setAvatar] = useState(profile.avatar_emoji)
   const [bio, setBio] = useState(profile.bio)
   const [error, setError] = useState<string | null>(null)
@@ -36,6 +38,7 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout }: ProfilePage
         display_name: displayName.trim(),
         avatar_emoji: avatar,
         bio: bio.trim(),
+        username: username.trim().toLowerCase(),
       })
       setEditing(false)
     } catch (err) {
@@ -56,6 +59,9 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout }: ProfilePage
           <h2 className="text-xl font-semibold text-quiet-slate">
             {profile.display_name}
           </h2>
+          {profile.username && (
+            <p className="text-sm text-quiet-muted">@{profile.username}</p>
+          )}
           {profile.bio && (
             <p className="text-center text-sm text-quiet-muted">{profile.bio}</p>
           )}
@@ -130,6 +136,27 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout }: ProfilePage
 
         <div>
           <label
+            htmlFor="editUsername"
+            className="mb-1 block text-sm text-quiet-muted"
+          >
+            Username
+          </label>
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-quiet-muted">@</span>
+            <input
+              id="editUsername"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
+              required
+              maxLength={20}
+              className="w-full rounded-md border border-quiet-border bg-white p-2.5 text-sm text-quiet-slate placeholder:text-quiet-muted/50 focus:border-quiet-accent focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
             htmlFor="editDisplayName"
             className="mb-1 block text-sm text-quiet-muted"
           >
@@ -175,6 +202,7 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout }: ProfilePage
             className="flex-1"
             onClick={() => {
               setDisplayName(profile.display_name)
+              setUsername(profile.username)
               setAvatar(profile.avatar_emoji)
               setBio(profile.bio)
               setEditing(false)

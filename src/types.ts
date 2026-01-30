@@ -1,5 +1,6 @@
 export interface Profile {
   id: string
+  username: string
   display_name: string
   avatar_emoji: string
   bio: string
@@ -18,7 +19,9 @@ export interface Post {
   profiles?: {
     display_name: string
     avatar_emoji: string
+    username: string
   }
+  tags: string[]
   upvote_count: number
   user_upvoted: boolean
 }
@@ -26,6 +29,7 @@ export interface Post {
 export interface Circle {
   id: string
   name: string
+  slug: string
   description: string | null
   about: string | null
   rules: string | null
@@ -34,6 +38,16 @@ export interface Circle {
   radius_km: number
   created_by: string
   created_at: string
+}
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
 }
 
 export const DURATION_OPTIONS = [
@@ -48,6 +62,39 @@ export const AVATAR_OPTIONS = [
 
 export function avatarUrl(avatar: string): string {
   return `/images/avatars/${avatar}.jpg`
+}
+
+export interface TagDef {
+  id: string
+  label: string
+  color: string
+}
+
+export const TAGS: TagDef[] = [
+  // Everyday
+  { id: "quick-question", label: "#quick-question", color: "var(--color-tag-blue)" },
+  { id: "lost-and-found", label: "#lost-and-found", color: "var(--color-tag-amber)" },
+  { id: "recommendations", label: "#recommendations", color: "var(--color-tag-green)" },
+  { id: "free-stuff", label: "#free-stuff", color: "var(--color-tag-cyan)" },
+  { id: "secondhand", label: "#secondhand", color: "var(--color-tag-cyan)" },
+  { id: "help-needed", label: "#help-needed", color: "var(--color-tag-pink)" },
+  { id: "volunteer", label: "#volunteer", color: "var(--color-tag-green)" },
+  // Community
+  { id: "local-events", label: "#local-events", color: "var(--color-tag-purple)" },
+  { id: "noise-complaint", label: "#noise-complaint", color: "var(--color-tag-amber)" },
+  { id: "safety", label: "#safety", color: "var(--color-tag-pink)" },
+  { id: "neighbors", label: "#neighbors", color: "var(--color-tag-blue)" },
+  // Interests
+  { id: "sports", label: "#sports", color: "var(--color-tag-green)" },
+  { id: "gardening", label: "#gardening", color: "var(--color-tag-green)" },
+  { id: "cycling", label: "#cycling", color: "var(--color-tag-cyan)" },
+  { id: "food", label: "#food", color: "var(--color-tag-amber)" },
+  { id: "pets", label: "#pets", color: "var(--color-tag-pink)" },
+  { id: "parents", label: "#parents", color: "var(--color-tag-purple)" },
+]
+
+export function getTagDef(tagId: string): TagDef | undefined {
+  return TAGS.find((t) => t.id === tagId)
 }
 
 export const POST_SPARKS = [

@@ -1,17 +1,20 @@
 import { useState } from "react"
-import { ChevronDown, Pencil } from "lucide-react"
+import { ChevronDown, LogOut, Pencil } from "lucide-react"
 import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
+import { useCircleMembers } from "@/lib/hooks"
+import { avatarUrl } from "@/types"
 import type { Circle } from "@/types"
 
 interface CircleAboutProps {
   circle: Circle
   userId: string
   onUpdate: (updates: { about?: string | null; rules?: string | null }) => Promise<void>
+  onLeave?: () => Promise<void>
   sidebar?: boolean
 }
 
@@ -19,7 +22,7 @@ function AboutContent({
   circle,
   userId,
   onUpdate,
-}: Omit<CircleAboutProps, "sidebar">) {
+}: Omit<CircleAboutProps, "sidebar" | "onLeave">) {
   const [editing, setEditing] = useState(false)
   const [about, setAbout] = useState(circle.about ?? "")
   const [rules, setRules] = useState(circle.rules ?? "")
@@ -139,18 +142,80 @@ function AboutContent({
   )
 }
 
-export function CircleAbout({ circle, userId, onUpdate, sidebar }: CircleAboutProps) {
+function MembersSection({ circleId }: { circleId: string }) {
+  const { members, count, loading } = useCircleMembers(circleId)
+
+  if (loading) return null
+
+  const displayMembers = members.slice(0, 8)
+  const remaining = count - displayMembers.length
+
+  return (
+    <div className="px-4 py-3 border-t border-quiet-border">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-medium text-quiet-muted">Members</p>
+        <span className="text-xs font-medium text-quiet-slate">{count}</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {displayMembers.map((m) => (
+          <img
+            key={m.username}
+            src={avatarUrl(m.avatar_emoji)}
+            alt={m.display_name}
+            title={m.display_name}
+            className="h-7 w-7 rounded-full object-cover ring-1 ring-quiet-border"
+          />
+        ))}
+        {remaining > 0 && (
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-quiet-border text-[10px] font-medium text-quiet-muted">
+            +{remaining}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function LeaveButton({ onLeave }: { onLeave: () => Promise<void> }) {
+  const [leaving, setLeaving] = useState(false)
+
+  return (
+    <div className="px-4 py-3 border-t border-quiet-border flex justify-end">
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={leaving}
+        onClick={async () => {
+          setLeaving(true)
+          await onLeave()
+          setLeaving(false)
+        }}
+        className="gap-1 text-quiet-muted hover:text-quiet-slate"
+      >
+        <LogOut className="h-3 w-3" />
+        {leaving ? "Leaving..." : "Leave circle"}
+      </Button>
+    </div>
+  )
+}
+
+export function CircleAbout({ circle, userId, onUpdate, onLeave, sidebar }: CircleAboutProps) {
   const [open, setOpen] = useState(false)
+  const isCreator = circle.created_by === userId
 
   // Desktop sidebar: always-visible static card
   if (sidebar) {
     return (
-      <div className="sticky top-8 rounded-lg border border-quiet-border bg-white">
-        <div className="px-4 py-3 border-b border-quiet-border">
-          <h3 className="text-sm font-medium text-quiet-slate">About / Rules</h3>
-        </div>
-        <div className="px-4 py-3">
-          <AboutContent circle={circle} userId={userId} onUpdate={onUpdate} />
+      <div className="sticky top-8 space-y-3">
+        <div className="rounded-lg border border-quiet-border bg-white">
+          <div className="px-4 py-3 border-b border-quiet-border">
+            <h3 className="text-sm font-medium text-quiet-slate">About / Rules</h3>
+          </div>
+          <div className="px-4 py-3">
+            <AboutContent circle={circle} userId={userId} onUpdate={onUpdate} />
+          </div>
+          <MembersSection circleId={circle.id} />
+          {onLeave && !isCreator && <LeaveButton onLeave={onLeave} />}
         </div>
       </div>
     )
@@ -173,6 +238,8 @@ export function CircleAbout({ circle, userId, onUpdate, sidebar }: CircleAboutPr
           <div className="border-t border-quiet-border px-4 py-3">
             <AboutContent circle={circle} userId={userId} onUpdate={onUpdate} />
           </div>
+          <MembersSection circleId={circle.id} />
+          {onLeave && !isCreator && <LeaveButton onLeave={onLeave} />}
         </CollapsibleContent>
       </div>
     </Collapsible>

@@ -8,6 +8,13 @@
   --color-quiet-accent: #64748B;
   --color-quiet-warm: #D97706;
   --color-quiet-aged: #F1F5F9;
+
+  --color-tag-blue: #DBEAFE;
+  --color-tag-green: #D1FAE5;
+  --color-tag-amber: #FEF3C7;
+  --color-tag-pink: #FCE7F3;
+  --color-tag-purple: #EDE9FE;
+  --color-tag-cyan: #CFFAFE;
 }
 
 body {
@@ -16,4 +23,20 @@ body {
   background-color: var(--color-quiet-offwhite);
   color: var(--color-quiet-slate);
   font-family: system-ui, -apple-system, sans-serif;
+}
+
+h1, h2 {
+  font-family: 'Urbanist', system-ui, sans-serif;
+}
+
+/* Fade-in on scroll */
+.fade-in-section {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.fade-in-section.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }

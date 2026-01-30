@@ -94,12 +94,23 @@ alter table circle_members enable row level security;
 create policy "Members can view their circle's membership"
   on circle_members for select
   to authenticated
-  using (user_id = auth.uid());
+  using (
+    exists (
+      select 1 from circle_members as cm
+      where cm.circle_id = circle_members.circle_id
+        and cm.user_id = auth.uid()
+    )
+  );
 
 create policy "Users can join circles"
   on circle_members for insert
   to authenticated
   with check (user_id = auth.uid());
+
+create policy "Users can leave circles"
+  on circle_members for delete
+  to authenticated
+  using (user_id = auth.uid());
 
 
 -- ============================================

@@ -5,21 +5,26 @@ import type { Circle } from "@/types"
 
 interface CirclePickerProps {
   circles: Circle[]
+  discoverableCircles: Circle[]
   loading: boolean
   onSelect: (circle: Circle) => void
   onCreate: (name: string, description?: string) => Promise<void>
+  onJoin: (circle: Circle) => Promise<void>
 }
 
 export function CirclePicker({
   circles,
+  discoverableCircles,
   loading,
   onSelect,
   onCreate,
+  onJoin,
 }: CirclePickerProps) {
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [creating, setCreating] = useState(false)
+  const [joiningId, setJoiningId] = useState<string | null>(null)
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,6 +35,12 @@ export function CirclePicker({
     setDescription("")
     setShowCreate(false)
     setCreating(false)
+  }
+
+  const handleJoin = async (circle: Circle) => {
+    setJoiningId(circle.id)
+    await onJoin(circle)
+    setJoiningId(null)
   }
 
   if (loading) {
@@ -64,6 +75,38 @@ export function CirclePicker({
         </div>
       )}
 
+      {discoverableCircles.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm text-quiet-muted">Discover circles</p>
+          {discoverableCircles.map((circle) => (
+            <div
+              key={circle.id}
+              className="flex items-center justify-between rounded-lg border border-quiet-border bg-white p-3"
+            >
+              <div className="min-w-0">
+                <span className="text-sm font-medium text-quiet-slate">
+                  {circle.name}
+                </span>
+                {circle.description && (
+                  <span className="mt-0.5 block text-xs text-quiet-muted">
+                    {circle.description}
+                  </span>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={joiningId === circle.id}
+                onClick={() => handleJoin(circle)}
+                className="ml-3 shrink-0"
+              >
+                {joiningId === circle.id ? "Joining..." : "Join"}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {!showCreate ? (
         <Button
           variant="outline"
@@ -71,7 +114,7 @@ export function CirclePicker({
           className="w-full"
         >
           <Plus className="mr-1.5 h-4 w-4" />
-          {circles.length === 0
+          {circles.length === 0 && discoverableCircles.length === 0
             ? "Create your first circle"
             : "Create another circle"}
         </Button>
