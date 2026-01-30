@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { BrowserRouter, Routes, Route, useNavigate, useParams } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth, useProfile, useCircles, useAllCircles, usePublicProfile } from "@/lib/hooks"
@@ -192,7 +192,11 @@ function AppRoutes() {
       <Routes>
         <Route
           path="/"
-          element={<HomeFeed circles={circles} userId={user.id} />}
+          element={
+            circles.length === 0
+              ? <Navigate to="/explore" replace />
+              : <HomeFeed circles={circles} userId={user.id} />
+          }
         />
         <Route
           path="/explore"
