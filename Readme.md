@@ -61,6 +61,8 @@ Built with a modern, high-performance stack optimized for rapid iteration and sc
     npm install
     ```
 
+    > **Note:** The project uses React 19, but some dependencies (e.g. `@emoji-mart/react`) haven't updated their peer dependency ranges yet. The `.npmrc` file includes `legacy-peer-deps=true` to work around this. Do not remove it or the install will fail on Vercel and in CI.
+
 3.  **Set up environment variables:** Create a `.env.local` file with your Supabase credentials:
 
     ```bash
