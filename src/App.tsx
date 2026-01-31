@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-import { useAuth, useProfile, useCircles, useAllCircles, usePublicProfile } from "@/lib/hooks"
+import { useAuth, useProfile, useCircles, useAllCircles, usePublicProfile, useAdminCircles } from "@/lib/hooks"
 import { AuthForm } from "@/components/AuthForm"
 import { ProfileSetup } from "@/components/ProfileSetup"
 import { ProfilePage } from "@/components/ProfilePage"
@@ -11,11 +11,12 @@ import { AboutPage } from "@/components/AboutPage"
 import { BottomNav } from "@/components/BottomNav"
 import { Sidebar } from "@/components/Sidebar"
 import { Shell } from "@/components/Shell"
+import { AdminPanel } from "@/components/AdminPanel"
 import { HomeFeed } from "@/components/HomeFeed"
 import { CircleFeedRoute } from "@/components/CircleFeedRoute"
 import { ExplorePage } from "@/components/ExplorePage"
 import { Button } from "@/components/ui/button"
-import type { Circle, Profile as ProfileType } from "@/types"
+import type { Circle, CircleRole, Profile as ProfileType } from "@/types"
 
 function App() {
   return (
@@ -35,13 +36,16 @@ function AppRoutes() {
   } = useProfile(user?.id)
   const {
     circles,
+    circleRoles,
     loading: circlesLoading,
     createCircle,
     joinCircle,
     leaveCircle,
     updateCircle,
+    deleteCircle,
   } = useCircles(user?.id)
   const { allCircles, loading: allCirclesLoading, refetch: refetchAllCircles } = useAllCircles()
+  const { adminCircles } = useAdminCircles(user?.id)
   const navigate = useNavigate()
   const [loadingStuck, setLoadingStuck] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
@@ -188,7 +192,7 @@ function AppRoutes() {
   }
 
   return (
-    <AppLayout profile={profile} circles={circles}>
+    <AppLayout profile={profile} circles={circles} adminCircles={adminCircles}>
       <Routes>
         <Route
           path="/"
@@ -242,12 +246,24 @@ function AppRoutes() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/user/:username" element={<PublicProfileRoute />} />
         <Route
+          path="/admin/:circleSlug"
+          element={
+            <AdminPanel
+              userId={user.id}
+              adminCircles={adminCircles}
+              updateCircle={updateCircle}
+              deleteCircle={deleteCircle}
+            />
+          }
+        />
+        <Route
           path="/:circleSlug"
           element={
             <CircleFeedRoute
               userId={user.id}
               circles={circles}
               memberCircleIds={circles.map((c) => c.id)}
+              circleRoles={circleRoles}
               joinCircle={joinCircle}
               leaveCircle={leaveCircle}
               updateCircle={updateCircle}
@@ -265,15 +281,17 @@ function AppRoutes() {
 function AppLayout({
   profile,
   circles,
+  adminCircles = [],
   children,
 }: {
   profile: ProfileType
   circles: Circle[]
+  adminCircles?: (Circle & { role: CircleRole })[]
   children: React.ReactNode
 }) {
   return (
     <div className="min-h-screen bg-quiet-offwhite">
-      <Sidebar profile={profile} circles={circles} />
+      <Sidebar profile={profile} circles={circles} adminCircles={adminCircles} />
       <div className="md:ml-60 lg:ml-64">
         <main className="mx-auto max-w-3xl px-4 pb-20 pt-6 md:pb-8 md:pt-8">
           {children}

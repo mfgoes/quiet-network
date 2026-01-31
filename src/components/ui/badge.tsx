@@ -10,6 +10,9 @@ const badgeVariants = cva(
         default: "bg-quiet-border text-quiet-accent",
         expiring: "bg-amber-50 text-quiet-warm",
         pinned: "bg-quiet-border text-quiet-muted",
+        admin: "bg-amber-100 text-amber-800",
+        moderator: "bg-blue-100 text-blue-800",
+        member: "bg-quiet-border text-quiet-muted",
       },
     },
     defaultVariants: {

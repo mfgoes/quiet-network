@@ -40,6 +40,64 @@ export interface Circle {
   created_at: string
 }
 
+// ─── Admin panel types ──────────────────────────────
+
+export type CircleRole = "admin" | "moderator" | "member"
+
+export interface AdminCircleMember {
+  user_id: string
+  display_name: string
+  avatar_emoji: string
+  username: string
+  role: CircleRole
+  joined_at: string
+  post_count: number
+  upvote_count: number
+}
+
+export interface Report {
+  id: string
+  circle_id: string
+  post_id: string
+  reported_by: string
+  reason: string
+  status: "pending" | "reviewed" | "dismissed"
+  reviewed_by: string | null
+  created_at: string
+  reviewed_at: string | null
+  post?: {
+    content: string
+    author_id: string
+    profiles?: {
+      display_name: string
+      avatar_emoji: string
+      username: string
+    }
+  }
+  reporter?: {
+    display_name: string
+    avatar_emoji: string
+    username: string
+  }
+}
+
+export interface BannedUser {
+  id: string
+  circle_id: string
+  user_id: string
+  banned_by: string
+  reason: string
+  created_at: string
+  profile?: {
+    display_name: string
+    avatar_emoji: string
+    username: string
+  }
+  banned_by_profile?: {
+    display_name: string
+  }
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

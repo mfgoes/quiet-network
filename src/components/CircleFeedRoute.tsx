@@ -11,6 +11,7 @@ interface CircleFeedRouteProps {
   userId: string
   circles: Circle[]
   memberCircleIds: string[]
+  circleRoles?: Record<string, string>
   joinCircle: (circleId: string) => Promise<unknown>
   leaveCircle: (circleId: string) => Promise<unknown>
   updateCircle: (circleId: string, updates: { about?: string | null; rules?: string | null }) => Promise<{ data: Circle | null; error: unknown }>
@@ -20,6 +21,7 @@ export function CircleFeedRoute({
   userId,
   circles,
   memberCircleIds,
+  circleRoles = {},
   joinCircle,
   leaveCircle,
   updateCircle,
@@ -30,6 +32,7 @@ export function CircleFeedRoute({
   const [joining, setJoining] = useState(false)
 
   const isMember = circle ? memberCircleIds.includes(circle.id) : false
+  const isAdminOrMod = circle ? ["admin", "moderator"].includes(circleRoles[circle.id] ?? "") : false
 
   if (loading) {
     return <p className="text-center text-sm text-quiet-muted">Loading...</p>
@@ -54,6 +57,7 @@ export function CircleFeedRoute({
           circle={circle}
           userId={userId}
           isMember={isMember}
+          isAdminOrMod={isAdminOrMod}
           onJoin={async () => {
             setJoining(true)
             await joinCircle(circle.id)

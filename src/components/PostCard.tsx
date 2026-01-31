@@ -8,6 +8,7 @@ import { avatarUrl, getTagDef } from "@/types"
 interface PostCardProps {
   post: Post
   userId?: string
+  isAdminOrMod?: boolean
   onUpvote?: (postId: string) => void
   onDelete?: (postId: string) => void
 }
@@ -53,7 +54,7 @@ function getAgeTint(post: Post): string {
   return "bg-quiet-aged"
 }
 
-export function PostCard({ post, userId, onUpvote, onDelete }: PostCardProps) {
+export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: PostCardProps) {
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
   const bgClass = useMemo(() => getAgeTint(post), [post])
@@ -107,7 +108,7 @@ export function PostCard({ post, userId, onUpvote, onDelete }: PostCardProps) {
               {expiry.label}
             </Badge>
           )}
-          {isOwn && onDelete && !post.is_welcome && (
+          {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
             <button
               onClick={() => onDelete(post.id)}
               className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-warm group-hover:inline-flex"

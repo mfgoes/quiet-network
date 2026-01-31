@@ -258,3 +258,229 @@ begin
   delete from auth.users where id = auth.uid();
 end;
 $$;
+
+
+-- ============================================
+-- ADMIN PANEL: Role system for circle members
+-- ============================================
+
+-- Add role column to circle_members
+alter table circle_members
+  add column if not exists role text not null default 'member'
+  check (role in ('admin', 'moderator', 'member'));
+
+-- Auto-set role to 'admin' when circle creator joins
+create or replace function set_creator_as_admin()
+returns trigger as $$
+begin
+  if exists (
+    select 1 from circles
+    where id = new.circle_id and created_by = new.user_id
+  ) then
+    new.role := 'admin';
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create or replace trigger on_member_insert_set_admin
+  before insert on circle_members
+  for each row execute function set_creator_as_admin();
+
+-- Backfill: set existing circle creators to admin
+update circle_members cm
+set role = 'admin'
+from circles c
+where cm.circle_id = c.id
+  and cm.user_id = c.created_by
+  and cm.role != 'admin';
+
+
+-- ============================================
+-- REPORTS TABLE
+-- ============================================
+create table if not exists reports (
+  id uuid primary key default gen_random_uuid(),
+  circle_id uuid not null references circles(id) on delete cascade,
+  post_id uuid not null references posts(id) on delete cascade,
+  reported_by uuid not null references profiles(id) on delete cascade,
+  reason text not null default '',
+  status text not null default 'pending' check (status in ('pending', 'reviewed', 'dismissed')),
+  reviewed_by uuid references profiles(id),
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+
+alter table reports enable row level security;
+
+-- Only admins/mods can read reports in their circles
+create policy "Admins and mods can view reports"
+  on reports for select
+  to authenticated
+  using (
+    exists (
+      select 1 from circle_members
+      where circle_members.circle_id = reports.circle_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+  );
+
+-- Any circle member can create a report
+create policy "Circle members can create reports"
+  on reports for insert
+  to authenticated
+  with check (
+    reported_by = auth.uid()
+    and exists (
+      select 1 from circle_members
+      where circle_members.circle_id = reports.circle_id
+        and circle_members.user_id = auth.uid()
+    )
+  );
+
+-- Only admins/mods can update reports (review/dismiss)
+create policy "Admins and mods can update reports"
+  on reports for update
+  to authenticated
+  using (
+    exists (
+      select 1 from circle_members
+      where circle_members.circle_id = reports.circle_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+  );
+
+
+-- ============================================
+-- BANNED USERS TABLE
+-- ============================================
+create table if not exists banned_users (
+  id uuid primary key default gen_random_uuid(),
+  circle_id uuid not null references circles(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  banned_by uuid not null references profiles(id),
+  reason text not null default '',
+  created_at timestamptz not null default now(),
+  unique (circle_id, user_id)
+);
+
+alter table banned_users enable row level security;
+
+-- Only admins/mods can view banned users
+create policy "Admins and mods can view banned users"
+  on banned_users for select
+  to authenticated
+  using (
+    exists (
+      select 1 from circle_members
+      where circle_members.circle_id = banned_users.circle_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+  );
+
+-- Only admins/mods can ban users
+create policy "Admins and mods can ban users"
+  on banned_users for insert
+  to authenticated
+  with check (
+    banned_by = auth.uid()
+    and exists (
+      select 1 from circle_members
+      where circle_members.circle_id = banned_users.circle_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+  );
+
+-- Only admins/mods can unban users
+create policy "Admins and mods can delete bans"
+  on banned_users for delete
+  to authenticated
+  using (
+    exists (
+      select 1 from circle_members
+      where circle_members.circle_id = banned_users.circle_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+  );
+
+
+-- ============================================
+-- UPDATED POLICIES: Admin/mod privileges
+-- ============================================
+
+-- Admins/mods can delete any post in their circles
+drop policy if exists "Users can delete their own posts" on posts;
+create policy "Users or admins can delete posts"
+  on posts for delete
+  to authenticated
+  using (
+    author_id = auth.uid()
+    or exists (
+      select 1 from circle_members
+      where circle_members.circle_id = posts.circle_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+  );
+
+-- Admins can update circle settings (not just creator)
+drop policy if exists "Circle creators can update their circles" on circles;
+create policy "Circle creators or admins can update circles"
+  on circles for update
+  to authenticated
+  using (
+    created_by = auth.uid()
+    or exists (
+      select 1 from circle_members
+      where circle_members.circle_id = circles.id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role = 'admin'
+    )
+  );
+
+-- Admins can change member roles
+create policy "Admins can update member roles"
+  on circle_members for update
+  to authenticated
+  using (
+    exists (
+      select 1 from circle_members as cm
+      where cm.circle_id = circle_members.circle_id
+        and cm.user_id = auth.uid()
+        and cm.role = 'admin'
+    )
+  );
+
+-- Admins can delete circles
+create policy "Admins can delete circles"
+  on circles for delete
+  to authenticated
+  using (
+    created_by = auth.uid()
+    or exists (
+      select 1 from circle_members
+      where circle_members.circle_id = circles.id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role = 'admin'
+    )
+  );
+
+-- Admins/mods can remove members
+drop policy if exists "Users can leave circles" on circle_members;
+create policy "Users can leave or admins can remove members"
+  on circle_members for delete
+  to authenticated
+  using (
+    user_id = auth.uid()
+    or exists (
+      select 1 from circle_members as cm
+      where cm.circle_id = circle_members.circle_id
+        and cm.user_id = auth.uid()
+        and cm.role in ('admin', 'moderator')
+    )
+  );

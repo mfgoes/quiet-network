@@ -1,22 +1,25 @@
 import { useState } from "react"
-import { Home, Compass, User, ChevronDown } from "lucide-react"
+import { Home, Compass, User, ChevronDown, Shield } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { avatarUrl } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
-import type { Circle, Profile } from "@/types"
+import type { Circle, Profile, CircleRole } from "@/types"
 
 const INITIAL_SHOW = 3
 
 interface SidebarProps {
   profile: Profile
   circles: Circle[]
+  adminCircles?: (Circle & { role: CircleRole })[]
 }
 
-export function Sidebar({ profile, circles }: SidebarProps) {
+export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const path = location.pathname
   const [expanded, setExpanded] = useState(false)
+  const [adminExpanded, setAdminExpanded] = useState(true)
+  const [adminShowAll, setAdminShowAll] = useState(false)
 
   const navItems = [
     { label: "Home", path: "/", icon: Home },
@@ -44,7 +47,7 @@ export function Sidebar({ profile, circles }: SidebarProps) {
         {navItems.map((item) => {
           const isActive =
             item.path === "/"
-              ? path === "/" || (path !== "/explore" && path !== "/profile" && path !== "/about" && !path.startsWith("/user/"))
+              ? path === "/" || (path !== "/explore" && path !== "/profile" && path !== "/about" && !path.startsWith("/user/") && !path.startsWith("/admin/"))
               : path === item.path
           return (
             <button
@@ -99,6 +102,54 @@ export function Sidebar({ profile, circles }: SidebarProps) {
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Admin Panels */}
+      {adminCircles.length > 0 && (
+        <div className="mt-4 px-3">
+          <button
+            onClick={() => setAdminExpanded(!adminExpanded)}
+            className="flex w-full items-center gap-1.5 px-3 mb-1.5 text-xs font-medium uppercase tracking-wider text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            <Shield className="h-3 w-3" />
+            <span className="flex-1 text-left">Admin Panels</span>
+            <ChevronDown
+              className={`h-3 w-3 transition-transform ${adminExpanded ? "rotate-180" : ""}`}
+            />
+          </button>
+          {adminExpanded && (
+            <div className="space-y-0.5">
+              {(adminShowAll ? adminCircles : adminCircles.slice(0, 3)).map((ac) => {
+                const isActive = path === `/admin/${ac.slug}`
+                return (
+                  <button
+                    key={ac.id}
+                    onClick={() => navigate(`/admin/${ac.slug}`)}
+                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                      isActive
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-quiet-muted hover:bg-quiet-aged hover:text-quiet-slate"
+                    }`}
+                  >
+                    <CircleIcon name={ac.name} size="sm" />
+                    <span className="truncate flex-1 text-left">{ac.name}</span>
+                  </button>
+                )
+              })}
+              {adminCircles.length > 3 && (
+                <button
+                  onClick={() => setAdminShowAll(!adminShowAll)}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform ${adminShowAll ? "rotate-180" : ""}`}
+                  />
+                  {adminShowAll ? "Show less" : `View all (${adminCircles.length})`}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

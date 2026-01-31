@@ -11,6 +11,7 @@ interface CircleFeedProps {
   circle: Circle
   userId: string
   isMember: boolean
+  isAdminOrMod?: boolean
   onJoin: () => Promise<void>
   onLeave: () => Promise<void>
   joining: boolean
@@ -21,6 +22,7 @@ export function CircleFeed({
   circle,
   userId,
   isMember,
+  isAdminOrMod,
   onJoin,
   onLeave,
   joining,
@@ -121,6 +123,7 @@ export function CircleFeed({
                   key={post.id}
                   post={post}
                   userId={isMember ? userId : undefined}
+                  isAdminOrMod={isAdminOrMod}
                   onUpvote={isMember ? toggleUpvote : undefined}
                   onDelete={isMember ? deletePost : undefined}
                 />

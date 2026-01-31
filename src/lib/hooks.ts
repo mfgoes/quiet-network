@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import type { Profile, Post, Circle } from "@/types"
+import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser } from "@/types"
 import { slugify } from "@/types"
 
 // ─── Auth ────────────────────────────────────────────
@@ -134,16 +134,17 @@ export function useProfile(userId: string | undefined) {
 
 export function useCircles(userId: string | undefined) {
   const [circles, setCircles] = useState<Circle[]>([])
+  const [circleRoles, setCircleRoles] = useState<Record<string, CircleRole>>({})
   const [loading, setLoading] = useState(true)
 
   const fetchCircles = useCallback(async () => {
     if (!userId) return
     setLoading(true)
 
-    // Fetch circles the user is a member of
+    // Fetch circles the user is a member of, including role
     const { data, error } = await supabase
       .from("circle_members")
-      .select("circle_id, circles(*)")
+      .select("circle_id, role, circles(*)")
       .eq("user_id", userId)
 
     if (!error && data) {
@@ -151,6 +152,14 @@ export function useCircles(userId: string | undefined) {
         .map((row) => row.circles as unknown as Circle)
         .filter(Boolean)
       setCircles(mapped)
+
+      const roles: Record<string, CircleRole> = {}
+      for (const row of data) {
+        if (row.circle_id && row.role) {
+          roles[row.circle_id] = row.role as CircleRole
+        }
+      }
+      setCircleRoles(roles)
     }
     setLoading(false)
   }, [userId])
@@ -213,7 +222,17 @@ export function useCircles(userId: string | undefined) {
     return { data: data as Circle | null, error }
   }
 
-  return { circles, loading, createCircle, joinCircle, leaveCircle, updateCircle, refetch: fetchCircles }
+  const deleteCircle = async (circleId: string) => {
+    const { error } = await supabase
+      .from("circles")
+      .delete()
+      .eq("id", circleId)
+
+    if (!error) await fetchCircles()
+    return error
+  }
+
+  return { circles, circleRoles, loading, createCircle, joinCircle, leaveCircle, updateCircle, deleteCircle, refetch: fetchCircles }
 }
 
 // ─── Circle members ─────────────────────────────────
@@ -700,4 +719,324 @@ export function usePosts(circleId: string | undefined, userId?: string) {
   }
 
   return { posts, loading, createPost, deletePost, toggleUpvote, refetch: fetchPosts }
+}
+
+
+// ─── Admin Hooks ──────────────────────────────────────
+
+/** Circles where the current user is admin or moderator */
+export function useAdminCircles(userId: string | undefined) {
+  const [adminCircles, setAdminCircles] = useState<(Circle & { role: CircleRole })[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+
+    supabase
+      .from("circle_members")
+      .select("role, circles(*)")
+      .eq("user_id", userId)
+      .in("role", ["admin", "moderator"])
+      .then(({ data, error }) => {
+        if (!error && data) {
+          const mapped = data
+            .map((row) => {
+              const circle = row.circles as unknown as Circle
+              if (!circle) return null
+              return { ...circle, role: row.role as CircleRole }
+            })
+            .filter(Boolean) as (Circle & { role: CircleRole })[]
+          setAdminCircles(mapped)
+        }
+        setLoading(false)
+      })
+  }, [userId])
+
+  return { adminCircles, loading }
+}
+
+/** Members of a circle with roles and stats, plus mutation helpers */
+export function useAdminMembers(circleId: string | undefined) {
+  const [members, setMembers] = useState<AdminCircleMember[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchMembers = useCallback(async () => {
+    if (!circleId) return
+    setLoading(true)
+
+    const { data, error } = await supabase
+      .from("circle_members")
+      .select("user_id, role, joined_at, profiles(display_name, avatar_emoji, username)")
+      .eq("circle_id", circleId)
+
+    if (!error && data) {
+      // Get post counts and upvote counts for each member
+      const userIds = data.map((row) => row.user_id)
+
+      const [postsRes, upvotesRes] = await Promise.all([
+        supabase
+          .from("posts")
+          .select("author_id")
+          .eq("circle_id", circleId)
+          .in("author_id", userIds),
+        supabase
+          .from("post_upvotes")
+          .select("user_id")
+          .in("user_id", userIds),
+      ])
+
+      const postCounts: Record<string, number> = {}
+      for (const row of postsRes.data ?? []) {
+        postCounts[row.author_id] = (postCounts[row.author_id] || 0) + 1
+      }
+
+      const upvoteCounts: Record<string, number> = {}
+      for (const row of upvotesRes.data ?? []) {
+        upvoteCounts[row.user_id] = (upvoteCounts[row.user_id] || 0) + 1
+      }
+
+      const mapped: AdminCircleMember[] = data.map((row) => {
+        const prof = (row as Record<string, unknown>).profiles as {
+          display_name: string
+          avatar_emoji: string
+          username: string
+        }
+        return {
+          user_id: row.user_id,
+          display_name: prof?.display_name ?? "Neighbor",
+          avatar_emoji: prof?.avatar_emoji ?? "house",
+          username: prof?.username ?? "",
+          role: row.role as CircleRole,
+          joined_at: row.joined_at,
+          post_count: postCounts[row.user_id] || 0,
+          upvote_count: upvoteCounts[row.user_id] || 0,
+        }
+      })
+
+      setMembers(mapped)
+    }
+    setLoading(false)
+  }, [circleId])
+
+  useEffect(() => {
+    fetchMembers()
+  }, [fetchMembers])
+
+  const updateRole = async (userId: string, role: CircleRole) => {
+    const { error } = await supabase
+      .from("circle_members")
+      .update({ role })
+      .eq("circle_id", circleId)
+      .eq("user_id", userId)
+
+    if (!error) {
+      setMembers((prev) =>
+        prev.map((m) => (m.user_id === userId ? { ...m, role } : m))
+      )
+    }
+    return error
+  }
+
+  const removeMember = async (userId: string) => {
+    const { error } = await supabase
+      .from("circle_members")
+      .delete()
+      .eq("circle_id", circleId)
+      .eq("user_id", userId)
+
+    if (!error) {
+      setMembers((prev) => prev.filter((m) => m.user_id !== userId))
+    }
+    return error
+  }
+
+  return { members, loading, updateRole, removeMember, refetch: fetchMembers }
+}
+
+/** Reports for a circle with post and reporter joins */
+export function useAdminReports(circleId: string | undefined) {
+  const [reports, setReports] = useState<Report[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchReports = useCallback(async () => {
+    if (!circleId) return
+    setLoading(true)
+
+    const { data, error } = await supabase
+      .from("reports")
+      .select(`
+        *,
+        post:posts(content, author_id, profiles:profiles!posts_author_id_fkey(display_name, avatar_emoji, username)),
+        reporter:profiles!reports_reported_by_fkey(display_name, avatar_emoji, username)
+      `)
+      .eq("circle_id", circleId)
+      .order("created_at", { ascending: false })
+
+    if (!error && data) {
+      setReports(data as unknown as Report[])
+    }
+    setLoading(false)
+  }, [circleId])
+
+  useEffect(() => {
+    fetchReports()
+  }, [fetchReports])
+
+  const updateReport = async (reportId: string, status: "reviewed" | "dismissed", reviewedBy: string) => {
+    const { error } = await supabase
+      .from("reports")
+      .update({ status, reviewed_by: reviewedBy, reviewed_at: new Date().toISOString() })
+      .eq("id", reportId)
+
+    if (!error) {
+      setReports((prev) =>
+        prev.map((r) =>
+          r.id === reportId ? { ...r, status, reviewed_by: reviewedBy, reviewed_at: new Date().toISOString() } : r
+        )
+      )
+    }
+    return error
+  }
+
+  return { reports, loading, updateReport, refetch: fetchReports }
+}
+
+/** Banned users for a circle */
+export function useBannedUsers(circleId: string | undefined) {
+  const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchBannedUsers = useCallback(async () => {
+    if (!circleId) return
+    setLoading(true)
+
+    const { data, error } = await supabase
+      .from("banned_users")
+      .select(`
+        *,
+        profile:profiles!banned_users_user_id_fkey(display_name, avatar_emoji, username),
+        banned_by_profile:profiles!banned_users_banned_by_fkey(display_name)
+      `)
+      .eq("circle_id", circleId)
+      .order("created_at", { ascending: false })
+
+    if (!error && data) {
+      setBannedUsers(data as unknown as BannedUser[])
+    }
+    setLoading(false)
+  }, [circleId])
+
+  useEffect(() => {
+    fetchBannedUsers()
+  }, [fetchBannedUsers])
+
+  const banUser = async (userId: string, bannedBy: string, reason: string) => {
+    // Insert ban record
+    const { error } = await supabase
+      .from("banned_users")
+      .insert({ circle_id: circleId, user_id: userId, banned_by: bannedBy, reason })
+
+    if (!error) {
+      // Also remove from circle members
+      await supabase
+        .from("circle_members")
+        .delete()
+        .eq("circle_id", circleId)
+        .eq("user_id", userId)
+
+      await fetchBannedUsers()
+    }
+    return error
+  }
+
+  const unbanUser = async (banId: string) => {
+    const { error } = await supabase
+      .from("banned_users")
+      .delete()
+      .eq("id", banId)
+
+    if (!error) {
+      setBannedUsers((prev) => prev.filter((b) => b.id !== banId))
+    }
+    return error
+  }
+
+  return { bannedUsers, loading, banUser, unbanUser, refetch: fetchBannedUsers }
+}
+
+/** Stat counts for admin dashboard */
+export function useAdminStats(circleId: string | undefined) {
+  const [stats, setStats] = useState({ members: 0, recentPosts: 0, pendingReports: 0, banned: 0 })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!circleId) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+
+    Promise.all([
+      supabase
+        .from("circle_members")
+        .select("user_id", { count: "exact", head: true })
+        .eq("circle_id", circleId),
+      supabase
+        .from("posts")
+        .select("id", { count: "exact", head: true })
+        .eq("circle_id", circleId)
+        .gt("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+      supabase
+        .from("reports")
+        .select("id", { count: "exact", head: true })
+        .eq("circle_id", circleId)
+        .eq("status", "pending"),
+      supabase
+        .from("banned_users")
+        .select("id", { count: "exact", head: true })
+        .eq("circle_id", circleId),
+    ]).then(([membersRes, postsRes, reportsRes, bannedRes]) => {
+      setStats({
+        members: membersRes.count ?? 0,
+        recentPosts: postsRes.count ?? 0,
+        pendingReports: reportsRes.count ?? 0,
+        banned: bannedRes.count ?? 0,
+      })
+      setLoading(false)
+    })
+  }, [circleId])
+
+  return { stats, loading }
+}
+
+/** Member counts for a list of circles (used in admin circle selector dropdown) */
+export function useAdminCircleMemberCounts(circleIds: string[]) {
+  const [memberCounts, setMemberCounts] = useState<Record<string, number>>({})
+
+  const key = circleIds.slice().sort().join(",")
+
+  useEffect(() => {
+    if (circleIds.length === 0) return
+
+    supabase
+      .from("circle_members")
+      .select("circle_id")
+      .in("circle_id", circleIds)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          const counts: Record<string, number> = {}
+          for (const row of data) {
+            counts[row.circle_id] = (counts[row.circle_id] || 0) + 1
+          }
+          setMemberCounts(counts)
+        }
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+
+  return { memberCounts }
 }
