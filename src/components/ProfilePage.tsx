@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ChevronDown, Info, LogOut, Pencil, Trash2, UserMinus } from "lucide-react"
+import { ChevronDown, Info, LogOut, Pencil, Plus, Trash2, UserMinus } from "lucide-react"
 import { toast } from "sonner"
 import { linkifyText } from "@/lib/utils"
 import {
@@ -8,8 +8,11 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
+import { SocialIcon } from "@/components/SocialIcon"
 import { AVATAR_OPTIONS, avatarUrl } from "@/types"
-import type { Profile } from "@/types"
+import type { Profile, ProfileLink } from "@/types"
+
+const MAX_LINKS = 5
 
 interface ProfilePageProps {
   profile: Profile
@@ -18,6 +21,7 @@ interface ProfilePageProps {
     avatar_emoji: string
     bio: string
     username: string
+    links: ProfileLink[] | null
   }) => Promise<void>
   onSignOut: () => void
   onAbout: () => void
@@ -31,6 +35,7 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onLeaveAllCir
   const [username, setUsername] = useState(profile.username)
   const [avatar, setAvatar] = useState(profile.avatar_emoji)
   const [bio, setBio] = useState(profile.bio)
+  const [links, setLinks] = useState<ProfileLink[]>(profile.links ?? [])
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -43,11 +48,13 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onLeaveAllCir
     setError(null)
     setSubmitting(true)
     try {
+      const cleanLinks = links.filter((l) => l.label.trim() && l.url.trim())
       await onSave({
         display_name: displayName.trim(),
         avatar_emoji: avatar,
         bio: bio.trim(),
         username: username.trim().toLowerCase(),
+        links: cleanLinks.length > 0 ? cleanLinks : null,
       })
       setEditing(false)
     } catch (err) {
@@ -73,6 +80,22 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onLeaveAllCir
           )}
           {profile.bio && (
             <p className="text-center text-sm text-quiet-muted">{linkifyText(profile.bio)}</p>
+          )}
+          {profile.links && profile.links.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2 mt-1">
+              {profile.links.map((link, i) => (
+                <a
+                  key={i}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-quiet-offwhite px-3 py-1.5 text-sm font-medium text-quiet-slate transition-colors hover:bg-quiet-border/50"
+                >
+                  <SocialIcon url={link.url} />
+                  <span className="truncate">{link.label}</span>
+                </a>
+              ))}
+            </div>
           )}
         </div>
 
@@ -207,6 +230,59 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onLeaveAllCir
           </p>
         </div>
 
+        <div>
+          <label className="mb-1 block text-sm text-quiet-muted">
+            Links <span className="text-quiet-muted/50">(optional)</span>
+          </label>
+          <div className="space-y-2">
+            {links.map((link, i) => (
+              <div key={i} className="flex items-start gap-1.5">
+                <div className="flex-1 space-y-1">
+                  <input
+                    value={link.label}
+                    onChange={(e) =>
+                      setLinks((prev) =>
+                        prev.map((l, j) => (j === i ? { ...l, label: e.target.value } : l))
+                      )
+                    }
+                    placeholder="Label"
+                    maxLength={40}
+                    className="w-full rounded-md border border-quiet-border bg-white p-2.5 text-sm text-quiet-slate placeholder:text-quiet-muted/50 focus:border-quiet-accent focus:outline-none"
+                  />
+                  <input
+                    value={link.url}
+                    onChange={(e) =>
+                      setLinks((prev) =>
+                        prev.map((l, j) => (j === i ? { ...l, url: e.target.value } : l))
+                      )
+                    }
+                    placeholder="https://..."
+                    maxLength={300}
+                    className="w-full rounded-md border border-quiet-border bg-white p-2.5 text-sm text-quiet-slate placeholder:text-quiet-muted/50 focus:border-quiet-accent focus:outline-none"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLinks((prev) => prev.filter((_, j) => j !== i))}
+                  className="mt-2 rounded p-1 text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-warm transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+          {links.length < MAX_LINKS && (
+            <button
+              type="button"
+              onClick={() => setLinks([...links, { label: "", url: "" }])}
+              className="mt-2 flex items-center gap-1 text-xs text-quiet-muted hover:text-quiet-slate transition-colors"
+            >
+              <Plus className="h-3 w-3" />
+              Add link
+            </button>
+          )}
+        </div>
+
         {error && <p className="text-sm text-quiet-warm">{error}</p>}
 
         <div className="flex gap-2">
@@ -219,6 +295,7 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onLeaveAllCir
               setUsername(profile.username)
               setAvatar(profile.avatar_emoji)
               setBio(profile.bio)
+              setLinks(profile.links ?? [])
               setEditing(false)
             }}
           >

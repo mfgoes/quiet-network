@@ -114,6 +114,7 @@ export function useProfile(userId: string | undefined) {
     avatar_emoji: string
     bio: string
     username?: string
+    links?: { label: string; url: string }[] | null
   }) => {
     if (!userId) return { error: new Error("No user") }
 

@@ -1,6 +1,7 @@
 import { avatarUrl } from "@/types"
 import type { Profile } from "@/types"
 import { linkifyText } from "@/lib/utils"
+import { SocialIcon } from "@/components/SocialIcon"
 
 interface PublicProfilePageProps {
   profile: Profile
@@ -28,6 +29,22 @@ export function PublicProfilePage({ profile }: PublicProfilePageProps) {
         )}
         {profile.bio && (
           <p className="text-center text-sm text-quiet-muted">{linkifyText(profile.bio)}</p>
+        )}
+        {profile.links && profile.links.length > 0 && (
+          <div className="flex flex-wrap justify-center gap-2 mt-1">
+            {profile.links.map((link, i) => (
+              <a
+                key={i}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md bg-quiet-offwhite px-3 py-1.5 text-sm font-medium text-quiet-slate transition-colors hover:bg-quiet-border/50"
+              >
+                <SocialIcon url={link.url} />
+                <span className="truncate">{link.label}</span>
+              </a>
+            ))}
+          </div>
         )}
       </div>
 

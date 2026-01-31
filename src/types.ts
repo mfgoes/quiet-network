@@ -1,9 +1,15 @@
+export interface ProfileLink {
+  label: string
+  url: string
+}
+
 export interface Profile {
   id: string
   username: string
   display_name: string
   avatar_emoji: string
   bio: string
+  links: ProfileLink[] | null
   created_at: string
 }
 

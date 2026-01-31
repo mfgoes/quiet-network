@@ -535,6 +535,7 @@ git push                 # Vercel auto-deploys from main branch
 ## Post-MVP Roadmap (v1.1+)
 
 ### Near-term (after beta feedback)
+- [ ] Bluesky post embeds — render bsky.app links as rich embeds via oEmbed iframe (use `https://embed.bsky.app/oembed` to resolve AT URI, render iframe at `https://embed.bsky.app/embed/{atUri}`, listen for postMessage height)
 - [ ] Comments/threading on posts
 - [ ] Image attachments (with compression)
 - [ ] Push notifications (via service worker)

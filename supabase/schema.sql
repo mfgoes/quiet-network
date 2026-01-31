@@ -476,6 +476,12 @@ create policy "Admins can delete circles"
 alter table circles
   add column if not exists links jsonb default null;
 
+-- ============================================
+-- PROFILE LINKS (JSONB column)
+-- ============================================
+alter table profiles
+  add column if not exists links jsonb default null;
+
 
 -- Admins/mods can remove members
 drop policy if exists "Users can leave circles" on circle_members;

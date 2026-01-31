@@ -1,9 +1,12 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { PenLine, X } from "lucide-react"
 import { getTagDef } from "@/types"
-import { useAllMemberPosts } from "@/lib/hooks"
+import { useAllMemberPosts, usePosts } from "@/lib/hooks"
+import { PostComposer } from "@/components/PostComposer"
 import { PostCard } from "@/components/PostCard"
 import { CircleDropdown } from "@/components/CircleDropdown"
+import { CircleIcon } from "@/components/CircleIcon"
 import { Button } from "@/components/ui/button"
 import type { Circle } from "@/types"
 
@@ -12,11 +15,53 @@ interface HomeFeedProps {
   userId: string
 }
 
+/* ─── Inline composer with circle binding ──────────── */
+function HomeComposer({
+  circle,
+  userId,
+  onDone,
+}: {
+  circle: Circle
+  userId: string
+  onDone: () => void
+}) {
+  const { createPost } = usePosts(circle.id, userId)
+
+  const handleSubmit = async (content: string, durationSeconds: number, tags: string[]) => {
+    const error = await createPost(content, durationSeconds, userId, tags)
+    if (!error) onDone()
+    return error
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-quiet-muted">
+          <span>Posting to</span>
+          <span className="inline-flex items-center gap-1.5 font-medium text-quiet-slate">
+            <CircleIcon name={circle.name} size="sm" />
+            {circle.name}
+          </span>
+        </div>
+        <button
+          onClick={onDone}
+          className="rounded p-1 text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-slate transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <PostComposer onSubmit={handleSubmit} />
+    </div>
+  )
+}
+
 export function HomeFeed({ circles, userId }: HomeFeedProps) {
   const navigate = useNavigate()
   const circleIds = useMemo(() => circles.map((c) => c.id), [circles])
   const { posts, loading, toggleUpvote, deletePost } = useAllMemberPosts(circleIds, userId)
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [composerState, setComposerState] = useState<"closed" | "picking" | Circle>("closed")
+  const pickerRef = useRef<HTMLDivElement>(null)
 
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>()
@@ -33,8 +78,31 @@ export function HomeFeed({ circles, userId }: HomeFeedProps) {
     return posts.filter((p) => p.tags?.includes(activeTag))
   }, [posts, activeTag])
 
+  // Close picker on outside click
+  useEffect(() => {
+    if (composerState !== "picking") return
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setComposerState("closed")
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [composerState])
+
   return (
     <>
+      {/* Composer overlay */}
+      {composerState !== "closed" && composerState !== "picking" && (
+        <div className="mb-4">
+          <HomeComposer
+            circle={composerState}
+            userId={userId}
+            onDone={() => setComposerState("closed")}
+          />
+        </div>
+      )}
+
       <CircleDropdown circles={circles} />
 
       {/* Tag filter bar */}
@@ -111,6 +179,49 @@ export function HomeFeed({ circles, userId }: HomeFeedProps) {
               No posts with this tag yet.
             </p>
           )}
+        </div>
+      )}
+
+      {/* FAB: Share something nearby */}
+      {circles.length > 0 && composerState === "closed" && (
+        <button
+          onClick={() => {
+            if (circles.length === 1) {
+              setComposerState(circles[0])
+              window.scrollTo({ top: 0, behavior: "smooth" })
+            } else {
+              setComposerState("picking")
+            }
+          }}
+          className="fixed bottom-24 right-5 md:bottom-8 md:right-8 z-40 flex items-center gap-2 rounded-full bg-quiet-slate px-5 py-3 text-sm font-medium text-white shadow-lg transition-all hover:bg-quiet-accent hover:shadow-xl active:scale-95"
+        >
+          <PenLine className="h-4 w-4" />
+          <span className="hidden sm:inline">Share something nearby</span>
+        </button>
+      )}
+
+      {/* Circle picker popover */}
+      {composerState === "picking" && (
+        <div
+          ref={pickerRef}
+          className="fixed bottom-40 right-5 md:bottom-20 md:right-8 z-50 w-56 rounded-xl border border-quiet-border bg-white p-2 shadow-xl"
+        >
+          <p className="px-2 py-1.5 text-xs font-medium text-quiet-muted">
+            Which circle?
+          </p>
+          {circles.map((circle) => (
+            <button
+              key={circle.id}
+              onClick={() => {
+                setComposerState(circle)
+                window.scrollTo({ top: 0, behavior: "smooth" })
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-quiet-slate transition-colors hover:bg-quiet-aged"
+            >
+              <CircleIcon name={circle.name} size="sm" />
+              <span className="truncate">{circle.name}</span>
+            </button>
+          ))}
         </div>
       )}
     </>
