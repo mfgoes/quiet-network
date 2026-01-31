@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react"
 import { ExternalLink } from "lucide-react"
 import { YouTubeEmbed, extractYouTubeId } from "@/components/YouTubeEmbed"
+import { GoogleMapsEmbed, extractMapCoords, isGoogleMapsUrl } from "@/components/GoogleMapsEmbed"
 
 interface LinkPreviewProps {
   url: string
