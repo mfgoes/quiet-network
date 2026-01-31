@@ -45,7 +45,7 @@ function AppRoutes() {
     deleteCircle,
   } = useCircles(user?.id)
   const { allCircles, loading: allCirclesLoading, refetch: refetchAllCircles } = useAllCircles()
-  const { adminCircles } = useAdminCircles(user?.id)
+  const { adminCircles, refetch: refetchAdminCircles } = useAdminCircles(user?.id)
   const navigate = useNavigate()
   const location = useLocation()
   const [loadingStuck, setLoadingStuck] = useState(false)
@@ -223,6 +223,7 @@ function AppRoutes() {
                 const { data } = await createCircle(name, desc)
                 if (data) {
                   refetchAllCircles()
+                  refetchAdminCircles()
                   navigate(`/${(data as Circle).slug}`)
                 }
               }}

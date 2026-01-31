@@ -210,7 +210,7 @@ export function useCircles(userId: string | undefined) {
 
   const updateCircle = async (
     circleId: string,
-    updates: { about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null }
+    updates: { description?: string | null; about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null }
   ) => {
     const { data, error } = await supabase
       .from("circles")
@@ -307,25 +307,28 @@ export function useCircleBySlug(slug: string | undefined) {
   const [circle, setCircle] = useState<Circle | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchCircle = useCallback(async () => {
     if (!slug) {
       setLoading(false)
       return
     }
     setLoading(true)
 
-    supabase
+    const { data } = await supabase
       .from("circles")
       .select("*")
       .eq("slug", slug)
       .single()
-      .then(({ data }) => {
-        if (data) setCircle(data as Circle)
-        setLoading(false)
-      })
+
+    if (data) setCircle(data as Circle)
+    setLoading(false)
   }, [slug])
 
-  return { circle, loading }
+  useEffect(() => {
+    fetchCircle()
+  }, [fetchCircle])
+
+  return { circle, loading, refetch: fetchCircle }
 }
 
 // ─── Public profile ──────────────────────────────────
@@ -730,34 +733,37 @@ export function useAdminCircles(userId: string | undefined) {
   const [adminCircles, setAdminCircles] = useState<(Circle & { role: CircleRole })[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchAdminCircles = useCallback(async () => {
     if (!userId) {
       setLoading(false)
       return
     }
     setLoading(true)
 
-    supabase
+    const { data, error } = await supabase
       .from("circle_members")
       .select("role, circles(*)")
       .eq("user_id", userId)
       .in("role", ["admin", "moderator"])
-      .then(({ data, error }) => {
-        if (!error && data) {
-          const mapped = data
-            .map((row) => {
-              const circle = row.circles as unknown as Circle
-              if (!circle) return null
-              return { ...circle, role: row.role as CircleRole }
-            })
-            .filter(Boolean) as (Circle & { role: CircleRole })[]
-          setAdminCircles(mapped)
-        }
-        setLoading(false)
-      })
+
+    if (!error && data) {
+      const mapped = data
+        .map((row) => {
+          const circle = row.circles as unknown as Circle
+          if (!circle) return null
+          return { ...circle, role: row.role as CircleRole }
+        })
+        .filter(Boolean) as (Circle & { role: CircleRole })[]
+      setAdminCircles(mapped)
+    }
+    setLoading(false)
   }, [userId])
 
-  return { adminCircles, loading }
+  useEffect(() => {
+    fetchAdminCircles()
+  }, [fetchAdminCircles])
+
+  return { adminCircles, loading, refetch: fetchAdminCircles }
 }
 
 /** Members of a circle with roles and stats, plus mutation helpers */

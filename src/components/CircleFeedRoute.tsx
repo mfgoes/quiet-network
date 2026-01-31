@@ -27,7 +27,7 @@ export function CircleFeedRoute({
   updateCircle,
 }: CircleFeedRouteProps) {
   const { circleSlug } = useParams<{ circleSlug: string }>()
-  const { circle, loading } = useCircleBySlug(circleSlug)
+  const { circle, loading, refetch: refetchCircle } = useCircleBySlug(circleSlug)
   const navigate = useNavigate()
   const [joining, setJoining] = useState(false)
 
@@ -70,6 +70,7 @@ export function CircleFeedRoute({
           joining={joining}
           onUpdateCircle={async (updates) => {
             await updateCircle(circle.id, updates)
+            await refetchCircle()
           }}
         />
       </div>
