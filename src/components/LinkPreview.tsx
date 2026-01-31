@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { ExternalLink } from "lucide-react"
+import { YouTubeEmbed, extractYouTubeId } from "@/components/YouTubeEmbed"
 
 interface LinkPreviewProps {
   url: string
@@ -10,6 +11,12 @@ const IMAGE_RE = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)(\?.*)?$/i
 export function LinkPreview({ url }: LinkPreviewProps) {
   const [faviconError, setFaviconError] = useState(false)
   const [imgError, setImgError] = useState(false)
+
+  const youtubeId = useMemo(() => extractYouTubeId(url), [url])
+
+  if (youtubeId) {
+    return <YouTubeEmbed videoId={youtubeId} />
+  }
 
   const isImage = IMAGE_RE.test(url) && !imgError
 

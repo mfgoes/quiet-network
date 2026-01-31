@@ -339,29 +339,64 @@ export function AboutPage({ onJoin }: { onJoin?: () => void }) {
       </FadeIn>
 
       {/* Recent Updates */}
-      <FadeIn>
-        <div id="recent-updates" className="scroll-mt-8 space-y-5">
-          <h2 className="text-xl font-bold text-quiet-slate">Recent Updates</h2>
-          <div className="relative pl-6 border-l-2 border-quiet-border space-y-6">
-            {[
-              { date: "Jan 31", text: "Added text styling and basic admin settings" },
-              { date: "Jan 30", text: "Setup a new explore page" },
-              { date: "Jan 28", text: "Started the project!" },
-            ].map((entry) => (
-              <div key={entry.date} className="relative">
-                <div className="absolute -left-[1.8125rem] top-1 h-2.5 w-2.5 rounded-full bg-quiet-accent" />
-                <p className="text-xs font-medium text-quiet-accent">{entry.date}</p>
-                <p className="text-sm text-quiet-slate mt-0.5">{entry.text}</p>
-              </div>
-            ))}
-            <div className="relative">
-              <div className="absolute -left-[1.8125rem] top-1 h-2.5 w-2.5 rounded-full border-2 border-quiet-border bg-quiet-offwhite" />
-              <p className="text-sm text-quiet-muted italic">More coming soon...</p>
-            </div>
-          </div>
-        </div>
-      </FadeIn>
+     <FadeIn>
+  <div id="recent-updates" className="scroll-mt-8 space-y-5">
+    <h2 className="text-xl font-bold text-quiet-slate">Recent Updates</h2>
 
+    <div className="relative pl-6 border-l-2 border-quiet-border space-y-6">
+      {[
+        {
+          date: "Jan 31",
+          summary: "Added text styling and basic admin settings",
+          items: [
+            "Sticky homepage button to promote posts",
+            "YouTube and Imgur embeds",
+            "Profile links with social icon support",
+          ],
+        },
+        {
+          date: "Jan 30",
+          summary: "Set up a new explore page",
+        },
+        {
+          date: "Jan 28",
+          summary: "Started the project!",
+        },
+      ].map((entry) => (
+        <div key={entry.date} className="relative">
+          <div className="absolute -left-[1.8125rem] top-1 h-2.5 w-2.5 rounded-full bg-quiet-accent" />
+
+          <p className="text-xs font-medium text-quiet-accent">
+            {entry.date}
+          </p>
+
+          <p className="text-sm text-quiet-slate mt-0.5">
+            {entry.summary}
+          </p>
+
+          {entry.items && (
+            <ul className="mt-1.5 space-y-1">
+              {entry.items.map((item, i) => (
+                <li
+                  key={i}
+                  className="relative pl-3 text-sm text-quiet-slate"
+                >
+                  <span className="absolute left-0 top-2 h-1 w-1 rounded-full bg-quiet-muted" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+
+      <div className="relative">
+        <div className="absolute -left-[1.8125rem] top-1 h-2.5 w-2.5 rounded-full border-2 border-quiet-border bg-quiet-offwhite" />
+        <p className="text-sm text-quiet-muted italic">More coming soon...</p>
+      </div>
+    </div>
+  </div>
+</FadeIn>
       {/* Footer */}
       <FadeIn>
         <div className="pt-4 border-t border-quiet-border text-center">

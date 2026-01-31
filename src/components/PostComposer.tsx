@@ -321,11 +321,6 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
         </div>
       </div>
 
-      {/* Formatting hint */}
-      <p className="mt-1.5 text-[11px] text-quiet-muted/60">
-        **bold**&ensp; _italic_&ensp; __underline__&ensp; [text](url)
-      </p>
-
       {/* Selected tags */}
       {selectedTags.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
