@@ -24,12 +24,13 @@ interface AdminPanelProps {
   adminCircles: (Circle & { role: CircleRole })[]
   updateCircle: (
     circleId: string,
-    updates: { description?: string | null; about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null }
+    updates: { description?: string | null; about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null }
   ) => Promise<{ data: Circle | null; error: unknown }>
+  uploadCircleAvatar: (circleId: string, file: File) => Promise<{ url: string | null; error: unknown }>
   deleteCircle: (circleId: string) => Promise<unknown>
 }
 
-export function AdminPanel({ userId, adminCircles, updateCircle, deleteCircle }: AdminPanelProps) {
+export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAvatar, deleteCircle }: AdminPanelProps) {
   const { circleSlug } = useParams<{ circleSlug: string }>()
   const { circle, loading: circleLoading, refetch: refetchCircle } = useCircleBySlug(circleSlug)
   const navigate = useNavigate()
@@ -230,6 +231,11 @@ export function AdminPanel({ userId, adminCircles, updateCircle, deleteCircle }:
               onSave={async (updates) => {
                 await updateCircle(circle.id, updates)
                 await refetchCircle()
+              }}
+              onUploadAvatar={async (file) => {
+                const result = await uploadCircleAvatar(circle.id, file)
+                if (!result.error) await refetchCircle()
+                return result
               }}
               onDelete={async () => {
                 await deleteCircle(circle.id)

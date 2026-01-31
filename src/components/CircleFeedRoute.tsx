@@ -14,7 +14,8 @@ interface CircleFeedRouteProps {
   circleRoles?: Record<string, string>
   joinCircle: (circleId: string) => Promise<unknown>
   leaveCircle: (circleId: string) => Promise<unknown>
-  updateCircle: (circleId: string, updates: { about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null }) => Promise<{ data: Circle | null; error: unknown }>
+  updateCircle: (circleId: string, updates: { about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null }) => Promise<{ data: Circle | null; error: unknown }>
+  uploadCircleAvatar: (circleId: string, file: File) => Promise<{ url: string | null; error: unknown }>
 }
 
 export function CircleFeedRoute({
@@ -25,6 +26,7 @@ export function CircleFeedRoute({
   joinCircle,
   leaveCircle,
   updateCircle,
+  uploadCircleAvatar,
 }: CircleFeedRouteProps) {
   const { circleSlug } = useParams<{ circleSlug: string }>()
   const { circle, loading, refetch: refetchCircle } = useCircleBySlug(circleSlug)
@@ -51,7 +53,7 @@ export function CircleFeedRoute({
 
   return (
     <>
-      <CircleDropdown circles={circles} selectedSlug={circleSlug} />
+      <CircleDropdown circles={circles} selectedSlug={circleSlug} currentCircle={circle} />
       <div className="mt-4">
         <CircleFeed
           circle={circle}
@@ -71,6 +73,11 @@ export function CircleFeedRoute({
           onUpdateCircle={async (updates) => {
             await updateCircle(circle.id, updates)
             await refetchCircle()
+          }}
+          onUploadAvatar={async (file) => {
+            const result = await uploadCircleAvatar(circle.id, file)
+            if (!result.error) await refetchCircle()
+            return result
           }}
         />
       </div>

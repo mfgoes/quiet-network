@@ -66,15 +66,19 @@ export function CirclePicker({
           <p className="text-sm font-medium text-quiet-muted">Your circles</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {visibleCircles.map((circle) => {
-              const color = circleColor(circle.name)
+              const hint = circle.banner_color || circleColor(circle.name).bg
               return (
                 <button
                   key={circle.id}
                   onClick={() => onSelect(circle)}
-                  className="flex items-center gap-3 rounded-xl p-3 text-left transition-all hover:scale-[1.02] hover:shadow-sm"
-                  style={{ backgroundColor: `${color.bg}66` }}
+                  className="relative flex items-center gap-3 rounded-xl border border-quiet-border bg-white p-3 text-left transition-all hover:shadow-sm overflow-hidden"
                 >
-                  <CircleIcon name={circle.name} size="lg" />
+                  <div className="absolute inset-x-0 top-0 h-1 rounded-t-xl" style={{ backgroundColor: hint }} />
+                  {circle.avatar_url ? (
+                    <img src={circle.avatar_url} alt={circle.name} className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                  ) : (
+                    <CircleIcon name={circle.name} size="lg" />
+                  )}
                   <div className="min-w-0">
                     <span className="block text-sm font-medium text-quiet-slate">
                       {circle.name}
@@ -105,30 +109,39 @@ export function CirclePicker({
           <p className="text-sm font-medium text-quiet-muted">Discover circles</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {visibleDiscoverable.map((circle) => {
-              const color = circleColor(circle.name)
+              const hint = circle.banner_color || circleColor(circle.name).bg
               return (
                 <div
                   key={circle.id}
-                  className="flex items-center gap-3 rounded-xl p-3"
-                  style={{ backgroundColor: `${color.bg}66` }}
+                  className="relative flex items-center gap-3 rounded-xl border border-quiet-border bg-white p-3 overflow-hidden"
                 >
-                  <CircleIcon name={circle.name} size="lg" />
-                  <div className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-quiet-slate">
-                      {circle.name}
-                    </span>
-                    {circle.description && (
-                      <span className="mt-0.5 block text-xs text-quiet-muted truncate">
-                        {circle.description}
-                      </span>
+                  <div className="absolute inset-x-0 top-0 h-1 rounded-t-xl" style={{ backgroundColor: hint }} />
+                  <button
+                    onClick={() => onSelect(circle)}
+                    className="flex items-center gap-3 min-w-0 flex-1 text-left transition-all hover:opacity-80"
+                  >
+                    {circle.avatar_url ? (
+                      <img src={circle.avatar_url} alt={circle.name} className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                    ) : (
+                      <CircleIcon name={circle.name} size="lg" />
                     )}
-                  </div>
+                    <div className="min-w-0">
+                      <span className="block text-sm font-medium text-quiet-slate">
+                        {circle.name}
+                      </span>
+                      {circle.description && (
+                        <span className="mt-0.5 block text-xs text-quiet-muted truncate">
+                          {circle.description}
+                        </span>
+                      )}
+                    </div>
+                  </button>
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={joiningId === circle.id}
                     onClick={() => handleJoin(circle)}
-                    className="ml-2 shrink-0 bg-white/80"
+                    className="ml-2 shrink-0"
                   >
                     {joiningId === circle.id ? "Joining..." : "Join"}
                   </Button>

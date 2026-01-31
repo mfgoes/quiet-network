@@ -45,11 +45,39 @@ export interface Circle {
   about: string | null
   rules: string | null
   links: CircleLink[] | null
+  banner_color: string | null
+  avatar_url: string | null
   latitude: number | null
   longitude: number | null
   radius_km: number
   created_by: string
   created_at: string
+}
+
+export interface BannerColorDef {
+  id: string
+  bg: string
+}
+
+export const BANNER_COLORS: BannerColorDef[] = [
+  { id: "sky", bg: "#BAE6FD" },
+  { id: "mint", bg: "#A7F3D0" },
+  { id: "lavender", bg: "#DDD6FE" },
+  { id: "peach", bg: "#FED7AA" },
+  { id: "blush", bg: "#FECDD3" },
+  { id: "lemon", bg: "#FEF08A" },
+  { id: "slate", bg: "#CBD5E1" },
+  { id: "lilac", bg: "#E9D5FF" },
+  { id: "sage", bg: "#BBF7D0" },
+  { id: "coral", bg: "#FECACA" },
+]
+
+export function getBannerBg(bannerColor: string | null, circleName: string): string {
+  if (bannerColor) {
+    const preset = BANNER_COLORS.find((c) => c.id === bannerColor)
+    if (preset) return preset.bg
+  }
+  return circleColor(circleName).bg
 }
 
 // ─── Admin panel types ──────────────────────────────

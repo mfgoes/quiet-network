@@ -208,9 +208,30 @@ export function useCircles(userId: string | undefined) {
     return error
   }
 
+  const uploadCircleAvatar = async (circleId: string, file: File) => {
+    const path = `${circleId}`
+    const { error: uploadError } = await supabase.storage
+      .from("circle-avatars")
+      .upload(path, file, { upsert: true, contentType: file.type })
+    if (uploadError) return { url: null, error: uploadError }
+
+    const { data: urlData } = supabase.storage
+      .from("circle-avatars")
+      .getPublicUrl(path)
+
+    const avatar_url = `${urlData.publicUrl}?t=${Date.now()}`
+    const { error: updateError } = await supabase
+      .from("circles")
+      .update({ avatar_url })
+      .eq("id", circleId)
+
+    if (!updateError) await fetchCircles()
+    return { url: updateError ? null : avatar_url, error: updateError }
+  }
+
   const updateCircle = async (
     circleId: string,
-    updates: { description?: string | null; about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null }
+    updates: { description?: string | null; about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null }
   ) => {
     const { data, error } = await supabase
       .from("circles")
@@ -233,7 +254,7 @@ export function useCircles(userId: string | undefined) {
     return error
   }
 
-  return { circles, circleRoles, loading, createCircle, joinCircle, leaveCircle, updateCircle, deleteCircle, refetch: fetchCircles }
+  return { circles, circleRoles, loading, createCircle, joinCircle, leaveCircle, updateCircle, uploadCircleAvatar, deleteCircle, refetch: fetchCircles }
 }
 
 // ─── Circle members ─────────────────────────────────

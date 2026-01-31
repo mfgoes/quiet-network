@@ -42,6 +42,7 @@ function AppRoutes() {
     joinCircle,
     leaveCircle,
     updateCircle,
+    uploadCircleAvatar,
     deleteCircle,
   } = useCircles(user?.id)
   const { allCircles, loading: allCirclesLoading, refetch: refetchAllCircles } = useAllCircles()
@@ -260,6 +261,7 @@ function AppRoutes() {
               userId={user.id}
               adminCircles={adminCircles}
               updateCircle={updateCircle}
+              uploadCircleAvatar={uploadCircleAvatar}
               deleteCircle={deleteCircle}
             />
           }
@@ -275,6 +277,7 @@ function AppRoutes() {
               joinCircle={joinCircle}
               leaveCircle={leaveCircle}
               updateCircle={updateCircle}
+              uploadCircleAvatar={uploadCircleAvatar}
             />
           }
         />

@@ -4,7 +4,6 @@ import { usePosts } from "@/lib/hooks"
 import { PostComposer } from "@/components/PostComposer"
 import { PostCard } from "@/components/PostCard"
 import { CircleAbout } from "@/components/CircleAbout"
-import { Button } from "@/components/ui/button"
 import type { Circle } from "@/types"
 
 interface CircleFeedProps {
@@ -15,7 +14,8 @@ interface CircleFeedProps {
   onJoin: () => Promise<void>
   onLeave: () => Promise<void>
   joining: boolean
-  onUpdateCircle: (updates: { about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null }) => Promise<void>
+  onUpdateCircle: (updates: { about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null }) => Promise<void>
+  onUploadAvatar?: (file: File) => Promise<{ url: string | null; error: unknown }>
 }
 
 export function CircleFeed({
@@ -27,6 +27,7 @@ export function CircleFeed({
   onLeave,
   joining,
   onUpdateCircle,
+  onUploadAvatar,
 }: CircleFeedProps) {
   const circleId = circle.id
   const { posts, loading, createPost, deletePost, toggleUpvote } = usePosts(circleId, userId)
@@ -55,26 +56,12 @@ export function CircleFeed({
     <>
       {/* Mobile: collapsible above feed */}
       <div className="lg:hidden">
-        <CircleAbout circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onLeave={isMember ? onLeave : undefined} />
+        <CircleAbout circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} />
       </div>
 
       <div className="lg:grid lg:grid-cols-[1fr_280px] lg:gap-6">
         {/* Main feed column */}
         <div>
-          {/* Join banner for non-members */}
-          {!isMember && (
-            <div className="mb-4 flex items-center justify-between rounded-lg border border-quiet-border bg-white p-3">
-              <p className="text-sm text-quiet-muted">Join this circle to post and interact.</p>
-              <Button
-                size="sm"
-                disabled={joining}
-                onClick={onJoin}
-              >
-                {joining ? "Joining..." : "Join"}
-              </Button>
-            </div>
-          )}
-
           {isMember && <PostComposer onSubmit={handleNewPost} />}
 
           {/* Tag filter bar */}
@@ -139,7 +126,7 @@ export function CircleFeed({
 
         {/* Desktop: sidebar */}
         <div className="hidden lg:block">
-          <CircleAbout sidebar circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onLeave={isMember ? onLeave : undefined} />
+          <CircleAbout sidebar circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} />
         </div>
       </div>
     </>

@@ -7,15 +7,16 @@ import type { Circle } from "@/types"
 interface CircleDropdownProps {
   circles: Circle[]
   selectedSlug?: string
+  currentCircle?: Circle | null
 }
 
-export function CircleDropdown({ circles, selectedSlug }: CircleDropdownProps) {
+export function CircleDropdown({ circles, selectedSlug, currentCircle }: CircleDropdownProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
 
   const selected = selectedSlug
-    ? circles.find((c) => c.slug === selectedSlug)
+    ? circles.find((c) => c.slug === selectedSlug) ?? currentCircle ?? null
     : null
 
   const label = selected ? selected.name : "All circles"

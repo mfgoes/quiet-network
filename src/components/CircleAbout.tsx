@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { ChevronDown, LogOut, Pencil, Shield, ExternalLink, Plus, Trash2 } from "lucide-react"
+import { ChevronDown, LogOut, Pencil, Shield, ExternalLink, Plus, Trash2, Camera } from "lucide-react"
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -8,7 +8,8 @@ import {
 } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
 import { useCircleMembers } from "@/lib/hooks"
-import { avatarUrl } from "@/types"
+import { avatarUrl, getBannerBg } from "@/types"
+import { CircleIcon } from "@/components/CircleIcon"
 import type { Circle, CircleLink } from "@/types"
 
 interface CircleAboutProps {
@@ -16,8 +17,38 @@ interface CircleAboutProps {
   userId: string
   isAdminOrMod?: boolean
   onUpdate: (updates: { about?: string | null; rules?: string | null; links?: CircleLink[] | null }) => Promise<void>
+  onUploadAvatar?: (file: File) => Promise<{ url: string | null; error: unknown }>
   onLeave?: () => Promise<void>
+  onJoin?: () => Promise<void>
+  joining?: boolean
   sidebar?: boolean
+}
+
+const MAX_AVATAR_SIZE = 100 * 1024 // 100 KB
+
+function compressImage(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement("canvas")
+        canvas.width = 100
+        canvas.height = 100
+        const ctx = canvas.getContext("2d")!
+        ctx.drawImage(img, 0, 0, 100, 100)
+        canvas.toBlob(
+          (blob) => {
+            resolve(new File([blob!], file.name, { type: "image/jpeg" }))
+          },
+          "image/jpeg",
+          0.85
+        )
+      }
+      img.src = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  })
 }
 
 function AboutContent({
@@ -304,16 +335,95 @@ function ManageCircleLink({ circleSlug }: { circleSlug: string }) {
   )
 }
 
-export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onLeave, sidebar }: CircleAboutProps) {
+function CircleBanner({ circle, isAdminOrMod, onUploadAvatar }: { circle: Circle; isAdminOrMod?: boolean; onUploadAvatar?: (file: File) => Promise<{ url: string | null; error: unknown }> }) {
+  const bannerBg = getBannerBg(circle.banner_color, circle.name)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const canEdit = isAdminOrMod && onUploadAvatar
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !onUploadAvatar) return
+    e.target.value = ""
+
+    if (!file.type.startsWith("image/")) return
+
+    setUploading(true)
+    try {
+      const toUpload = file.size > MAX_AVATAR_SIZE ? await compressImage(file) : file
+      await onUploadAvatar(toUpload)
+    } catch {
+      // silently fail
+    }
+    setUploading(false)
+  }
+
+  return (
+    <div className="relative">
+      <div className="h-20 rounded-t-lg" style={{ backgroundColor: bannerBg }} />
+      <div className="absolute -bottom-5 left-4">
+        <button
+          type="button"
+          disabled={!canEdit || uploading}
+          onClick={() => canEdit && fileInputRef.current?.click()}
+          className={`group relative rounded-full ${canEdit ? "cursor-pointer" : "cursor-default"}`}
+        >
+          {circle.avatar_url ? (
+            <img
+              src={circle.avatar_url}
+              alt={circle.name}
+              className="h-12 w-12 rounded-full object-cover ring-2 ring-white"
+            />
+          ) : (
+            <CircleIcon name={circle.name} size="lg" className="ring-2 ring-white" />
+          )}
+          {canEdit && !uploading && (
+            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 group-hover:bg-black/40 transition-colors">
+              <Camera className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+            </span>
+          )}
+          {uploading && (
+            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            </span>
+          )}
+        </button>
+        {canEdit && (
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAvatar, onLeave, onJoin, joining, sidebar }: CircleAboutProps) {
   const [open, setOpen] = useState(false)
 
   // Desktop sidebar: separate cards
   if (sidebar) {
     return (
       <div className="sticky top-8 space-y-3">
-        {/* About / Rules card */}
-        <div className="rounded-lg border border-quiet-border bg-white">
-          <div className="px-4 py-3 border-b border-quiet-border">
+        {/* Join CTA for non-members */}
+        {onJoin && (
+          <div className="rounded-lg border border-quiet-border bg-white px-4 py-4 text-center">
+            <p className="text-sm text-quiet-muted mb-3">Join this circle to post and interact.</p>
+            <Button className="w-full" disabled={joining} onClick={onJoin}>
+              {joining ? "Joining..." : "Join Circle"}
+            </Button>
+          </div>
+        )}
+
+        {/* About / Rules card with banner */}
+        <div className="rounded-lg border border-quiet-border bg-white overflow-hidden">
+          <CircleBanner circle={circle} isAdminOrMod={isAdminOrMod} onUploadAvatar={onUploadAvatar} />
+          <div className="px-4 pt-8 pb-3 border-b border-quiet-border">
             <h3 className="text-sm font-medium text-quiet-slate">About / Rules</h3>
           </div>
           <div className="px-4 py-3">
@@ -345,9 +455,19 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onLeave, s
 
   // Mobile: collapsible
   return (
+    <>
+    {onJoin && (
+      <div className="mb-4 rounded-lg border border-quiet-border bg-white px-4 py-4 text-center">
+        <p className="text-sm text-quiet-muted mb-3">Join this circle to post and interact.</p>
+        <Button className="w-full" disabled={joining} onClick={onJoin}>
+          {joining ? "Joining..." : "Join Circle"}
+        </Button>
+      </div>
+    )}
     <Collapsible open={open} onOpenChange={setOpen} className="mb-4">
-      <div className="rounded-lg border border-quiet-border bg-white">
-        <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-quiet-slate hover:bg-quiet-aged transition-colors rounded-lg">
+      <div className="rounded-lg border border-quiet-border bg-white overflow-hidden">
+        <CircleBanner circle={circle} isAdminOrMod={isAdminOrMod} onUploadAvatar={onUploadAvatar} />
+        <CollapsibleTrigger className="flex w-full items-center justify-between px-4 pt-8 pb-3 text-sm font-medium text-quiet-slate hover:bg-quiet-aged transition-colors">
           <span>About / Rules</span>
           <ChevronDown
             className={`h-4 w-4 text-quiet-muted transition-transform ${
@@ -376,5 +496,6 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onLeave, s
         </CollapsibleContent>
       </div>
     </Collapsible>
+    </>
   )
 }

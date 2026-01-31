@@ -127,16 +127,10 @@ create table if not exists posts (
 
 alter table posts enable row level security;
 
-create policy "Posts are viewable by circle members"
+create policy "Posts are viewable by authenticated users"
   on posts for select
   to authenticated
-  using (
-    exists (
-      select 1 from circle_members
-      where circle_members.circle_id = posts.circle_id
-        and circle_members.user_id = auth.uid()
-    )
-  );
+  using (true);
 
 create policy "Authenticated users can create posts in their circles"
   on posts for insert
@@ -201,17 +195,10 @@ create table if not exists post_upvotes (
 
 alter table post_upvotes enable row level security;
 
-create policy "Upvotes are viewable by circle members"
+create policy "Upvotes are viewable by authenticated users"
   on post_upvotes for select
   to authenticated
-  using (
-    exists (
-      select 1 from posts
-      join circle_members on circle_members.circle_id = posts.circle_id
-      where posts.id = post_upvotes.post_id
-        and circle_members.user_id = auth.uid()
-    )
-  );
+  using (true);
 
 create policy "Users can upvote posts in their circles"
   on post_upvotes for insert

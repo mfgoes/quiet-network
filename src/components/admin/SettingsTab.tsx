@@ -1,22 +1,58 @@
-import { useState } from "react"
-import { Trash2 } from "lucide-react"
+import { useState, useRef } from "react"
+import { Trash2, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { CircleIcon } from "@/components/CircleIcon"
+import { BANNER_COLORS, getBannerBg } from "@/types"
 import type { Circle } from "@/types"
 
 interface SettingsTabProps {
   circle: Circle
-  onSave: (updates: { description?: string | null; about?: string | null; rules?: string | null }) => Promise<void>
+  onSave: (updates: { description?: string | null; about?: string | null; rules?: string | null; banner_color?: string | null; avatar_url?: string | null }) => Promise<void>
+  onUploadAvatar: (file: File) => Promise<{ url: string | null; error: unknown }>
   onDelete: () => Promise<void>
 }
 
-export function SettingsTab({ circle, onSave, onDelete }: SettingsTabProps) {
+const MAX_UPLOAD_SIZE = 100 * 1024 // 100 KB
+
+function compressImage(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement("canvas")
+        canvas.width = 100
+        canvas.height = 100
+        const ctx = canvas.getContext("2d")!
+        ctx.drawImage(img, 0, 0, 100, 100)
+        canvas.toBlob(
+          (blob) => {
+            resolve(new File([blob!], file.name, { type: "image/jpeg" }))
+          },
+          "image/jpeg",
+          0.85
+        )
+      }
+      img.src = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: SettingsTabProps) {
   const [description, setDescription] = useState(circle.description ?? "")
   const [about, setAbout] = useState(circle.about ?? "")
   const [rules, setRules] = useState(circle.rules ?? "")
+  const [bannerColor, setBannerColor] = useState(circle.banner_color ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  // Avatar upload state
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSave = async () => {
     setSaving(true)
@@ -25,10 +61,44 @@ export function SettingsTab({ circle, onSave, onDelete }: SettingsTabProps) {
       description: description || null,
       about: about || null,
       rules: rules || null,
+      banner_color: bannerColor || null,
     })
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    e.target.value = ""
+
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select an image file.")
+      return
+    }
+
+    setUploadError(null)
+    setUploading(true)
+
+    try {
+      const toUpload = file.size > MAX_UPLOAD_SIZE ? await compressImage(file) : file
+      const { error } = await onUploadAvatar(toUpload)
+      if (error) {
+        setUploadError("Upload failed. Please try again.")
+      }
+    } catch {
+      setUploadError("Failed to process image.")
+    }
+
+    setUploading(false)
+  }
+
+  const handleRemoveAvatar = async () => {
+    setSaving(true)
+    await onSave({ avatar_url: null })
+    setSaving(false)
   }
 
   const handleDelete = async () => {
@@ -39,6 +109,98 @@ export function SettingsTab({ circle, onSave, onDelete }: SettingsTabProps) {
 
   return (
     <div className="space-y-5 max-w-lg">
+      {/* Avatar & Banner preview */}
+      <div>
+        <label className="block text-sm font-medium text-quiet-slate mb-1.5">
+          Circle Avatar
+        </label>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            {circle.avatar_url ? (
+              <img
+                src={circle.avatar_url}
+                alt={circle.name}
+                className="h-14 w-14 rounded-full object-cover ring-2 ring-quiet-border"
+              />
+            ) : (
+              <CircleIcon name={circle.name} size="lg" />
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="gap-1.5"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                {uploading ? "Uploading..." : "Upload image"}
+              </Button>
+              {circle.avatar_url && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={saving}
+                  onClick={handleRemoveAvatar}
+                  className="gap-1 text-quiet-muted"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Remove
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-quiet-muted">JPG, PNG, or WebP. Images over 100 KB are auto-compressed.</p>
+            {uploadError && (
+              <p className="text-xs text-red-600">{uploadError}</p>
+            )}
+          </div>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+      </div>
+
+      {/* Banner color */}
+      <div>
+        <label className="block text-sm font-medium text-quiet-slate mb-1.5">
+          Banner Color
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          {BANNER_COLORS.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setBannerColor(bannerColor === c.id ? "" : c.id)}
+              className={`h-8 w-8 rounded-full transition-all ${
+                bannerColor === c.id
+                  ? "ring-2 ring-quiet-slate ring-offset-2"
+                  : "ring-1 ring-quiet-border hover:ring-quiet-accent"
+              }`}
+              style={{ backgroundColor: c.bg }}
+              title={c.id}
+            />
+          ))}
+          {bannerColor && (
+            <button
+              onClick={() => setBannerColor("")}
+              className="ml-1 text-xs text-quiet-muted hover:text-quiet-slate transition-colors"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+        {/* Preview */}
+        <div
+          className="mt-2 h-12 rounded-md transition-colors"
+          style={{ backgroundColor: getBannerBg(bannerColor || null, circle.name) }}
+        />
+      </div>
+
       <div>
         <label className="block text-sm font-medium text-quiet-slate mb-1.5">
           Description
