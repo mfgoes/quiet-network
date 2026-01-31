@@ -14,7 +14,7 @@ interface CircleFeedRouteProps {
   circleRoles?: Record<string, string>
   joinCircle: (circleId: string) => Promise<unknown>
   leaveCircle: (circleId: string) => Promise<unknown>
-  updateCircle: (circleId: string, updates: { about?: string | null; rules?: string | null }) => Promise<{ data: Circle | null; error: unknown }>
+  updateCircle: (circleId: string, updates: { about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null }) => Promise<{ data: Circle | null; error: unknown }>
 }
 
 export function CircleFeedRoute({

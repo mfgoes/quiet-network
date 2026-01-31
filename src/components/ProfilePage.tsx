@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { ChevronDown, Info, LogOut, Pencil, Trash2, UserMinus } from "lucide-react"
 import { toast } from "sonner"
+import { linkifyText } from "@/lib/utils"
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -71,7 +72,7 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onLeaveAllCir
             <p className="text-sm text-quiet-muted">@{profile.username}</p>
           )}
           {profile.bio && (
-            <p className="text-center text-sm text-quiet-muted">{profile.bio}</p>
+            <p className="text-center text-sm text-quiet-muted">{linkifyText(profile.bio)}</p>
           )}
         </div>
 

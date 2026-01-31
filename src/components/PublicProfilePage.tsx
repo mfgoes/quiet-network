@@ -1,5 +1,6 @@
 import { avatarUrl } from "@/types"
 import type { Profile } from "@/types"
+import { linkifyText } from "@/lib/utils"
 
 interface PublicProfilePageProps {
   profile: Profile
@@ -26,7 +27,7 @@ export function PublicProfilePage({ profile }: PublicProfilePageProps) {
           <p className="text-sm text-quiet-muted">@{profile.username}</p>
         )}
         {profile.bio && (
-          <p className="text-center text-sm text-quiet-muted">{profile.bio}</p>
+          <p className="text-center text-sm text-quiet-muted">{linkifyText(profile.bio)}</p>
         )}
       </div>
 

@@ -40,3 +40,95 @@ h1, h2 {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ─── TipTap editor ─────────────────────────────────── */
+
+.tiptap {
+  outline: none;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--color-quiet-muted);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Inherit the data-placeholder from the parent wrapper */
+.tiptap[data-placeholder] p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+}
+
+/* Override: read from the editor element's data-placeholder */
+[data-placeholder] .tiptap p.is-editor-empty:first-child::before {
+  content: "Share something with your neighbors...";
+}
+
+.tiptap ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin: 0.25rem 0;
+}
+
+.tiptap li {
+  margin: 0.125rem 0;
+}
+
+.tiptap strong {
+  font-weight: 700;
+}
+
+.tiptap em {
+  font-style: italic;
+}
+
+.tiptap u {
+  text-decoration: underline;
+}
+
+.tiptap a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+/* ─── Rendered post content ──────────────────────────── */
+
+.post-content p {
+  margin: 0;
+}
+
+.post-content p + p {
+  margin-top: 0.25rem;
+}
+
+.post-content ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin: 0.25rem 0;
+}
+
+.post-content li {
+  margin: 0.125rem 0;
+}
+
+.post-content strong {
+  font-weight: 700;
+}
+
+.post-content em {
+  font-style: italic;
+}
+
+.post-content u {
+  text-decoration: underline;
+}
+
+.post-content a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.post-content a:hover {
+  color: #1d4ed8;
+}

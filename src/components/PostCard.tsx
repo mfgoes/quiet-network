@@ -2,6 +2,8 @@ import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { Pin, Clock, ChevronUp, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { LinkPreview } from "@/components/LinkPreview"
+import { parseMarkdown, extractMarkdownUrls } from "@/lib/markdown"
 import type { Post } from "@/types"
 import { avatarUrl, getTagDef } from "@/types"
 
@@ -54,10 +56,39 @@ function getAgeTint(post: Post): string {
   return "bg-quiet-aged"
 }
 
+/** Check if content looks like HTML (from rich editor) vs plain text */
+function isHtmlContent(content: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(content)
+}
+
+/** Extract unique URLs from HTML anchor tags */
+function extractUrls(content: string): string[] {
+  const urls: string[] = []
+  const regex = /href="(https?:\/\/[^"]+)"/g
+  let match
+  while ((match = regex.exec(content)) !== null) {
+    if (!urls.includes(match[1])) {
+      urls.push(match[1])
+    }
+  }
+  return urls
+}
+
+/** Extract URLs from plain text / markdown */
+function extractPlainTextUrls(content: string): string[] {
+  return extractMarkdownUrls(content)
+}
+
 export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: PostCardProps) {
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
   const bgClass = useMemo(() => getAgeTint(post), [post])
+
+  const isHtml = useMemo(() => isHtmlContent(post.content), [post.content])
+  const linkUrls = useMemo(
+    () => (isHtml ? extractUrls(post.content) : extractPlainTextUrls(post.content)),
+    [post.content, isHtml]
+  )
 
   const authorName = post.profiles?.display_name ?? "Neighbor"
   const authorAvatar = post.profiles?.avatar_emoji ?? "house"
@@ -121,9 +152,26 @@ export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: Pos
       </div>
 
       {/* Content */}
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-quiet-slate">
-        {post.content}
-      </p>
+      {isHtml ? (
+        <div
+          className="post-content text-sm leading-relaxed text-quiet-slate"
+          dangerouslySetInnerHTML={{ __html: post.content }}
+        />
+      ) : (
+        <div
+          className="post-content text-sm leading-relaxed text-quiet-slate"
+          dangerouslySetInnerHTML={{ __html: parseMarkdown(post.content) }}
+        />
+      )}
+
+      {/* Link previews */}
+      {linkUrls.length > 0 && (
+        <div className="mt-1">
+          {linkUrls.map((url) => (
+            <LinkPreview key={url} url={url} />
+          ))}
+        </div>
+      )}
 
       {/* Tags */}
       {post.tags && post.tags.length > 0 && (

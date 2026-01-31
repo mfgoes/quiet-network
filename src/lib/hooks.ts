@@ -209,7 +209,7 @@ export function useCircles(userId: string | undefined) {
 
   const updateCircle = async (
     circleId: string,
-    updates: { about?: string | null; rules?: string | null }
+    updates: { about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null }
   ) => {
     const { data, error } = await supabase
       .from("circles")

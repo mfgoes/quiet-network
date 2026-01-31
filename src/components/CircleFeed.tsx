@@ -15,7 +15,7 @@ interface CircleFeedProps {
   onJoin: () => Promise<void>
   onLeave: () => Promise<void>
   joining: boolean
-  onUpdateCircle: (updates: { about?: string | null; rules?: string | null }) => Promise<void>
+  onUpdateCircle: (updates: { about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null }) => Promise<void>
 }
 
 export function CircleFeed({
@@ -55,7 +55,7 @@ export function CircleFeed({
     <>
       {/* Mobile: collapsible above feed */}
       <div className="lg:hidden">
-        <CircleAbout circle={circle} userId={userId} onUpdate={onUpdateCircle} onLeave={isMember ? onLeave : undefined} />
+        <CircleAbout circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onLeave={isMember ? onLeave : undefined} />
       </div>
 
       <div className="lg:grid lg:grid-cols-[1fr_280px] lg:gap-6">
@@ -139,7 +139,7 @@ export function CircleFeed({
 
         {/* Desktop: sidebar */}
         <div className="hidden lg:block">
-          <CircleAbout sidebar circle={circle} userId={userId} onUpdate={onUpdateCircle} onLeave={isMember ? onLeave : undefined} />
+          <CircleAbout sidebar circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onLeave={isMember ? onLeave : undefined} />
         </div>
       </div>
     </>

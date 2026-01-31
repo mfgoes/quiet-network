@@ -26,6 +26,11 @@ export interface Post {
   user_upvoted: boolean
 }
 
+export interface CircleLink {
+  label: string
+  url: string
+}
+
 export interface Circle {
   id: string
   name: string
@@ -33,6 +38,7 @@ export interface Circle {
   description: string | null
   about: string | null
   rules: string | null
+  links: CircleLink[] | null
   latitude: number | null
   longitude: number | null
   radius_km: number

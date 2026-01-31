@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { ChevronDown, LogOut, Pencil } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { ChevronDown, LogOut, Pencil, Shield, ExternalLink, Plus, Trash2 } from "lucide-react"
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -8,12 +9,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { useCircleMembers } from "@/lib/hooks"
 import { avatarUrl } from "@/types"
-import type { Circle } from "@/types"
+import type { Circle, CircleLink } from "@/types"
 
 interface CircleAboutProps {
   circle: Circle
   userId: string
-  onUpdate: (updates: { about?: string | null; rules?: string | null }) => Promise<void>
+  isAdminOrMod?: boolean
+  onUpdate: (updates: { about?: string | null; rules?: string | null; links?: CircleLink[] | null }) => Promise<void>
   onLeave?: () => Promise<void>
   sidebar?: boolean
 }
@@ -22,10 +24,11 @@ function AboutContent({
   circle,
   userId,
   onUpdate,
-}: Omit<CircleAboutProps, "sidebar" | "onLeave">) {
+}: Omit<CircleAboutProps, "sidebar" | "onLeave" | "isAdminOrMod">) {
   const [editing, setEditing] = useState(false)
   const [about, setAbout] = useState(circle.about ?? "")
   const [rules, setRules] = useState(circle.rules ?? "")
+  const [links, setLinks] = useState<CircleLink[]>(circle.links ?? [])
   const [saving, setSaving] = useState(false)
 
   const isCreator = circle.created_by === userId
@@ -33,9 +36,11 @@ function AboutContent({
 
   const handleSave = async () => {
     setSaving(true)
+    const cleanLinks = links.filter((l) => l.label.trim() && l.url.trim())
     await onUpdate({
       about: about.trim() || null,
       rules: rules.trim() || null,
+      links: cleanLinks.length > 0 ? cleanLinks : null,
     })
     setEditing(false)
     setSaving(false)
@@ -44,7 +49,21 @@ function AboutContent({
   const handleCancel = () => {
     setAbout(circle.about ?? "")
     setRules(circle.rules ?? "")
+    setLinks(circle.links ?? [])
     setEditing(false)
+  }
+
+  const addLink = () => {
+    if (links.length >= 6) return
+    setLinks([...links, { label: "", url: "" }])
+  }
+
+  const updateLink = (index: number, field: "label" | "url", value: string) => {
+    setLinks((prev) => prev.map((l, i) => (i === index ? { ...l, [field]: value } : l)))
+  }
+
+  const removeLink = (index: number) => {
+    setLinks((prev) => prev.filter((_, i) => i !== index))
   }
 
   if (editing) {
@@ -76,6 +95,53 @@ function AboutContent({
             className="w-full rounded-md border border-quiet-border bg-quiet-offwhite px-3 py-2 text-sm text-quiet-slate placeholder:text-quiet-muted focus:outline-none focus:ring-1 focus:ring-quiet-accent resize-none"
           />
         </div>
+
+        {/* Links editor */}
+        <div>
+          <label className="mb-1 block text-xs font-medium text-quiet-muted">
+            Links
+          </label>
+          <div className="space-y-2">
+            {links.map((link, i) => (
+              <div key={i} className="flex items-start gap-1.5">
+                <div className="flex-1 space-y-1">
+                  <input
+                    value={link.label}
+                    onChange={(e) => updateLink(i, "label", e.target.value)}
+                    placeholder="Label"
+                    maxLength={40}
+                    className="w-full rounded-md border border-quiet-border bg-quiet-offwhite px-2.5 py-1.5 text-sm text-quiet-slate placeholder:text-quiet-muted focus:outline-none focus:ring-1 focus:ring-quiet-accent"
+                  />
+                  <input
+                    value={link.url}
+                    onChange={(e) => updateLink(i, "url", e.target.value)}
+                    placeholder="https://..."
+                    maxLength={300}
+                    className="w-full rounded-md border border-quiet-border bg-quiet-offwhite px-2.5 py-1.5 text-sm text-quiet-slate placeholder:text-quiet-muted focus:outline-none focus:ring-1 focus:ring-quiet-accent"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeLink(i)}
+                  className="mt-1.5 rounded p-1 text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-warm transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+          {links.length < 6 && (
+            <button
+              type="button"
+              onClick={addLink}
+              className="mt-2 flex items-center gap-1 text-xs text-quiet-muted hover:text-quiet-slate transition-colors"
+            >
+              <Plus className="h-3 w-3" />
+              Add link
+            </button>
+          )}
+        </div>
+
         <div className="flex gap-2 justify-end">
           <Button
             variant="ghost"
@@ -119,13 +185,42 @@ function AboutContent({
           )}
         </div>
       ) : (
-        <p className="text-sm text-quiet-muted">
-          {isCreator
-            ? "No info yet. Add a description and rules for your circle."
-            : "No info added yet."}
-        </p>
+        isCreator ? (
+          <button
+            onClick={() => setEditing(true)}
+            className="w-full rounded-md border border-dashed border-quiet-accent/40 bg-quiet-offwhite px-4 py-4 text-center transition-colors hover:border-quiet-accent hover:bg-quiet-border/30"
+          >
+            <Pencil className="mx-auto mb-1.5 h-4 w-4 text-quiet-accent" />
+            <p className="text-sm font-medium text-quiet-slate">Set up your circle</p>
+            <p className="mt-0.5 text-xs text-quiet-muted">Add a description, rules, and links</p>
+          </button>
+        ) : (
+          <p className="text-sm text-quiet-muted">
+            No info added yet.
+          </p>
+        )
       )}
-      {isCreator && (
+
+      {/* Links display */}
+      {circle.links && circle.links.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          <p className="text-xs font-medium text-quiet-muted">Links</p>
+          {circle.links.map((link, i) => (
+            <a
+              key={i}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-md bg-quiet-offwhite px-3 py-2 text-sm font-medium text-quiet-slate transition-colors hover:bg-quiet-border/50"
+            >
+              <ExternalLink className="h-3.5 w-3.5 shrink-0 text-quiet-muted" />
+              <span className="truncate">{link.label}</span>
+            </a>
+          ))}
+        </div>
+      )}
+
+      {isCreator && hasContent && (
         <div className="flex justify-end mt-2">
           <Button
             variant="ghost"
@@ -195,7 +290,21 @@ function LeaveButton({ onLeave }: { onLeave: () => Promise<void> }) {
   )
 }
 
-export function CircleAbout({ circle, userId, onUpdate, onLeave, sidebar }: CircleAboutProps) {
+function ManageCircleLink({ circleSlug }: { circleSlug: string }) {
+  const navigate = useNavigate()
+
+  return (
+    <button
+      onClick={() => navigate(`/admin/${circleSlug}`)}
+      className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-sm font-medium text-quiet-slate transition-colors hover:bg-quiet-aged"
+    >
+      <Shield className="h-4 w-4 text-quiet-muted" />
+      Manage circle
+    </button>
+  )
+}
+
+export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onLeave, sidebar }: CircleAboutProps) {
   const [open, setOpen] = useState(false)
 
   // Desktop sidebar: separate cards
@@ -216,6 +325,13 @@ export function CircleAbout({ circle, userId, onUpdate, onLeave, sidebar }: Circ
         <div className="rounded-lg border border-quiet-border bg-white">
           <MembersSection circleId={circle.id} />
         </div>
+
+        {/* Manage circle (admin/mod only) */}
+        {isAdminOrMod && (
+          <div className="rounded-lg border border-quiet-border bg-white px-2 py-1.5">
+            <ManageCircleLink circleSlug={circle.slug} />
+          </div>
+        )}
 
         {/* Leave circle */}
         {onLeave && (
@@ -247,6 +363,11 @@ export function CircleAbout({ circle, userId, onUpdate, onLeave, sidebar }: Circ
           <div className="border-t border-quiet-border">
             <MembersSection circleId={circle.id} />
           </div>
+          {isAdminOrMod && (
+            <div className="px-2 py-1.5 border-t border-quiet-border">
+              <ManageCircleLink circleSlug={circle.slug} />
+            </div>
+          )}
           {onLeave && (
             <div className="px-4 py-3 border-t border-quiet-border">
               <LeaveButton onLeave={onLeave} />

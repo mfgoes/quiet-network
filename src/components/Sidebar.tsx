@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Home, Compass, User, ChevronDown, Shield } from "lucide-react"
+import { Home, Compass, User, ChevronDown, Shield, Info } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { avatarUrl } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
@@ -25,6 +25,7 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
     { label: "Home", path: "/", icon: Home },
     { label: "Explore", path: "/explore", icon: Compass },
     { label: "Profile", path: "/profile", icon: User },
+    { label: "About", path: "/about", icon: Info },
   ]
 
   return (

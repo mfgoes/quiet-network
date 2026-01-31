@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth, useProfile, useCircles, useAllCircles, usePublicProfile, useAdminCircles } from "@/lib/hooks"
@@ -47,6 +47,7 @@ function AppRoutes() {
   const { allCircles, loading: allCirclesLoading, refetch: refetchAllCircles } = useAllCircles()
   const { adminCircles } = useAdminCircles(user?.id)
   const navigate = useNavigate()
+  const location = useLocation()
   const [loadingStuck, setLoadingStuck] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
 
@@ -81,7 +82,7 @@ function AppRoutes() {
 
   // Not signed in
   if (!user) {
-    if (showAbout) {
+    if (showAbout || location.pathname === "/about") {
       return (
         <Shell
           wide
@@ -89,13 +90,19 @@ function AppRoutes() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setShowAbout(false)}
+              onClick={() => {
+                setShowAbout(false)
+                navigate("/")
+              }}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
           }
         >
-          <AboutPage onJoin={() => setShowAbout(false)} />
+          <AboutPage onJoin={() => {
+            setShowAbout(false)
+            navigate("/")
+          }} />
         </Shell>
       )
     }
