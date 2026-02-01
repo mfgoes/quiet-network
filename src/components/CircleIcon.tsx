@@ -2,6 +2,7 @@ import { circleColor, circleInitial } from "@/types"
 
 interface CircleIconProps {
   name: string
+  avatarUrl?: string | null
   size?: "xs" | "sm" | "md" | "lg"
   className?: string
 }
@@ -13,7 +14,17 @@ const sizeClasses = {
   lg: "h-10 w-10 text-base",
 }
 
-export function CircleIcon({ name, size = "md", className = "" }: CircleIconProps) {
+export function CircleIcon({ name, avatarUrl, size = "md", className = "" }: CircleIconProps) {
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        className={`${sizeClasses[size]} shrink-0 rounded-full object-cover ${className}`}
+      />
+    )
+  }
+
   const color = circleColor(name)
 
   return (

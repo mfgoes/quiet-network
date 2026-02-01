@@ -129,17 +129,7 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
           Circle Avatar
         </label>
         <div className="flex items-center gap-4">
-          <div className="relative">
-            {circle.avatar_url ? (
-              <img
-                src={circle.avatar_url}
-                alt={circle.name}
-                className="h-14 w-14 rounded-full object-cover ring-2 ring-quiet-border"
-              />
-            ) : (
-              <CircleIcon name={circle.name} size="lg" />
-            )}
-          </div>
+          <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="lg" className="ring-2 ring-quiet-border" />
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <Button

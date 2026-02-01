@@ -39,7 +39,7 @@ function HomeComposer({
         <div className="flex items-center gap-2 text-sm text-quiet-muted">
           <span>Posting to</span>
           <span className="inline-flex items-center gap-1.5 font-medium text-quiet-slate">
-            <CircleIcon name={circle.name} size="sm" />
+            <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
             {circle.name}
           </span>
         </div>
@@ -218,7 +218,7 @@ export function HomeFeed({ circles, userId }: HomeFeedProps) {
               }}
               className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-quiet-slate transition-colors hover:bg-quiet-aged"
             >
-              <CircleIcon name={circle.name} size="sm" />
+              <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
               <span className="truncate">{circle.name}</span>
             </button>
           ))}

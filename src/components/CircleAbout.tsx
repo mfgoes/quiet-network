@@ -386,15 +386,7 @@ function CircleBanner({ circle, isAdminOrMod, onUploadAvatar }: { circle: Circle
           onClick={() => canEdit && fileInputRef.current?.click()}
           className={`group relative rounded-full ${canEdit ? "cursor-pointer" : "cursor-default"}`}
         >
-          {circle.avatar_url ? (
-            <img
-              src={circle.avatar_url}
-              alt={circle.name}
-              className="h-12 w-12 rounded-full object-cover ring-2 ring-white"
-            />
-          ) : (
-            <CircleIcon name={circle.name} size="lg" className="ring-2 ring-white" />
-          )}
+          <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="lg" className="ring-2 ring-white" />
           {canEdit && !uploading && (
             <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 group-hover:bg-black/40 transition-colors">
               <Camera className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />

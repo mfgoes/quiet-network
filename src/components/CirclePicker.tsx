@@ -74,11 +74,7 @@ export function CirclePicker({
                   className="relative flex items-center gap-3 rounded-xl border border-quiet-border bg-white p-3 text-left transition-all hover:shadow-sm overflow-hidden"
                 >
                   <div className="absolute inset-x-0 top-0 h-1 rounded-t-xl" style={{ backgroundColor: hint }} />
-                  {circle.avatar_url ? (
-                    <img src={circle.avatar_url} alt={circle.name} className="h-10 w-10 shrink-0 rounded-full object-cover" />
-                  ) : (
-                    <CircleIcon name={circle.name} size="lg" />
-                  )}
+                  <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="lg" />
                   <div className="min-w-0">
                     <span className="block text-sm font-medium text-quiet-slate">
                       {circle.name}
@@ -120,11 +116,7 @@ export function CirclePicker({
                     onClick={() => onSelect(circle)}
                     className="flex items-center gap-3 min-w-0 flex-1 text-left transition-all hover:opacity-80"
                   >
-                    {circle.avatar_url ? (
-                      <img src={circle.avatar_url} alt={circle.name} className="h-10 w-10 shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <CircleIcon name={circle.name} size="lg" />
-                    )}
+                    <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="lg" />
                     <div className="min-w-0">
                       <span className="block text-sm font-medium text-quiet-slate">
                         {circle.name}

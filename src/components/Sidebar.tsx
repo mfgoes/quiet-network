@@ -86,7 +86,7 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
                       : "text-quiet-muted hover:bg-quiet-aged hover:text-quiet-slate"
                   }`}
                 >
-                  <CircleIcon name={circle.name} size="sm" />
+                  <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
                   <span className="truncate">{circle.name}</span>
                 </button>
               )
@@ -133,7 +133,7 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
                         : "text-quiet-muted hover:bg-quiet-aged hover:text-quiet-slate"
                     }`}
                   >
-                    <CircleIcon name={ac.name} size="sm" />
+                    <CircleIcon name={ac.name} avatarUrl={ac.avatar_url} size="sm" />
                     <span className="truncate flex-1 text-left">{ac.name}</span>
                   </button>
                 )

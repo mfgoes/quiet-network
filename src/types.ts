@@ -33,6 +33,7 @@ export interface Post {
     name: string
     slug: string
     description: string | null
+    avatar_url: string | null
   }
   tags: string[]
   upvote_count: number

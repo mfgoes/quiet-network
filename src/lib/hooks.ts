@@ -449,7 +449,7 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
 
     const { data, error } = await supabase
       .from("posts")
-      .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot), circles(name, slug, description)")
+      .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot), circles(name, slug, description, avatar_url)")
       .in("circle_id", circleIds)
       .or(`is_welcome.eq.true,expires_at.gt.${new Date().toISOString()}`)
       .order("created_at", { ascending: false })

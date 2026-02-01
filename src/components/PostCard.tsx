@@ -121,7 +121,7 @@ function stripRichEmbedLinks(html: string, urls: string[]): string {
   return result
 }
 
-function CircleBadge({ name, slug, description }: { name: string; slug: string; description?: string }) {
+function CircleBadge({ name, slug, description, avatarUrl }: { name: string; slug: string; description?: string; avatarUrl?: string | null }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -133,7 +133,7 @@ function CircleBadge({ name, slug, description }: { name: string; slug: string; 
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}
         >
-          <CircleIcon name={name} size="xs" />
+          <CircleIcon name={name} avatarUrl={avatarUrl} size="xs" />
           <span>{name}</span>
         </Link>
       </PopoverTrigger>
@@ -200,6 +200,7 @@ export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: Pos
               name={post.circles.name}
               slug={post.circles.slug}
               description={post.circles.description ?? undefined}
+              avatarUrl={post.circles.avatar_url}
             />
           )}
           <span className="text-xs text-quiet-muted">{age}</span>

@@ -71,7 +71,7 @@ export function CircleDropdown({ circles, selectedSlug, currentCircle }: CircleD
                   : "text-quiet-muted hover:bg-quiet-aged hover:text-quiet-slate"
               }`}
             >
-              <CircleIcon name={circle.name} size="sm" />
+              <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
               {circle.name}
             </button>
           ))}

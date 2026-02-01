@@ -106,7 +106,7 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
               }}
               className="flex items-center gap-2 rounded-lg border border-quiet-border bg-white px-3 py-2 text-sm text-quiet-slate hover:bg-quiet-aged transition-colors"
             >
-              <CircleIcon name={circle.name} size="sm" />
+              <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
               <span className="max-w-[120px] truncate">{circle.name}</span>
               <ChevronDown className={`h-3.5 w-3.5 text-quiet-muted transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
             </button>
@@ -129,7 +129,7 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
                           : "text-quiet-slate hover:bg-quiet-aged"
                       }`}
                     >
-                      <CircleIcon name={ac.name} size="sm" />
+                      <CircleIcon name={ac.name} avatarUrl={ac.avatar_url} size="sm" />
                       <span className="flex-1 truncate text-left">{ac.name}</span>
                       <span className="flex items-center gap-1 text-xs text-quiet-muted">
                         <Users className="h-3 w-3" />
@@ -146,7 +146,7 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
 
       {/* Circle info */}
       <div className="flex items-center gap-3 mb-6">
-        <CircleIcon name={circle.name} size="lg" />
+        <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="lg" />
         <div>
           <h2 className="text-base font-medium text-quiet-slate">{circle.name}</h2>
           <Badge variant={userRole}>{userRole}</Badge>
