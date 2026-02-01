@@ -13,6 +13,7 @@ const badgeVariants = cva(
         admin: "bg-amber-100 text-amber-800",
         moderator: "bg-blue-100 text-blue-800",
         member: "bg-quiet-border text-quiet-muted",
+        bot: "bg-quiet-border text-quiet-muted",
       },
     },
     defaultVariants: {

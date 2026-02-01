@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { avatarUrl } from "@/types"
 import type { Profile } from "@/types"
 import { linkifyText } from "@/lib/utils"
@@ -28,9 +29,12 @@ export function PublicProfilePage({ profile }: PublicProfilePageProps) {
           alt="avatar"
           className="h-20 w-20 rounded-full object-cover"
         />
-        <h2 className="text-xl font-semibold text-quiet-slate">
-          {profile.display_name}
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-quiet-slate">
+            {profile.display_name}
+          </h2>
+          {profile.is_bot && <Badge variant="bot">Bot</Badge>}
+        </div>
         {profile.username && (
           <p className="text-sm text-quiet-muted">@{profile.username}</p>
         )}

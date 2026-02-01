@@ -11,6 +11,7 @@ export interface Profile {
   bio: string
   links: ProfileLink[] | null
   created_at: string
+  is_bot?: boolean
 }
 
 export interface Post {
@@ -26,6 +27,12 @@ export interface Post {
     display_name: string
     avatar_emoji: string
     username: string
+    is_bot?: boolean
+  }
+  circles?: {
+    name: string
+    slug: string
+    description: string | null
   }
   tags: string[]
   upvote_count: number
@@ -89,6 +96,7 @@ export interface AdminCircleMember {
   display_name: string
   avatar_emoji: string
   username: string
+  is_bot?: boolean
   role: CircleRole
   joined_at: string
   post_count: number

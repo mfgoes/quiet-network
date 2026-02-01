@@ -279,7 +279,7 @@ export function useCircleMembers(circleId: string | undefined) {
 
     supabase
       .from("circle_members")
-      .select("profiles(display_name, avatar_emoji, username)")
+      .select("profiles(display_name, avatar_emoji, username, is_bot)")
       .eq("circle_id", circleId)
       .then(({ data, error }) => {
         if (!error && data) {
@@ -449,7 +449,7 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
 
     const { data, error } = await supabase
       .from("posts")
-      .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username)")
+      .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot), circles(name, slug, description)")
       .in("circle_id", circleIds)
       .or(`is_welcome.eq.true,expires_at.gt.${new Date().toISOString()}`)
       .order("created_at", { ascending: false })
@@ -595,7 +595,7 @@ export function usePosts(circleId: string | undefined, userId?: string) {
 
     const { data, error } = await supabase
       .from("posts")
-      .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username)")
+      .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot)")
       .eq("circle_id", circleId)
       .or(`is_welcome.eq.true,expires_at.gt.${new Date().toISOString()}`)
       .order("is_welcome", { ascending: false })
@@ -635,7 +635,7 @@ export function usePosts(circleId: string | undefined, userId?: string) {
           // Fetch the full post with profile join
           const { data } = await supabase
             .from("posts")
-            .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username)")
+            .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot)")
             .eq("id", payload.new.id)
             .single()
 
@@ -814,7 +814,7 @@ export function useAdminMembers(circleId: string | undefined) {
 
     const { data, error } = await supabase
       .from("circle_members")
-      .select("user_id, role, joined_at, profiles(display_name, avatar_emoji, username)")
+      .select("user_id, role, joined_at, profiles(display_name, avatar_emoji, username, is_bot)")
       .eq("circle_id", circleId)
 
     if (!error && data) {
@@ -848,12 +848,14 @@ export function useAdminMembers(circleId: string | undefined) {
           display_name: string
           avatar_emoji: string
           username: string
+          is_bot?: boolean
         }
         return {
           user_id: row.user_id,
           display_name: prof?.display_name ?? "Neighbor",
           avatar_emoji: prof?.avatar_emoji ?? "house",
           username: prof?.username ?? "",
+          is_bot: prof?.is_bot ?? false,
           role: row.role as CircleRole,
           joined_at: row.joined_at,
           post_count: postCounts[row.user_id] || 0,
@@ -914,7 +916,7 @@ export function useAdminReports(circleId: string | undefined) {
       .from("reports")
       .select(`
         *,
-        post:posts(content, author_id, profiles:profiles!posts_author_id_fkey(display_name, avatar_emoji, username)),
+        post:posts(content, author_id, profiles:profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot)),
         reporter:profiles!reports_reported_by_fkey(display_name, avatar_emoji, username)
       `)
       .eq("circle_id", circleId)
@@ -962,7 +964,7 @@ export function useBannedUsers(circleId: string | undefined) {
       .from("banned_users")
       .select(`
         *,
-        profile:profiles!banned_users_user_id_fkey(display_name, avatar_emoji, username),
+        profile:profiles!banned_users_user_id_fkey(display_name, avatar_emoji, username, is_bot),
         banned_by_profile:profiles!banned_users_banned_by_fkey(display_name)
       `)
       .eq("circle_id", circleId)

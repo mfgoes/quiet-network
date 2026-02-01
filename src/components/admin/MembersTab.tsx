@@ -65,6 +65,7 @@ export function MembersTab({
                   {member.display_name}
                 </span>
                 <Badge variant={member.role}>{member.role}</Badge>
+                {member.is_bot && <Badge variant="bot">Bot</Badge>}
               </div>
               <p className="text-xs text-quiet-muted">
                 @{member.username} &middot; {member.post_count} posts &middot; {member.upvote_count} upvotes

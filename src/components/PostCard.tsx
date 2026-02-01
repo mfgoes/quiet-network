@@ -1,11 +1,13 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { Pin, Clock, ChevronUp, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { LinkPreview } from "@/components/LinkPreview"
 import { extractYouTubeId } from "@/components/YouTubeEmbed"
 import { extractMapCoords, isGoogleMapsUrl } from "@/components/GoogleMapsEmbed"
 import { parseMarkdown, extractMarkdownUrls } from "@/lib/markdown"
+import { CircleIcon } from "@/components/CircleIcon"
 import type { Post } from "@/types"
 import { avatarUrl, getTagDef } from "@/types"
 
@@ -119,6 +121,36 @@ function stripRichEmbedLinks(html: string, urls: string[]): string {
   return result
 }
 
+function CircleBadge({ name, slug, description }: { name: string; slug: string; description?: string }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Link
+          to={`/${slug}`}
+          className="flex items-center gap-1 rounded-full bg-quiet-border/40 px-2 py-0.5 text-[11px] text-quiet-muted transition-colors hover:bg-quiet-border/70 hover:text-quiet-slate"
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+        >
+          <CircleIcon name={name} size="xs" />
+          <span>{name}</span>
+        </Link>
+      </PopoverTrigger>
+      <PopoverContent
+        side="top"
+        className="max-w-[220px] pointer-events-none"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <p className="text-xs font-medium text-quiet-slate">{name}</p>
+        {description && (
+          <p className="mt-0.5 text-xs text-quiet-muted">{description}</p>
+        )}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: PostCardProps) {
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
@@ -162,6 +194,13 @@ export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: Pos
                 {authorName}
               </span>
             </>
+          )}
+          {post.circles && (
+            <CircleBadge
+              name={post.circles.name}
+              slug={post.circles.slug}
+              description={post.circles.description ?? undefined}
+            />
           )}
           <span className="text-xs text-quiet-muted">{age}</span>
         </div>

@@ -10,6 +10,7 @@ create table if not exists profiles (
   display_name text not null default 'Neighbor',
   avatar_emoji text not null default 'house',
   bio text not null default '',
+  is_bot boolean not null default false,
   created_at timestamptz not null default now()
 );
 
