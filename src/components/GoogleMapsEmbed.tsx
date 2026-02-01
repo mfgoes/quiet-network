@@ -36,7 +36,7 @@ function GoogleMapsIcon({ className }: { className?: string }) {
 }
 
 export function GoogleMapsEmbed({ url, lat, lng }: GoogleMapsEmbedProps) {
-  const [active, setActive] = useState(false)
+  const [active] = useState(false)
   const [thumbError, setThumbError] = useState(false)
 
   const placeName = useMemo(() => extractPlaceName(url), [url])

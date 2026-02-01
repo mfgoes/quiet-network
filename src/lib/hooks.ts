@@ -761,22 +761,38 @@ export function useAdminCircles(userId: string | undefined) {
     }
     setLoading(true)
 
+    // Fetch circles where user has admin/mod role in circle_members
     const { data, error } = await supabase
       .from("circle_members")
       .select("role, circles(*)")
       .eq("user_id", userId)
       .in("role", ["admin", "moderator"])
 
+    // Also fetch circles the user created (they may be missing from circle_members)
+    const { data: createdData } = await supabase
+      .from("circles")
+      .select("*")
+      .eq("created_by", userId)
+
+    const mapped = new Map<string, Circle & { role: CircleRole }>()
+
     if (!error && data) {
-      const mapped = data
-        .map((row) => {
-          const circle = row.circles as unknown as Circle
-          if (!circle) return null
-          return { ...circle, role: row.role as CircleRole }
-        })
-        .filter(Boolean) as (Circle & { role: CircleRole })[]
-      setAdminCircles(mapped)
+      for (const row of data) {
+        const circle = row.circles as unknown as Circle
+        if (circle) mapped.set(circle.id, { ...circle, role: row.role as CircleRole })
+      }
     }
+
+    // Add created circles as admin if not already present
+    if (createdData) {
+      for (const circle of createdData) {
+        if (!mapped.has(circle.id)) {
+          mapped.set(circle.id, { ...circle, role: "admin" as CircleRole })
+        }
+      }
+    }
+
+    setAdminCircles(Array.from(mapped.values()))
     setLoading(false)
   }, [userId])
 

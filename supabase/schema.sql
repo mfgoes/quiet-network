@@ -483,4 +483,145 @@ create policy "Users can leave or admins can remove members"
         and cm.user_id = auth.uid()
         and cm.role in ('admin', 'moderator')
     )
+    or exists (
+      select 1 from circles
+      where circles.id = circle_members.circle_id
+        and circles.created_by = auth.uid()
+    )
+  );
+
+-- ============================================
+-- UPDATED POLICIES: Creator fallbacks
+-- ============================================
+-- Circle creators should always have admin-level access even if
+-- their circle_members row is missing or has the wrong role.
+
+drop policy if exists "Admins and mods can view reports" on reports;
+create policy "Admins and mods can view reports"
+  on reports for select
+  to authenticated
+  using (
+    exists (
+      select 1 from circle_members
+      where circle_members.circle_id = reports.circle_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+    or exists (
+      select 1 from circles
+      where circles.id = reports.circle_id
+        and circles.created_by = auth.uid()
+    )
+  );
+
+drop policy if exists "Admins and mods can update reports" on reports;
+create policy "Admins and mods can update reports"
+  on reports for update
+  to authenticated
+  using (
+    exists (
+      select 1 from circle_members
+      where circle_members.circle_id = reports.circle_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+    or exists (
+      select 1 from circles
+      where circles.id = reports.circle_id
+        and circles.created_by = auth.uid()
+    )
+  );
+
+drop policy if exists "Admins and mods can view banned users" on banned_users;
+create policy "Admins and mods can view banned users"
+  on banned_users for select
+  to authenticated
+  using (
+    exists (
+      select 1 from circle_members
+      where circle_members.circle_id = banned_users.circle_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+    or exists (
+      select 1 from circles
+      where circles.id = banned_users.circle_id
+        and circles.created_by = auth.uid()
+    )
+  );
+
+drop policy if exists "Admins and mods can ban users" on banned_users;
+create policy "Admins and mods can ban users"
+  on banned_users for insert
+  to authenticated
+  with check (
+    banned_by = auth.uid()
+    and (
+      exists (
+        select 1 from circle_members
+        where circle_members.circle_id = banned_users.circle_id
+          and circle_members.user_id = auth.uid()
+          and circle_members.role in ('admin', 'moderator')
+      )
+      or exists (
+        select 1 from circles
+        where circles.id = banned_users.circle_id
+          and circles.created_by = auth.uid()
+      )
+    )
+  );
+
+drop policy if exists "Admins and mods can delete bans" on banned_users;
+create policy "Admins and mods can delete bans"
+  on banned_users for delete
+  to authenticated
+  using (
+    exists (
+      select 1 from circle_members
+      where circle_members.circle_id = banned_users.circle_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+    or exists (
+      select 1 from circles
+      where circles.id = banned_users.circle_id
+        and circles.created_by = auth.uid()
+    )
+  );
+
+drop policy if exists "Admins can update member roles" on circle_members;
+create policy "Admins can update member roles"
+  on circle_members for update
+  to authenticated
+  using (
+    exists (
+      select 1 from circle_members as cm
+      where cm.circle_id = circle_members.circle_id
+        and cm.user_id = auth.uid()
+        and cm.role = 'admin'
+    )
+    or exists (
+      select 1 from circles
+      where circles.id = circle_members.circle_id
+        and circles.created_by = auth.uid()
+    )
+  );
+
+drop policy if exists "Users or admins can delete posts" on posts;
+create policy "Users or admins can delete posts"
+  on posts for delete
+  to authenticated
+  using (
+    author_id = auth.uid()
+    or exists (
+      select 1 from circle_members
+      where circle_members.circle_id = posts.circle_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+    or exists (
+      select 1 from circles
+      where circles.id = posts.circle_id
+        and circles.created_by = auth.uid()
+    )
   );

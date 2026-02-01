@@ -34,7 +34,7 @@ export function CircleFeedRoute({
   const [joining, setJoining] = useState(false)
 
   const isMember = circle ? memberCircleIds.includes(circle.id) : false
-  const isAdminOrMod = circle ? ["admin", "moderator"].includes(circleRoles[circle.id] ?? "") : false
+  const isAdminOrMod = circle ? ["admin", "moderator"].includes(circleRoles[circle.id] ?? "") || circle.created_by === userId : false
 
   if (loading) {
     return <p className="text-center text-sm text-quiet-muted">Loading...</p>
