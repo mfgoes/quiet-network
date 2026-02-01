@@ -5,7 +5,7 @@ import { avatarUrl } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
 import type { Circle, Profile, CircleRole } from "@/types"
 
-const INITIAL_SHOW = 3
+const INITIAL_SHOW = 6
 
 interface SidebarProps {
   profile: Profile

@@ -1,3 +1,6 @@
+import { useNavigate } from "react-router-dom"
+import { ArrowLeft, Info } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { avatarUrl } from "@/types"
 import type { Profile } from "@/types"
 import { linkifyText } from "@/lib/utils"
@@ -8,10 +11,14 @@ interface PublicProfilePageProps {
 }
 
 export function PublicProfilePage({ profile }: PublicProfilePageProps) {
+  const navigate = useNavigate()
   const memberSince = new Date(profile.created_at).toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
   })
+
+  const hasBio = !!profile.bio
+  const hasLinks = profile.links && profile.links.length > 0
 
   return (
     <div className="mx-auto max-w-sm space-y-6">
@@ -27,12 +34,14 @@ export function PublicProfilePage({ profile }: PublicProfilePageProps) {
         {profile.username && (
           <p className="text-sm text-quiet-muted">@{profile.username}</p>
         )}
-        {profile.bio && (
+        {hasBio ? (
           <p className="text-center text-sm text-quiet-muted">{linkifyText(profile.bio)}</p>
+        ) : (
+          <p className="text-center text-sm text-quiet-muted/60 italic">No bio yet</p>
         )}
-        {profile.links && profile.links.length > 0 && (
+        {hasLinks ? (
           <div className="flex flex-wrap justify-center gap-2 mt-1">
-            {profile.links.map((link, i) => (
+            {profile.links!.map((link, i) => (
               <a
                 key={i}
                 href={link.url}
@@ -45,12 +54,31 @@ export function PublicProfilePage({ profile }: PublicProfilePageProps) {
               </a>
             ))}
           </div>
+        ) : (
+          <p className="text-center text-sm text-quiet-muted/60 italic">No public links</p>
         )}
       </div>
 
       <p className="text-center text-xs text-quiet-muted">
         Member since {memberSince}
       </p>
+
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={() => navigate(-1)}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Go back
+      </Button>
+
+      <button
+        onClick={() => navigate("/about")}
+        className="flex w-full items-center justify-center gap-1.5 text-xs text-quiet-muted/60 transition-colors hover:text-quiet-muted"
+      >
+        <Info className="h-3 w-3" />
+        About Quiet Network
+      </button>
     </div>
   )
 }

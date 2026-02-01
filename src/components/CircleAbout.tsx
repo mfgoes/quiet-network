@@ -1,6 +1,6 @@
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { ChevronDown, LogOut, Pencil, Shield, ExternalLink, Plus, Trash2, Camera } from "lucide-react"
+import { ChevronDown, LogOut, Pencil, Shield, ExternalLink, Plus, Sparkles, Trash2, Camera } from "lucide-react"
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -114,9 +114,26 @@ function AboutContent({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-quiet-muted">
-            Rules
-          </label>
+          <div className="flex items-center gap-2 mb-1">
+            <label className="block text-xs font-medium text-quiet-muted">
+              Rules
+            </label>
+            {!rules.trim() && (
+              <button
+                type="button"
+                onClick={() =>
+                  setRules(
+                    "• Be civil and respectful\n• No doxxing, personal information, or witch-hunts\n• No trolling, baiting, or bad faith posting\n• Source news and claims properly\n• No NSFW / illegal content\n• Political discussion is allowed, but avoid flooding with low-effort partisan content"
+                  )
+                }
+                title="Auto generate rules"
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-quiet-muted hover:text-quiet-slate hover:bg-quiet-border/50 transition-colors"
+              >
+                <Sparkles className="h-3 w-3" />
+                Generate
+              </button>
+            )}
+          </div>
           <textarea
             value={rules}
             onChange={(e) => setRules(e.target.value)}

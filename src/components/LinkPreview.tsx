@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react"
 import { ExternalLink } from "lucide-react"
 import { YouTubeEmbed, extractYouTubeId } from "@/components/YouTubeEmbed"
-import { GoogleMapsEmbed, extractMapCoords, isGoogleMapsUrl } from "@/components/GoogleMapsEmbed"
+import { GoogleMapsEmbed, GoogleMapsLinkCard, extractMapCoords, isGoogleMapsUrl } from "@/components/GoogleMapsEmbed"
 
 interface LinkPreviewProps {
   url: string
@@ -14,11 +14,21 @@ export function LinkPreview({ url }: LinkPreviewProps) {
   const [imgError, setImgError] = useState(false)
 
   const youtubeId = useMemo(() => extractYouTubeId(url), [url])
+  const mapCoords = useMemo(() => extractMapCoords(url), [url])
 
   if (youtubeId) {
     return <YouTubeEmbed videoId={youtubeId} />
   }
 
+  const isMapsLink = useMemo(() => isGoogleMapsUrl(url), [url])
+
+  if (mapCoords) {
+    return <GoogleMapsEmbed url={url} lat={mapCoords.lat} lng={mapCoords.lng} />
+  }
+
+  if (isMapsLink) {
+    return <GoogleMapsLinkCard url={url} />
+  }
   const isImage = IMAGE_RE.test(url) && !imgError
 
   let domain: string

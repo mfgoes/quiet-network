@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CircleIcon } from "@/components/CircleIcon"
-import { circleColor } from "@/types"
+import { getBannerBg } from "@/types"
 import type { Circle } from "@/types"
 
 interface CirclePickerProps {
@@ -66,7 +66,7 @@ export function CirclePicker({
           <p className="text-sm font-medium text-quiet-muted">Your circles</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {visibleCircles.map((circle) => {
-              const hint = circle.banner_color || circleColor(circle.name).bg
+              const hint = getBannerBg(circle.banner_color, circle.name)
               return (
                 <button
                   key={circle.id}
@@ -83,9 +83,9 @@ export function CirclePicker({
                     <span className="block text-sm font-medium text-quiet-slate">
                       {circle.name}
                     </span>
-                    {circle.description && (
+                    {(circle.description || circle.about) && (
                       <span className="mt-0.5 block text-xs text-quiet-muted truncate">
-                        {circle.description}
+                        {circle.description || circle.about}
                       </span>
                     )}
                   </div>
@@ -109,7 +109,7 @@ export function CirclePicker({
           <p className="text-sm font-medium text-quiet-muted">Discover circles</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {visibleDiscoverable.map((circle) => {
-              const hint = circle.banner_color || circleColor(circle.name).bg
+              const hint = getBannerBg(circle.banner_color, circle.name)
               return (
                 <div
                   key={circle.id}
@@ -129,9 +129,9 @@ export function CirclePicker({
                       <span className="block text-sm font-medium text-quiet-slate">
                         {circle.name}
                       </span>
-                      {circle.description && (
+                      {(circle.description || circle.about) && (
                         <span className="mt-0.5 block text-xs text-quiet-muted truncate">
-                          {circle.description}
+                          {circle.description || circle.about}
                         </span>
                       )}
                     </div>
@@ -198,7 +198,7 @@ export function CirclePicker({
               htmlFor="circle-desc"
               className="mb-1 block text-sm text-quiet-muted"
             >
-              Description (optional)
+              Tagline (optional)
             </label>
             <input
               id="circle-desc"

@@ -10,6 +10,7 @@ import { PublicProfilePage } from "@/components/PublicProfilePage"
 import { AboutPage } from "@/components/AboutPage"
 import { BottomNav } from "@/components/BottomNav"
 import { Sidebar } from "@/components/Sidebar"
+import { MobileMenu } from "@/components/MobileMenu"
 import { Shell } from "@/components/Shell"
 import { AdminPanel } from "@/components/AdminPanel"
 import { HomeFeed } from "@/components/HomeFeed"
@@ -302,9 +303,10 @@ function AppLayout({
 }) {
   return (
     <div className="min-h-screen bg-quiet-offwhite">
+      <MobileMenu profile={profile} circles={circles} adminCircles={adminCircles} />
       <Sidebar profile={profile} circles={circles} adminCircles={adminCircles} />
       <div className="md:ml-60 lg:ml-64">
-        <main className="mx-auto max-w-3xl px-4 pb-20 pt-6 md:pb-8 md:pt-8">
+        <main className="mx-auto max-w-3xl px-4 pb-20 pt-14 md:pb-8 md:pt-8">
           {children}
         </main>
       </div>

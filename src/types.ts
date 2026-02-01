@@ -155,7 +155,7 @@ export const DURATION_OPTIONS = [
 ] as const
 
 export const AVATAR_OPTIONS = [
-  "house", "fox", "hills", "man", "roof", "woman",
+  "house", "fox", "hills", "man", "roof", "woman", "cat", "bubu", "jjk",
 ] as const
 
 export function avatarUrl(avatar: string): string {

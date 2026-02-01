@@ -229,8 +229,9 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
             <SettingsTab
               circle={circle}
               onSave={async (updates) => {
-                await updateCircle(circle.id, updates)
+                const { error } = await updateCircle(circle.id, updates)
                 await refetchCircle()
+                return { error }
               }}
               onUploadAvatar={async (file) => {
                 const result = await uploadCircleAvatar(circle.id, file)

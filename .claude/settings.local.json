@@ -15,7 +15,9 @@
       "WebSearch",
       "WebFetch(domain:docs.bsky.app)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nFix stale circle data after creation and settings save\n\nuseAdminCircles and useCircleBySlug only fetched on mount/slug change,\nso newly created circles showed \"no admin access\" and saved settings\ndidn''t reflect in the UI. Added refetch to both hooks and call them\nafter circle creation and settings updates. Also added missing\ndescription field to updateCircle type signature.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(npx vite build:*)"
+      "Bash(npx vite build:*)",
+      "Bash(git -C /Users/mischa.van.der.goes/Documents/GitHub/quiet-network log -1 --stat 1ee845a)",
+      "Bash(git -C /Users/mischa.van.der.goes/Documents/GitHub/quiet-network diff 1ee845a~1..1ee845a)"
     ]
   }
 }

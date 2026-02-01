@@ -1,5 +1,5 @@
-import { useState, useRef } from "react"
-import { Trash2, Upload, X } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { Sparkles, Trash2, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CircleIcon } from "@/components/CircleIcon"
 import { BANNER_COLORS, getBannerBg } from "@/types"
@@ -7,7 +7,7 @@ import type { Circle } from "@/types"
 
 interface SettingsTabProps {
   circle: Circle
-  onSave: (updates: { description?: string | null; about?: string | null; rules?: string | null; banner_color?: string | null; avatar_url?: string | null }) => Promise<void>
+  onSave: (updates: { description?: string | null; about?: string | null; rules?: string | null; banner_color?: string | null; avatar_url?: string | null }) => Promise<{ error?: unknown }>
   onUploadAvatar: (file: File) => Promise<{ url: string | null; error: unknown }>
   onDelete: () => Promise<void>
 }
@@ -46,6 +46,15 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
   const [bannerColor, setBannerColor] = useState(circle.banner_color ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Sync local state when circle data changes (e.g. after refetch)
+  useEffect(() => {
+    setDescription(circle.description ?? "")
+    setAbout(circle.about ?? "")
+    setRules(circle.rules ?? "")
+    setBannerColor(circle.banner_color ?? "")
+  }, [circle.description, circle.about, circle.rules, circle.banner_color])
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -57,15 +66,20 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
   const handleSave = async () => {
     setSaving(true)
     setSaved(false)
-    await onSave({
+    setSaveError(null)
+    const result = await onSave({
       description: description || null,
       about: about || null,
       rules: rules || null,
       banner_color: bannerColor || null,
     })
     setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    if (result?.error) {
+      setSaveError("Failed to save. Please try again.")
+    } else {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    }
   }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,13 +217,13 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
 
       <div>
         <label className="block text-sm font-medium text-quiet-slate mb-1.5">
-          Description
+          Tagline
         </label>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="A short description of this circle"
+          placeholder="A short tagline for this circle"
           className="w-full rounded-md border border-quiet-border bg-white px-3 py-2 text-sm text-quiet-slate placeholder:text-quiet-muted focus:outline-none focus:ring-1 focus:ring-quiet-slate"
         />
       </div>
@@ -228,9 +242,26 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-quiet-slate mb-1.5">
-          Rules
-        </label>
+        <div className="flex items-center gap-2 mb-1.5">
+          <label className="block text-sm font-medium text-quiet-slate">
+            Rules
+          </label>
+          {!rules.trim() && (
+            <button
+              type="button"
+              onClick={() =>
+                setRules(
+                  "• Be civil and respectful\n• No doxxing, personal information, or witch-hunts\n• No trolling, baiting, or bad faith posting\n• Source news and claims properly\n• No NSFW / illegal content\n• Political discussion is allowed, but avoid flooding with low-effort partisan content"
+                )
+              }
+              title="Auto generate rules"
+              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-quiet-muted hover:text-quiet-slate hover:bg-quiet-border/50 transition-colors"
+            >
+              <Sparkles className="h-3 w-3" />
+              Generate
+            </button>
+          )}
+        </div>
         <textarea
           value={rules}
           onChange={(e) => setRules(e.target.value)}
@@ -246,6 +277,9 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
         </Button>
         {saved && (
           <span className="text-sm text-green-600">Saved</span>
+        )}
+        {saveError && (
+          <span className="text-sm text-red-600">{saveError}</span>
         )}
       </div>
 

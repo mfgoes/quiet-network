@@ -94,6 +94,11 @@ h1, h2 {
 
 /* ─── Rendered post content ──────────────────────────── */
 
+.post-content {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
 .post-content p {
   margin: 0;
 }

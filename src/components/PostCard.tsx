@@ -3,6 +3,8 @@ import { Link } from "react-router-dom"
 import { Pin, Clock, ChevronUp, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { LinkPreview } from "@/components/LinkPreview"
+import { extractYouTubeId } from "@/components/YouTubeEmbed"
+import { extractMapCoords, isGoogleMapsUrl } from "@/components/GoogleMapsEmbed"
 import { parseMarkdown, extractMarkdownUrls } from "@/lib/markdown"
 import type { Post } from "@/types"
 import { avatarUrl, getTagDef } from "@/types"
@@ -79,6 +81,44 @@ function extractPlainTextUrls(content: string): string[] {
   return extractMarkdownUrls(content)
 }
 
+/** Check if a URL will be rendered as a rich embed (maps, youtube). */
+function isRichEmbed(url: string): boolean {
+  if (extractYouTubeId(url)) return true
+  if (extractMapCoords(url)) return true
+  if (isGoogleMapsUrl(url)) return true
+  return false
+}
+
+/**
+ * Remove anchor tags for rich-embed URLs from rendered HTML.
+ * If a <p> becomes empty after removal, strip the whole <p>.
+ */
+function stripRichEmbedLinks(html: string, urls: string[]): string {
+  const richUrls = urls.filter(isRichEmbed)
+  if (richUrls.length === 0) return html
+
+  let result = html
+  for (const url of richUrls) {
+    const escaped = url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    // Remove <a> tags whose href matches and text content is the URL itself
+    result = result.replace(
+      new RegExp(`<a\\s[^>]*href="${escaped}"[^>]*>${escaped}</a>`, "g"),
+      ""
+    )
+    // Also handle HTML-escaped versions of the URL
+    const htmlEscaped = url.replace(/&/g, "&amp;").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    if (htmlEscaped !== escaped) {
+      result = result.replace(
+        new RegExp(`<a\\s[^>]*href="${htmlEscaped}"[^>]*>${htmlEscaped}</a>`, "g"),
+        ""
+      )
+    }
+  }
+  // Remove <p> tags that are now empty (or whitespace-only)
+  result = result.replace(/<p>\s*<\/p>/g, "")
+  return result
+}
+
 export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: PostCardProps) {
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
@@ -96,7 +136,7 @@ export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: Pos
   const isOwn = userId === post.author_id
 
   return (
-    <div className={`group relative rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
+    <div className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
       {/* Header */}
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -155,12 +195,12 @@ export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: Pos
       {isHtml ? (
         <div
           className="post-content text-sm leading-relaxed text-quiet-slate"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
         />
       ) : (
         <div
           className="post-content text-sm leading-relaxed text-quiet-slate"
-          dangerouslySetInnerHTML={{ __html: parseMarkdown(post.content) }}
+          dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
         />
       )}
 
