@@ -110,6 +110,7 @@ export function CircleFeed({
                   key={post.id}
                   post={post}
                   userId={isMember ? userId : undefined}
+                  isMember={isMember}
                   isAdminOrMod={isAdminOrMod}
                   onUpvote={isMember ? toggleUpvote : undefined}
                   onDelete={isMember ? deletePost : undefined}

@@ -38,6 +38,23 @@ export interface Post {
   tags: string[]
   upvote_count: number
   user_upvoted: boolean
+  reply_count: number
+}
+
+export interface Reply {
+  id: string
+  post_id: string
+  author_id: string
+  content: string
+  created_at: string
+  profiles?: {
+    display_name: string
+    avatar_emoji: string
+    username: string
+    is_bot?: boolean
+  }
+  upvote_count: number
+  user_upvoted: boolean
 }
 
 export interface CircleLink {

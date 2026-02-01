@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { useCircleMembers } from "@/lib/hooks"
 import { avatarUrl, getBannerBg } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import type { Circle, CircleLink } from "@/types"
 
 interface CircleAboutProps {
@@ -301,13 +302,16 @@ function MembersSection({ circleId }: { circleId: string }) {
       </div>
       <div className="flex flex-wrap gap-1.5">
         {displayMembers.map((m) => (
-          <img
-            key={m.username}
-            src={avatarUrl(m.avatar_emoji)}
-            alt={m.display_name}
-            title={m.display_name}
-            className="h-7 w-7 rounded-full object-cover ring-1 ring-quiet-border"
-          />
+          <Tooltip key={m.username}>
+            <TooltipTrigger asChild>
+              <img
+                src={avatarUrl(m.avatar_emoji)}
+                alt={m.display_name}
+                className="h-7 w-7 rounded-full object-cover ring-1 ring-quiet-border"
+              />
+            </TooltipTrigger>
+            <TooltipContent>{m.display_name}</TooltipContent>
+          </Tooltip>
         ))}
         {remaining > 0 && (
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-quiet-border text-[10px] font-medium text-quiet-muted">

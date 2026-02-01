@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser } from "@/types"
+import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser, Reply } from "@/types"
 import { slugify } from "@/types"
 
 // ─── Auth ────────────────────────────────────────────
@@ -394,6 +394,7 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
         tags: (p.tags as string[]) || [],
         upvote_count: 0,
         user_upvoted: false,
+        reply_count: 0,
       })) as Post[]
 
       if (rawPosts.length === 0) return fallback
@@ -401,7 +402,7 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
       try {
         const postIds = rawPosts.map((p) => p.id as string)
 
-        const [countsRes, userRes] = await Promise.all([
+        const [countsRes, userRes, replyCountsRes] = await Promise.all([
           supabase
             .from("post_upvotes")
             .select("post_id")
@@ -413,6 +414,10 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
                 .in("post_id", postIds)
                 .eq("user_id", userId)
             : null,
+          supabase
+            .from("replies")
+            .select("post_id")
+            .in("post_id", postIds),
         ])
 
         if (countsRes.error) return fallback
@@ -427,10 +432,16 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
           userSet.add(row.post_id)
         }
 
+        const replyCountMap: Record<string, number> = {}
+        for (const row of replyCountsRes.data ?? []) {
+          replyCountMap[row.post_id] = (replyCountMap[row.post_id] || 0) + 1
+        }
+
         return rawPosts.map((p) => ({
           ...p,
           upvote_count: countMap[p.id as string] || 0,
           user_upvoted: userSet.has(p.id as string),
+          reply_count: replyCountMap[p.id as string] || 0,
         })) as Post[]
       } catch {
         return fallback
@@ -544,6 +555,7 @@ export function usePosts(circleId: string | undefined, userId?: string) {
         tags: (p.tags as string[]) || [],
         upvote_count: 0,
         user_upvoted: false,
+        reply_count: 0,
       })) as Post[]
 
       if (rawPosts.length === 0) return fallback
@@ -551,7 +563,7 @@ export function usePosts(circleId: string | undefined, userId?: string) {
       try {
         const postIds = rawPosts.map((p) => p.id as string)
 
-        const [countsRes, userRes] = await Promise.all([
+        const [countsRes, userRes, replyCountsRes] = await Promise.all([
           supabase
             .from("post_upvotes")
             .select("post_id")
@@ -563,6 +575,10 @@ export function usePosts(circleId: string | undefined, userId?: string) {
                 .in("post_id", postIds)
                 .eq("user_id", userId)
             : null,
+          supabase
+            .from("replies")
+            .select("post_id")
+            .in("post_id", postIds),
         ])
 
         if (countsRes.error) return fallback
@@ -577,10 +593,16 @@ export function usePosts(circleId: string | undefined, userId?: string) {
           userSet.add(row.post_id)
         }
 
+        const replyCountMap: Record<string, number> = {}
+        for (const row of replyCountsRes.data ?? []) {
+          replyCountMap[row.post_id] = (replyCountMap[row.post_id] || 0) + 1
+        }
+
         return rawPosts.map((p) => ({
           ...p,
           upvote_count: countMap[p.id as string] || 0,
           user_upvoted: userSet.has(p.id as string),
+          reply_count: replyCountMap[p.id as string] || 0,
         })) as Post[]
       } catch {
         return fallback
@@ -746,6 +768,204 @@ export function usePosts(circleId: string | undefined, userId?: string) {
   return { posts, loading, createPost, deletePost, toggleUpvote, refetch: fetchPosts }
 }
 
+
+// ─── Replies ─────────────────────────────────────────
+
+export function useReplies(postId: string | undefined, userId?: string) {
+  const [replies, setReplies] = useState<Reply[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const enrichRepliesWithUpvotes = useCallback(
+    async (rawReplies: Record<string, unknown>[]): Promise<Reply[]> => {
+      const fallback = rawReplies.map((r) => ({
+        ...r,
+        upvote_count: 0,
+        user_upvoted: false,
+      })) as Reply[]
+
+      if (rawReplies.length === 0) return fallback
+
+      try {
+        const replyIds = rawReplies.map((r) => r.id as string)
+
+        const [countsRes, userRes] = await Promise.all([
+          supabase
+            .from("reply_upvotes")
+            .select("reply_id")
+            .in("reply_id", replyIds),
+          userId
+            ? supabase
+                .from("reply_upvotes")
+                .select("reply_id")
+                .in("reply_id", replyIds)
+                .eq("user_id", userId)
+            : null,
+        ])
+
+        if (countsRes.error) return fallback
+
+        const countMap: Record<string, number> = {}
+        for (const row of countsRes.data ?? []) {
+          countMap[row.reply_id] = (countMap[row.reply_id] || 0) + 1
+        }
+
+        const userSet = new Set<string>()
+        for (const row of userRes?.data ?? []) {
+          userSet.add(row.reply_id)
+        }
+
+        return rawReplies.map((r) => ({
+          ...r,
+          upvote_count: countMap[r.id as string] || 0,
+          user_upvoted: userSet.has(r.id as string),
+        })) as Reply[]
+      } catch {
+        return fallback
+      }
+    },
+    [userId]
+  )
+
+  const fetchReplies = useCallback(async () => {
+    if (!postId) return
+    setLoading(true)
+
+    const { data, error } = await supabase
+      .from("replies")
+      .select("*, profiles!replies_author_id_fkey(display_name, avatar_emoji, username, is_bot)")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true })
+
+    console.log("[fetchReplies]", { postId, error, rowCount: data?.length ?? 0, data })
+    if (!error && data) {
+      try {
+        const enriched = await enrichRepliesWithUpvotes(data)
+        setReplies(enriched)
+      } catch {
+        setReplies(data as Reply[])
+      }
+    }
+    setLoading(false)
+  }, [postId, enrichRepliesWithUpvotes])
+
+  useEffect(() => {
+    fetchReplies()
+  }, [fetchReplies])
+
+  // Realtime subscription for new replies
+  useEffect(() => {
+    if (!postId) return
+
+    const channel = supabase
+      .channel(`replies:${postId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "replies",
+          filter: `post_id=eq.${postId}`,
+        },
+        async (payload) => {
+          const { data } = await supabase
+            .from("replies")
+            .select("*, profiles!replies_author_id_fkey(display_name, avatar_emoji, username, is_bot)")
+            .eq("id", payload.new.id)
+            .single()
+
+          if (data) {
+            let reply: Reply
+            try {
+              const [enriched] = await enrichRepliesWithUpvotes([data])
+              reply = enriched
+            } catch {
+              reply = data as Reply
+            }
+            setReplies((prev) => {
+              if (prev.some((r) => r.id === reply.id)) return prev
+              return [...prev, reply]
+            })
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [postId, enrichRepliesWithUpvotes])
+
+  const createReply = async (content: string, authorId: string) => {
+    const { error } = await supabase.from("replies").insert({
+      post_id: postId,
+      author_id: authorId,
+      content,
+    })
+
+    console.log("[createReply]", { postId, authorId, error })
+    if (!error) await fetchReplies()
+    return error
+  }
+
+  const deleteReply = async (replyId: string) => {
+    setReplies((prev) => prev.filter((r) => r.id !== replyId))
+
+    const { error } = await supabase
+      .from("replies")
+      .delete()
+      .eq("id", replyId)
+
+    if (error) await fetchReplies()
+    return error
+  }
+
+  const toggleReplyUpvote = async (replyId: string) => {
+    if (!userId) return
+
+    const reply = replies.find((r) => r.id === replyId)
+    if (!reply) return
+
+    const wasUpvoted = reply.user_upvoted
+
+    setReplies((prev) =>
+      prev.map((r) =>
+        r.id === replyId
+          ? {
+              ...r,
+              user_upvoted: !wasUpvoted,
+              upvote_count: r.upvote_count + (wasUpvoted ? -1 : 1),
+            }
+          : r
+      )
+    )
+
+    const { error } = wasUpvoted
+      ? await supabase
+          .from("reply_upvotes")
+          .delete()
+          .eq("reply_id", replyId)
+          .eq("user_id", userId)
+      : await supabase
+          .from("reply_upvotes")
+          .insert({ reply_id: replyId, user_id: userId })
+
+    if (error) {
+      setReplies((prev) =>
+        prev.map((r) =>
+          r.id === replyId
+            ? {
+                ...r,
+                user_upvoted: wasUpvoted,
+                upvote_count: r.upvote_count + (wasUpvoted ? 1 : -1),
+              }
+            : r
+        )
+      )
+    }
+  }
+
+  return { replies, loading, createReply, deleteReply, toggleReplyUpvote, refetch: fetchReplies }
+}
 
 // ─── Admin Hooks ──────────────────────────────────────
 

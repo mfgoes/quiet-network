@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react"
+import { useMemo, useState, useCallback } from "react"
 import { Link } from "react-router-dom"
-import { Pin, Clock, ChevronUp, Trash2 } from "lucide-react"
+import { Pin, Clock, ChevronUp, Trash2, MessageSquare } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { LinkPreview } from "@/components/LinkPreview"
@@ -8,12 +8,14 @@ import { extractYouTubeId } from "@/components/YouTubeEmbed"
 import { extractMapCoords, isGoogleMapsUrl } from "@/components/GoogleMapsEmbed"
 import { parseMarkdown, extractMarkdownUrls } from "@/lib/markdown"
 import { CircleIcon } from "@/components/CircleIcon"
+import { ReplySection } from "@/components/ReplySection"
 import type { Post } from "@/types"
 import { avatarUrl, getTagDef } from "@/types"
 
 interface PostCardProps {
   post: Post
   userId?: string
+  isMember?: boolean
   isAdminOrMod?: boolean
   onUpvote?: (postId: string) => void
   onDelete?: (postId: string) => void
@@ -151,10 +153,16 @@ function CircleBadge({ name, slug, description, avatarUrl }: { name: string; slu
   )
 }
 
-export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: PostCardProps) {
+export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDelete }: PostCardProps) {
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
   const bgClass = useMemo(() => getAgeTint(post), [post])
+  const [repliesOpen, setRepliesOpen] = useState(false)
+  const [replyCountDelta, setReplyCountDelta] = useState(0)
+
+  const handleReplyCountChange = useCallback((delta: number) => {
+    setReplyCountDelta((prev) => prev + delta)
+  }, [])
 
   const isHtml = useMemo(() => isHtmlContent(post.content), [post.content])
   const linkUrls = useMemo(
@@ -272,9 +280,9 @@ export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: Pos
         </div>
       )}
 
-      {/* Upvote */}
+      {/* Upvote + Reply */}
       {onUpvote && !post.is_welcome && (
-        <div className="mt-3 flex items-center">
+        <div className="mt-3 flex items-center gap-2">
           <button
             onClick={() => onUpvote(post.id)}
             className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
@@ -286,6 +294,32 @@ export function PostCard({ post, userId, isAdminOrMod, onUpvote, onDelete }: Pos
             <ChevronUp className="h-3.5 w-3.5" />
             {post.upvote_count > 0 && <span>{post.upvote_count}</span>}
           </button>
+          <button
+            onClick={() => setRepliesOpen((prev) => !prev)}
+            className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              repliesOpen
+                ? "bg-quiet-accent/20 text-quiet-slate"
+                : "bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
+            }`}
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            {(post.reply_count + replyCountDelta) > 0 && (
+              <span>{post.reply_count + replyCountDelta}</span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Reply thread */}
+      {repliesOpen && !post.is_welcome && (
+        <div className="mt-3">
+          <ReplySection
+            postId={post.id}
+            userId={userId}
+            isMember={isMember}
+            isAdminOrMod={isAdminOrMod}
+            onReplyCountChange={handleReplyCountChange}
+          />
         </div>
       )}
     </div>

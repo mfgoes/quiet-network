@@ -17,12 +17,15 @@ import { HomeFeed } from "@/components/HomeFeed"
 import { CircleFeedRoute } from "@/components/CircleFeedRoute"
 import { ExplorePage } from "@/components/ExplorePage"
 import { Button } from "@/components/ui/button"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import type { Circle, CircleRole, Profile as ProfileType } from "@/types"
 
 function App() {
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <TooltipProvider delayDuration={300}>
+        <AppRoutes />
+      </TooltipProvider>
     </BrowserRouter>
   )
 }
@@ -206,9 +209,11 @@ function AppRoutes() {
         <Route
           path="/"
           element={
-            circles.length === 0
-              ? <Navigate to="/explore" replace />
-              : <HomeFeed circles={circles} userId={user.id} />
+            circlesLoading
+              ? <p className="mt-6 text-center text-sm text-quiet-muted">Loading...</p>
+              : circles.length === 0
+                ? <Navigate to="/explore" replace />
+                : <HomeFeed circles={circles} userId={user.id} />
           }
         />
         <Route

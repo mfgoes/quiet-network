@@ -165,6 +165,7 @@ export function HomeFeed({ circles, userId }: HomeFeedProps) {
               key={post.id}
               post={post}
               userId={userId}
+              isMember={true}
               onUpvote={toggleUpvote}
               onDelete={deletePost}
             />

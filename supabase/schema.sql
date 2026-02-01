@@ -221,6 +221,97 @@ create policy "Users can remove their own upvotes"
 
 
 -- ============================================
+-- REPLIES (flat, 1-level replies on posts)
+-- ============================================
+create table if not exists replies (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references posts(id) on delete cascade,
+  author_id uuid not null references profiles(id) on delete cascade,
+  content text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table replies enable row level security;
+
+create policy "Replies are viewable by authenticated users"
+  on replies for select
+  to authenticated
+  using (true);
+
+create policy "Circle members can create replies"
+  on replies for insert
+  to authenticated
+  with check (
+    author_id = auth.uid()
+    and exists (
+      select 1 from posts
+      join circle_members on circle_members.circle_id = posts.circle_id
+      where posts.id = replies.post_id
+        and circle_members.user_id = auth.uid()
+    )
+  );
+
+create policy "Authors or admins can delete replies"
+  on replies for delete
+  to authenticated
+  using (
+    author_id = auth.uid()
+    or exists (
+      select 1 from posts
+      join circle_members on circle_members.circle_id = posts.circle_id
+      where posts.id = replies.post_id
+        and circle_members.user_id = auth.uid()
+        and circle_members.role in ('admin', 'moderator')
+    )
+    or exists (
+      select 1 from posts
+      join circles on circles.id = posts.circle_id
+      where posts.id = replies.post_id
+        and circles.created_by = auth.uid()
+    )
+  );
+
+create index if not exists idx_replies_post_id on replies (post_id);
+
+
+-- ============================================
+-- REPLY UPVOTES
+-- ============================================
+create table if not exists reply_upvotes (
+  reply_id uuid not null references replies(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (reply_id, user_id)
+);
+
+alter table reply_upvotes enable row level security;
+
+create policy "Reply upvotes are viewable by authenticated users"
+  on reply_upvotes for select
+  to authenticated
+  using (true);
+
+create policy "Users can upvote replies in their circles"
+  on reply_upvotes for insert
+  to authenticated
+  with check (
+    user_id = auth.uid()
+    and exists (
+      select 1 from replies
+      join posts on posts.id = replies.post_id
+      join circle_members on circle_members.circle_id = posts.circle_id
+      where replies.id = reply_upvotes.reply_id
+        and circle_members.user_id = auth.uid()
+    )
+  );
+
+create policy "Users can remove their own reply upvotes"
+  on reply_upvotes for delete
+  to authenticated
+  using (user_id = auth.uid());
+
+
+-- ============================================
 -- DELETE ACCOUNT (security definer function)
 -- ============================================
 -- Allows a user to delete all their own data and auth account.
@@ -234,6 +325,10 @@ security definer
 set search_path = public
 as $$
 begin
+  -- Delete user's reply upvotes
+  delete from reply_upvotes where user_id = auth.uid();
+  -- Delete user's replies
+  delete from replies where author_id = auth.uid();
   -- Delete user's upvotes
   delete from post_upvotes where user_id = auth.uid();
   -- Delete user's posts
