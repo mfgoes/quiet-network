@@ -46,8 +46,8 @@ const features = [
   },
   {
     icon: "📍",
-    title: "Hyperlocal Circles",
-    desc: "Haarlem, Amsterdam-West, your street. Connect with real neighbors.",
+    title: "Focused Circles",
+    desc: "Neighborhoods, fan groups, hobby communities. Connect with your people.",
   },
   {
     icon: "🏷️",
@@ -70,7 +70,7 @@ const features = [
   {
     icon: "😌",
     title: "Calm by Design",
-    desc: "No followers, no karma, no FOMO. Just your neighborhood.",
+    desc: "No followers, no karma, no FOMO. Just your community.",
   },
 ]
 
@@ -173,11 +173,11 @@ export function AboutPage({ onJoin }: { onJoin?: () => void }) {
       <FadeIn>
         <div className="text-center space-y-5 max-w-lg mx-auto py-8 md:py-14">
           <h2 className="text-3xl md:text-4xl font-bold text-quiet-slate leading-tight">
-            Your neighborhood, without the noise
+            Your community, without the noise
           </h2>
           <p className="text-base text-quiet-muted leading-relaxed max-w-md mx-auto">
-            Quiet Network is a calm, hyperlocal space for your neighborhood
-            &mdash; without ads, drama, or permanent posts.
+            Quiet Network is a calm space for neighborhoods, fan communities, and
+            interest groups &mdash; without ads, drama, or permanent posts.
           </p>
           <div className="flex flex-col items-center gap-3 pt-2">
             {onJoin ? (
@@ -185,7 +185,7 @@ export function AboutPage({ onJoin }: { onJoin?: () => void }) {
                 className="bg-quiet-slate text-quiet-offwhite hover:bg-quiet-accent transition-colors text-base py-6 px-10 font-semibold rounded-xl"
                 onClick={onJoin}
               >
-                Join your neighborhood
+                Join your community
               </Button>
             ) : (
               <HeroCopyLink />
@@ -222,10 +222,10 @@ export function AboutPage({ onJoin }: { onJoin?: () => void }) {
             <p className="text-sm text-quiet-muted leading-relaxed">
               Quiet Network is built on a simple, yet radical idea:{" "}
               <strong className="text-quiet-slate">
-                your local connections should be calm, consensual, and truly yours.
+                your communities should be calm, consensual, and truly yours.
               </strong>{" "}
-              We're here to reclaim the digital space for real neighborhoods,
-              prioritizing mindful community over engagement metrics.
+              We're here to reclaim digital space for real neighborhoods, fan groups,
+              and shared interests &mdash; prioritizing mindful connection over engagement metrics.
             </p>
           </div>
           <div className="flex-shrink-0 w-full md:w-72">
@@ -252,7 +252,7 @@ export function AboutPage({ onJoin }: { onJoin?: () => void }) {
                 desc: (
                   <>
                     Mainstream platforms treat your conversations, your location, and your data as products to be sold.{" "}
-                    <strong className="text-quiet-slate">Your neighborhood isn't a market; it's your home.</strong>
+                    <strong className="text-quiet-slate">Your community isn't a market; it's your space.</strong>
                   </>
                 ),
               },
@@ -262,7 +262,7 @@ export function AboutPage({ onJoin }: { onJoin?: () => void }) {
                 desc: (
                   <>
                     Every post, every comment, every fleeting thought can be archived, screenshotted, and used against you years later.{" "}
-                    <strong className="text-quiet-slate">Who wants that kind of pressure just to ask for sugar?</strong>
+                    <strong className="text-quiet-slate">Who wants that kind of pressure in their community space?</strong>
                   </>
                 ),
               },
@@ -272,14 +272,14 @@ export function AboutPage({ onJoin }: { onJoin?: () => void }) {
                 desc: (
                   <>
                     Algorithms are designed to stir controversy, maximize "engagement," and keep you glued to your screen, often at the expense of genuine connection.{" "}
-                    <strong className="text-quiet-slate">We don't need digital shouting matches over local issues.</strong>
+                    <strong className="text-quiet-slate">We don't need digital shouting matches in our communities.</strong>
                   </>
                 ),
               },
               {
                 icon: Volume2,
                 title: "The Clutter and Irrelevance",
-                desc: "Endless feeds packed with ads, sensationalized news, and posts from people miles away, drowning out what actually matters right on your street.",
+                desc: "Endless feeds packed with ads, sensationalized news, and off-topic noise, drowning out what actually matters to you and your people.",
               },
             ].map((item) => (
               <div

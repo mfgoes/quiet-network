@@ -181,11 +181,12 @@ export const DURATION_OPTIONS = [
 ] as const
 
 export const AVATAR_OPTIONS = [
-  "house", "fox", "hills", "man", "roof", "woman", "cat", "bubu", "jjk",
+  "house", "fox", "hills", "man", "roof", "woman", "cat", "bubu", "jjk", "nana", "llama",
 ] as const
 
 export function avatarUrl(avatar: string): string {
-  return `/images/avatars/${avatar}.jpg`
+  const extension = avatar === "llama" ? "gif" : "jpg"
+  return `/images/avatars/${avatar}.${extension}`
 }
 
 export interface TagDef {

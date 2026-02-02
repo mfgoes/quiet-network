@@ -1,6 +1,6 @@
-import { useMemo, useState, useCallback } from "react"
+import { useMemo, useState, useCallback, useRef, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Pin, Clock, ChevronUp, Trash2, MessageSquare } from "lucide-react"
+import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { LinkPreview } from "@/components/LinkPreview"
@@ -159,6 +159,9 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const bgClass = useMemo(() => getAgeTint(post), [post])
   const [repliesOpen, setRepliesOpen] = useState(false)
   const [replyCountDelta, setReplyCountDelta] = useState(0)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [needsExpand, setNeedsExpand] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   const handleReplyCountChange = useCallback((delta: number) => {
     setReplyCountDelta((prev) => prev + delta)
@@ -169,6 +172,28 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
     () => (isHtml ? extractUrls(post.content) : extractPlainTextUrls(post.content)),
     [post.content, isHtml]
   )
+
+  // Filter to keep only the first Google Maps link to avoid clutter
+  const filteredLinkUrls = useMemo(() => {
+    let mapsFound = false
+    return linkUrls.filter((url) => {
+      const isMaps = isGoogleMapsUrl(url)
+      if (isMaps) {
+        if (mapsFound) return false // Skip subsequent maps links
+        mapsFound = true
+      }
+      return true
+    })
+  }, [linkUrls])
+
+  // Check if content exceeds height threshold (~19 lines)
+  useEffect(() => {
+    if (contentRef.current) {
+      const MAX_HEIGHT = 400 // roughly 19 lines of text-sm leading-relaxed
+      const contentHeight = contentRef.current.scrollHeight
+      setNeedsExpand(contentHeight > MAX_HEIGHT)
+    }
+  }, [post.content, filteredLinkUrls])
 
   const authorName = post.profiles?.display_name ?? "Neighbor"
   const authorAvatar = post.profiles?.avatar_emoji ?? "house"
@@ -239,26 +264,65 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
         </div>
       </div>
 
-      {/* Content */}
-      {isHtml ? (
+      {/* Content with height limiting */}
+      <div className="relative">
         <div
-          className="post-content text-sm leading-relaxed text-quiet-slate"
-          dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
-        />
-      ) : (
-        <div
-          className="post-content text-sm leading-relaxed text-quiet-slate"
-          dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
-        />
-      )}
+          ref={contentRef}
+          className={`transition-all ${
+            needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
+          }`}
+        >
+          {/* Content */}
+          {isHtml ? (
+            <div
+              className="post-content text-sm leading-relaxed text-quiet-slate"
+              dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
+            />
+          ) : (
+            <div
+              className="post-content text-sm leading-relaxed text-quiet-slate"
+              dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
+            />
+          )}
 
-      {/* Link previews */}
-      {linkUrls.length > 0 && (
-        <div className="mt-1">
-          {linkUrls.map((url) => (
-            <LinkPreview key={url} url={url} />
-          ))}
+          {/* Link previews */}
+          {filteredLinkUrls.length > 0 && (
+            <div className="mt-1">
+              {filteredLinkUrls.map((url) => (
+                <LinkPreview key={url} url={url} />
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Gradient fade when collapsed */}
+        {needsExpand && !isExpanded && (
+          <div
+            className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
+              bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
+            } to-transparent pointer-events-none`}
+          />
+        )}
+      </div>
+
+      {/* Expand/Collapse button */}
+      {needsExpand && (
+        <button
+          onClick={() => setIsExpanded((prev) => !prev)}
+          className="mt-1 flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUp className="h-3.5 w-3.5" />
+              <span>Show less</span>
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-3.5 w-3.5" />
+              <span>Show more</span>
+            </>
+          )}
+        </button>
       )}
 
       {/* Tags */}
