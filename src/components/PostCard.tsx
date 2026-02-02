@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown } from "lucide-react"
+import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown, Archive, Pencil } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { LinkPreview } from "@/components/LinkPreview"
@@ -10,7 +10,7 @@ import { parseMarkdown, extractMarkdownUrls } from "@/lib/markdown"
 import { CircleIcon } from "@/components/CircleIcon"
 import { ReplySection } from "@/components/ReplySection"
 import type { Post } from "@/types"
-import { avatarUrl, getTagDef } from "@/types"
+import { avatarUrl, getTagDef, TAGS } from "@/types"
 
 interface PostCardProps {
   post: Post
@@ -19,6 +19,8 @@ interface PostCardProps {
   isAdminOrMod?: boolean
   onUpvote?: (postId: string) => void
   onDelete?: (postId: string) => void
+  onEdit?: (postId: string, content: string, tags: string[]) => void
+  onMakePermanent?: (postId: string, permanent: boolean) => void
 }
 
 function formatRelativeAge(createdAt: string): string {
@@ -32,8 +34,14 @@ function formatRelativeAge(createdAt: string): string {
   return `${days}d ago`
 }
 
+function canEdit(post: Post): boolean {
+  const elapsed = Date.now() - new Date(post.created_at).getTime()
+  const minutes = Math.floor(elapsed / (1000 * 60))
+  return minutes < 30
+}
+
 function getExpiryInfo(post: Post): { label: string; isUrgent: boolean } | null {
-  if (post.is_welcome) return null
+  if (post.is_welcome || post.is_permanent) return null
 
   const remaining = new Date(post.expires_at).getTime() - Date.now()
   if (remaining <= 0) return null
@@ -49,7 +57,7 @@ function getExpiryInfo(post: Post): { label: string; isUrgent: boolean } | null 
 
 /** Subtle background tint: older posts get a very slight gray tint */
 function getAgeTint(post: Post): string {
-  if (post.is_welcome) return "bg-white"
+  if (post.is_welcome || post.is_permanent) return "bg-white"
 
   const elapsed = Date.now() - new Date(post.created_at).getTime()
   const original = post.original_duration_seconds * 1000
@@ -153,7 +161,7 @@ function CircleBadge({ name, slug, description, avatarUrl }: { name: string; slu
   )
 }
 
-export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDelete }: PostCardProps) {
+export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDelete, onEdit, onMakePermanent }: PostCardProps) {
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
   const bgClass = useMemo(() => getAgeTint(post), [post])
@@ -161,10 +169,48 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const [replyCountDelta, setReplyCountDelta] = useState(0)
   const [isExpanded, setIsExpanded] = useState(false)
   const [needsExpand, setNeedsExpand] = useState(false)
+  const [upvoteAnimating, setUpvoteAnimating] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState(post.content)
+  const [editTags, setEditTags] = useState<string[]>(post.tags || [])
   const contentRef = useRef<HTMLDivElement>(null)
 
   const handleReplyCountChange = useCallback((delta: number) => {
     setReplyCountDelta((prev) => prev + delta)
+  }, [])
+
+  const handleUpvoteClick = useCallback((postId: string) => {
+    setUpvoteAnimating(true)
+    onUpvote?.(postId)
+    // Reset animation state after animation completes (350ms)
+    const timer = setTimeout(() => setUpvoteAnimating(false), 350)
+    return () => clearTimeout(timer)
+  }, [onUpvote])
+
+  const handleEdit = useCallback(() => {
+    setIsEditing(true)
+    setEditContent(post.content)
+    setEditTags(post.tags || [])
+  }, [post.content, post.tags])
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editContent.trim() || !onEdit) return
+    await onEdit(post.id, editContent, editTags)
+    setIsEditing(false)
+  }, [editContent, editTags, onEdit, post.id])
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false)
+    setEditContent(post.content)
+    setEditTags(post.tags || [])
+  }, [post.content, post.tags])
+
+  const toggleEditTag = useCallback((tagId: string) => {
+    setEditTags((prev) => {
+      if (prev.includes(tagId)) return prev.filter((t) => t !== tagId)
+      if (prev.length >= 3) return prev
+      return [...prev, tagId]
+    })
   }, [])
 
   const isHtml = useMemo(() => isHtmlContent(post.content), [post.content])
@@ -237,6 +283,9 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
             />
           )}
           <span className="text-xs text-quiet-muted">{age}</span>
+          {post.edited && (
+            <span className="text-xs text-quiet-muted italic">(edited)</span>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -246,11 +295,47 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               Pinned
             </Badge>
           )}
+          {post.is_permanent && !post.is_welcome && (
+            <Badge variant="permanent">
+              <Archive className="mr-1 h-3 w-3" />
+              Permanent
+            </Badge>
+          )}
           {expiry && (
             <Badge variant={expiry.isUrgent ? "expiring" : "default"}>
               {expiry.isUrgent && <Clock className="mr-1 h-3 w-3" />}
               {expiry.label}
             </Badge>
+          )}
+          {isAdminOrMod && onMakePermanent && !post.is_welcome && (
+            post.is_permanent ? (
+              <button
+                onClick={() => onMakePermanent(post.id, false)}
+                className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
+                title="Make ephemeral"
+                aria-label="Make ephemeral"
+              >
+                <Clock className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => onMakePermanent(post.id, true)}
+                className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
+                title="Make permanent"
+                aria-label="Make permanent"
+              >
+                <Archive className="h-3.5 w-3.5" />
+              </button>
+            )
+          )}
+          {isOwn && canEdit(post) && onEdit && !post.is_welcome && (
+            <button
+              onClick={handleEdit}
+              className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-accent group-hover:inline-flex"
+              aria-label="Edit post"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
           )}
           {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
             <button
@@ -265,45 +350,99 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
       </div>
 
       {/* Content with height limiting */}
-      <div className="relative">
-        <div
-          ref={contentRef}
-          className={`transition-all ${
-            needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
-          }`}
-        >
-          {/* Content */}
-          {isHtml ? (
-            <div
-              className="post-content text-sm leading-relaxed text-quiet-slate"
-              dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
-            />
-          ) : (
-            <div
-              className="post-content text-sm leading-relaxed text-quiet-slate"
-              dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
-            />
-          )}
+      {isEditing ? (
+        // Edit mode
+        <div className="space-y-2">
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            className="w-full min-h-[120px] resize-none rounded-md border border-quiet-accent bg-quiet-offwhite p-3 text-sm text-quiet-slate focus:border-quiet-accent focus:outline-none"
+          />
 
-          {/* Link previews */}
-          {filteredLinkUrls.length > 0 && (
-            <div className="mt-1">
-              {filteredLinkUrls.map((url) => (
-                <LinkPreview key={url} url={url} />
-              ))}
-            </div>
+          {/* Tag selector in edit mode */}
+          <div className="flex flex-wrap gap-1.5">
+            {TAGS.map((tag) => {
+              const isSelected = editTags.includes(tag.id)
+              const isDisabled = !isSelected && editTags.length >= 3
+              return (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => toggleEditTag(tag.id)}
+                  disabled={isDisabled}
+                  className={`rounded-full px-2.5 py-0.5 text-xs transition-all ${
+                    isSelected
+                      ? "text-quiet-slate ring-1 ring-quiet-accent"
+                      : isDisabled
+                        ? "text-quiet-muted/50 opacity-50 cursor-not-allowed"
+                        : "text-quiet-slate hover:ring-1 hover:ring-quiet-border"
+                  }`}
+                  style={{ backgroundColor: isSelected ? tag.color : `${tag.color}80` }}
+                >
+                  {tag.label}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={handleCancelEdit}
+              className="rounded-md px-3 py-1.5 text-sm text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-slate"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              disabled={!editContent.trim()}
+              className="rounded-md bg-quiet-accent px-3 py-1.5 text-sm text-white hover:bg-quiet-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      ) : (
+        // Normal view mode
+        <div className="relative">
+          <div
+            ref={contentRef}
+            className={`transition-all ${
+              needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
+            }`}
+          >
+            {/* Content */}
+            {isHtml ? (
+              <div
+                className="post-content text-sm leading-relaxed text-quiet-slate"
+                dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
+              />
+            ) : (
+              <div
+                className="post-content text-sm leading-relaxed text-quiet-slate"
+                dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
+              />
+            )}
+
+            {/* Link previews */}
+            {filteredLinkUrls.length > 0 && (
+              <div className="mt-1">
+                {filteredLinkUrls.map((url) => (
+                  <LinkPreview key={url} url={url} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Gradient fade when collapsed */}
+          {needsExpand && !isExpanded && (
+            <div
+              className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
+                bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
+              } to-transparent pointer-events-none`}
+            />
           )}
         </div>
-
-        {/* Gradient fade when collapsed */}
-        {needsExpand && !isExpanded && (
-          <div
-            className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
-              bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
-            } to-transparent pointer-events-none`}
-          />
-        )}
-      </div>
+      )}
 
       {/* Expand/Collapse button */}
       {needsExpand && (
@@ -348,14 +487,14 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
       {onUpvote && !post.is_welcome && (
         <div className="mt-3 flex items-center gap-2">
           <button
-            onClick={() => onUpvote(post.id)}
+            onClick={() => handleUpvoteClick(post.id)}
             className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               post.user_upvoted
                 ? "bg-quiet-accent/20 text-quiet-slate"
                 : "bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
             }`}
           >
-            <ChevronUp className="h-3.5 w-3.5" />
+            <ChevronUp className={`h-3.5 w-3.5 ${upvoteAnimating ? "upvote-jump" : ""}`} />
             {post.upvote_count > 0 && <span>{post.upvote_count}</span>}
           </button>
           <button

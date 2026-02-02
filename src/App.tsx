@@ -213,7 +213,7 @@ function AppRoutes() {
               ? <p className="mt-6 text-center text-sm text-quiet-muted">Loading...</p>
               : circles.length === 0
                 ? <Navigate to="/explore" replace />
-                : <HomeFeed circles={circles} userId={user.id} />
+                : <HomeFeed circles={circles} userId={user.id} circleRoles={circleRoles} />
           }
         />
         <Route

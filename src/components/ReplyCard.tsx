@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useState, useCallback } from "react"
 import { Link } from "react-router-dom"
 import { ChevronUp, Trash2 } from "lucide-react"
 import type { Reply } from "@/types"
@@ -25,6 +25,15 @@ function formatRelativeAge(createdAt: string): string {
 
 export function ReplyCard({ reply, userId, isAdminOrMod, onUpvote, onDelete }: ReplyCardProps) {
   const age = useMemo(() => formatRelativeAge(reply.created_at), [reply.created_at])
+  const [upvoteAnimating, setUpvoteAnimating] = useState(false)
+
+  const handleUpvoteClick = useCallback((replyId: string) => {
+    setUpvoteAnimating(true)
+    onUpvote?.(replyId)
+    // Reset animation state after animation completes (350ms)
+    const timer = setTimeout(() => setUpvoteAnimating(false), 350)
+    return () => clearTimeout(timer)
+  }, [onUpvote])
 
   const authorName = reply.profiles?.display_name ?? "Neighbor"
   const authorAvatar = reply.profiles?.avatar_emoji ?? "house"
@@ -68,14 +77,14 @@ export function ReplyCard({ reply, userId, isAdminOrMod, onUpvote, onDelete }: R
 
         {onUpvote && (
           <button
-            onClick={() => onUpvote(reply.id)}
+            onClick={() => handleUpvoteClick(reply.id)}
             className={`mt-1 flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${
               reply.user_upvoted
                 ? "bg-quiet-accent/20 text-quiet-slate"
                 : "bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
             }`}
           >
-            <ChevronUp className="h-3 w-3" />
+            <ChevronUp className={`h-3 w-3 ${upvoteAnimating ? "upvote-jump" : ""}`} />
             {reply.upvote_count > 0 && <span>{reply.upvote_count}</span>}
           </button>
         )}

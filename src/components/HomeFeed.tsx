@@ -13,6 +13,7 @@ import type { Circle } from "@/types"
 interface HomeFeedProps {
   circles: Circle[]
   userId: string
+  circleRoles?: Record<string, string>
 }
 
 /* ─── Inline composer with circle binding ──────────── */
@@ -55,13 +56,23 @@ function HomeComposer({
   )
 }
 
-export function HomeFeed({ circles, userId }: HomeFeedProps) {
+export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
   const navigate = useNavigate()
   const circleIds = useMemo(() => circles.map((c) => c.id), [circles])
-  const { posts, loading, toggleUpvote, deletePost } = useAllMemberPosts(circleIds, userId)
+  const { posts, loading, toggleUpvote, updatePost, deletePost, makePermanent } = useAllMemberPosts(circleIds, userId)
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [composerState, setComposerState] = useState<"closed" | "picking" | Circle>("closed")
   const pickerRef = useRef<HTMLDivElement>(null)
+
+  // Helper to check if user is admin/mod for a given circle
+  const isAdminOrModForCircle = (circleId: string) => {
+    const circle = circles.find((c) => c.id === circleId)
+    return circle ? ["admin", "moderator"].includes(circleRoles[circleId] ?? "") || circle.created_by === userId : false
+  }
+
+  const handleUpdatePost = async (postId: string, content: string, tags: string[]) => {
+    await updatePost(postId, content, tags)
+  }
 
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>()
@@ -160,16 +171,22 @@ export function HomeFeed({ circles, userId }: HomeFeedProps) {
         </div>
       ) : (
         <div className="mt-6 space-y-3">
-          {filteredPosts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              userId={userId}
-              isMember={true}
-              onUpvote={toggleUpvote}
-              onDelete={deletePost}
-            />
-          ))}
+          {filteredPosts.map((post) => {
+            const isAdminOrMod = isAdminOrModForCircle(post.circle_id)
+            return (
+              <PostCard
+                key={post.id}
+                post={post}
+                userId={userId}
+                isMember={true}
+                isAdminOrMod={isAdminOrMod}
+                onUpvote={toggleUpvote}
+                onDelete={deletePost}
+                onEdit={handleUpdatePost}
+                onMakePermanent={makePermanent}
+              />
+            )
+          })}
           {filteredPosts.length === 0 && !activeTag && (
             <p className="text-center text-sm text-quiet-muted">
               No posts yet. Check back later!

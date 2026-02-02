@@ -23,6 +23,9 @@ export interface Post {
   expires_at: string
   original_duration_seconds: number
   is_welcome: boolean
+  is_permanent: boolean
+  edited: boolean
+  updated_at: string | null
   profiles?: {
     display_name: string
     avatar_emoji: string

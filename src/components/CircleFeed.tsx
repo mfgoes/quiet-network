@@ -30,11 +30,15 @@ export function CircleFeed({
   onUploadAvatar,
 }: CircleFeedProps) {
   const circleId = circle.id
-  const { posts, loading, createPost, deletePost, toggleUpvote } = usePosts(circleId, userId)
+  const { posts, loading, createPost, updatePost, deletePost, toggleUpvote, makePermanent } = usePosts(circleId, userId)
   const [activeTag, setActiveTag] = useState<string | null>(null)
 
   const handleNewPost = async (content: string, durationSeconds: number, tags: string[]) => {
     await createPost(content, durationSeconds, userId, tags)
+  }
+
+  const handleUpdatePost = async (postId: string, content: string, tags: string[]) => {
+    await updatePost(postId, content, tags)
   }
 
   const availableTags = useMemo(() => {
@@ -114,6 +118,8 @@ export function CircleFeed({
                   isAdminOrMod={isAdminOrMod}
                   onUpvote={isMember ? toggleUpvote : undefined}
                   onDelete={isMember ? deletePost : undefined}
+                  onEdit={isMember ? handleUpdatePost : undefined}
+                  onMakePermanent={isMember ? makePermanent : undefined}
                 />
               ))}
               {filteredPosts.length === 0 && activeTag && (

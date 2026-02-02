@@ -462,7 +462,7 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
       .from("posts")
       .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot), circles(name, slug, description, avatar_url)")
       .in("circle_id", circleIds)
-      .or(`is_welcome.eq.true,expires_at.gt.${new Date().toISOString()}`)
+      .or(`is_welcome.eq.true,is_permanent.eq.true,expires_at.gt.${new Date().toISOString()}`)
       .order("created_at", { ascending: false })
 
     if (!error && data) {
@@ -538,7 +538,76 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
     return error
   }
 
-  return { posts, loading, toggleUpvote, deletePost, refetch: fetchPosts }
+  const makePermanent = async (postId: string, permanent: boolean) => {
+    const post = posts.find((p) => p.id === postId)
+    if (!post) return
+
+    // Optimistic update
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              is_permanent: permanent,
+              expires_at: permanent ? 'infinity' : new Date(Date.now() + p.original_duration_seconds * 1000).toISOString()
+            }
+          : p
+      )
+    )
+
+    const { error } = await supabase
+      .from("posts")
+      .update({
+        is_permanent: permanent,
+        expires_at: permanent ? 'infinity' : new Date(Date.now() + post.original_duration_seconds * 1000).toISOString()
+      })
+      .eq("id", postId)
+
+    if (error) {
+      console.error("Failed to update post permanence:", error)
+      await fetchPosts() // Revert on error
+    }
+
+    return error
+  }
+
+  const updatePost = async (postId: string, content: string, tags: string[] = []) => {
+    // Optimistic update
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              content,
+              tags,
+              edited: true,
+              updated_at: new Date().toISOString(),
+            }
+          : p
+      )
+    )
+
+    const { data, error } = await supabase
+      .from("posts")
+      .update({
+        content,
+        tags,
+        edited: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", postId)
+      .select()
+      .single()
+
+    // Revert on error
+    if (error) {
+      await fetchPosts()
+    }
+
+    return error
+  }
+
+  return { posts, loading, toggleUpvote, updatePost, deletePost, makePermanent, refetch: fetchPosts }
 }
 
 // ─── Posts ───────────────────────────────────────────
@@ -619,7 +688,7 @@ export function usePosts(circleId: string | undefined, userId?: string) {
       .from("posts")
       .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot)")
       .eq("circle_id", circleId)
-      .or(`is_welcome.eq.true,expires_at.gt.${new Date().toISOString()}`)
+      .or(`is_welcome.eq.true,is_permanent.eq.true,expires_at.gt.${new Date().toISOString()}`)
       .order("is_welcome", { ascending: false })
       .order("created_at", { ascending: false })
 
@@ -765,7 +834,76 @@ export function usePosts(circleId: string | undefined, userId?: string) {
     return error
   }
 
-  return { posts, loading, createPost, deletePost, toggleUpvote, refetch: fetchPosts }
+  const makePermanent = async (postId: string, permanent: boolean) => {
+    const post = posts.find((p) => p.id === postId)
+    if (!post) return
+
+    // Optimistic update
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              is_permanent: permanent,
+              expires_at: permanent ? 'infinity' : new Date(Date.now() + p.original_duration_seconds * 1000).toISOString()
+            }
+          : p
+      )
+    )
+
+    const { error } = await supabase
+      .from("posts")
+      .update({
+        is_permanent: permanent,
+        expires_at: permanent ? 'infinity' : new Date(Date.now() + post.original_duration_seconds * 1000).toISOString()
+      })
+      .eq("id", postId)
+
+    if (error) {
+      console.error("Failed to update post permanence:", error)
+      await fetchPosts() // Revert on error
+    }
+
+    return error
+  }
+
+  const updatePost = async (postId: string, content: string, tags: string[] = []) => {
+    // Optimistic update
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              content,
+              tags,
+              edited: true,
+              updated_at: new Date().toISOString(),
+            }
+          : p
+      )
+    )
+
+    const { data, error } = await supabase
+      .from("posts")
+      .update({
+        content,
+        tags,
+        edited: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", postId)
+      .select()
+      .single()
+
+    // Revert on error
+    if (error) {
+      await fetchPosts()
+    }
+
+    return error
+  }
+
+  return { posts, loading, createPost, updatePost, deletePost, toggleUpvote, makePermanent, refetch: fetchPosts }
 }
 
 

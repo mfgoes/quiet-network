@@ -16,7 +16,9 @@ interface MobileMenuProps {
 export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuProps) {
   const [open, setOpen] = useState(false)
   const [circlesExpanded, setCirclesExpanded] = useState(false)
+  const [isExpandingCircles, setIsExpandingCircles] = useState(false)
   const [adminExpanded, setAdminExpanded] = useState(true)
+  const [isExpandingAdmin, setIsExpandingAdmin] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const path = location.pathname
@@ -24,6 +26,34 @@ export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuPr
   const go = (to: string) => {
     navigate(to)
     setOpen(false)
+  }
+
+  const handleToggleCircles = () => {
+    if (!circlesExpanded) {
+      setIsExpandingCircles(true)
+      setCirclesExpanded(true)
+      setTimeout(() => setIsExpandingCircles(false), 300)
+    } else {
+      setIsExpandingCircles(true)
+      setTimeout(() => {
+        setCirclesExpanded(false)
+        setIsExpandingCircles(false)
+      }, 300)
+    }
+  }
+
+  const handleToggleAdmin = () => {
+    if (!adminExpanded) {
+      setIsExpandingAdmin(true)
+      setAdminExpanded(true)
+      setTimeout(() => setIsExpandingAdmin(false), 300)
+    } else {
+      setIsExpandingAdmin(true)
+      setTimeout(() => {
+        setAdminExpanded(false)
+        setIsExpandingAdmin(false)
+      }, 300)
+    }
   }
 
   const isHome = path === "/" || (path !== "/explore" && path !== "/profile" && path !== "/about" && !path.startsWith("/user/") && !path.startsWith("/admin/"))
@@ -110,7 +140,7 @@ export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuPr
                 Recent Circles
               </p>
               <div className="space-y-0.5">
-                {(circlesExpanded ? circles : circles.slice(0, INITIAL_SHOW)).map((circle) => {
+                {circles.slice(0, INITIAL_SHOW).map((circle) => {
                   const isActive = path === `/${circle.slug}`
                   return (
                     <button
@@ -127,9 +157,33 @@ export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuPr
                     </button>
                   )
                 })}
+                {circlesExpanded && (
+                  <div className={isExpandingCircles ? "section-expanding" : ""}>
+                    {circles.slice(INITIAL_SHOW).map((circle) => {
+                      const isActive = path === `/${circle.slug}`
+                      return (
+                        <button
+                          key={circle.id}
+                          onClick={() => go(`/${circle.slug}`)}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                            isActive
+                              ? "bg-quiet-aged text-quiet-slate font-medium"
+                              : "text-quiet-muted hover:bg-quiet-aged hover:text-quiet-slate"
+                          }`}
+                        >
+                          <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
+                          <span className="truncate">{circle.name}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+                {!circlesExpanded && isExpandingCircles && (
+                  <div className="section-collapsing" />
+                )}
                 {circles.length > INITIAL_SHOW && (
                   <button
-                    onClick={() => setCirclesExpanded(!circlesExpanded)}
+                    onClick={handleToggleCircles}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-quiet-muted hover:text-quiet-slate transition-colors"
                   >
                     <ChevronDown
@@ -146,7 +200,7 @@ export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuPr
           {adminCircles.length > 0 && (
             <div className="mt-4 px-3">
               <button
-                onClick={() => setAdminExpanded(!adminExpanded)}
+                onClick={handleToggleAdmin}
                 className="flex w-full items-center gap-1.5 px-3 mb-1.5 text-xs font-medium uppercase tracking-wider text-blue-600 hover:text-blue-700 transition-colors"
               >
                 <Shield className="h-3 w-3" />
@@ -156,7 +210,7 @@ export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuPr
                 />
               </button>
               {adminExpanded && (
-                <div className="space-y-0.5">
+                <div className={isExpandingAdmin ? "section-expanding" : "space-y-0.5"}>
                   {adminCircles.map((ac) => {
                     const isActive = path === `/admin/${ac.slug}`
                     return (
@@ -175,6 +229,9 @@ export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuPr
                     )
                   })}
                 </div>
+              )}
+              {!adminExpanded && isExpandingAdmin && (
+                <div className="section-collapsing" />
               )}
             </div>
           )}

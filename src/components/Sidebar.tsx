@@ -18,8 +18,38 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
   const location = useLocation()
   const path = location.pathname
   const [expanded, setExpanded] = useState(false)
+  const [isExpandingCircles, setIsExpandingCircles] = useState(false)
   const [adminExpanded, setAdminExpanded] = useState(true)
+  const [isExpandingAdmin, setIsExpandingAdmin] = useState(false)
   const [adminShowAll, setAdminShowAll] = useState(false)
+
+  const handleToggleCircles = () => {
+    if (!expanded) {
+      setIsExpandingCircles(true)
+      setExpanded(true)
+      setTimeout(() => setIsExpandingCircles(false), 300)
+    } else {
+      setIsExpandingCircles(true)
+      setTimeout(() => {
+        setExpanded(false)
+        setIsExpandingCircles(false)
+      }, 300)
+    }
+  }
+
+  const handleToggleAdmin = () => {
+    if (!adminExpanded) {
+      setIsExpandingAdmin(true)
+      setAdminExpanded(true)
+      setTimeout(() => setIsExpandingAdmin(false), 300)
+    } else {
+      setIsExpandingAdmin(true)
+      setTimeout(() => {
+        setAdminExpanded(false)
+        setIsExpandingAdmin(false)
+      }, 300)
+    }
+  }
 
   const navItems = [
     { label: "Home", path: "/", icon: Home },
@@ -74,7 +104,7 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
             Recent Circles
           </p>
           <div className="space-y-0.5">
-            {(expanded ? circles : circles.slice(0, INITIAL_SHOW)).map((circle) => {
+            {circles.slice(0, INITIAL_SHOW).map((circle) => {
               const isActive = path === `/${circle.slug}`
               return (
                 <button
@@ -91,9 +121,33 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
                 </button>
               )
             })}
+            {expanded && (
+              <div className={isExpandingCircles ? "section-expanding" : ""}>
+                {circles.slice(INITIAL_SHOW).map((circle) => {
+                  const isActive = path === `/${circle.slug}`
+                  return (
+                    <button
+                      key={circle.id}
+                      onClick={() => navigate(`/${circle.slug}`)}
+                      className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                        isActive
+                          ? "bg-quiet-aged text-quiet-slate font-medium"
+                          : "text-quiet-muted hover:bg-quiet-aged hover:text-quiet-slate"
+                      }`}
+                    >
+                      <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
+                      <span className="truncate">{circle.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            {!expanded && isExpandingCircles && (
+              <div className="section-collapsing" />
+            )}
             {circles.length > INITIAL_SHOW && (
               <button
-                onClick={() => setExpanded(!expanded)}
+                onClick={handleToggleCircles}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-quiet-muted hover:text-quiet-slate transition-colors"
               >
                 <ChevronDown
@@ -110,7 +164,7 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
       {adminCircles.length > 0 && (
         <div className="mt-4 px-3">
           <button
-            onClick={() => setAdminExpanded(!adminExpanded)}
+            onClick={handleToggleAdmin}
             className="flex w-full items-center gap-1.5 px-3 mb-1.5 text-xs font-medium uppercase tracking-wider text-blue-600 hover:text-blue-700 transition-colors"
           >
             <Shield className="h-3 w-3" />
@@ -120,8 +174,8 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
             />
           </button>
           {adminExpanded && (
-            <div className="space-y-0.5">
-              {(adminShowAll ? adminCircles : adminCircles.slice(0, 3)).map((ac) => {
+            <div className={isExpandingAdmin ? "section-expanding" : "space-y-0.5"}>
+              {adminCircles.slice(0, 3).map((ac) => {
                 const isActive = path === `/admin/${ac.slug}`
                 return (
                   <button
@@ -138,6 +192,27 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
                   </button>
                 )
               })}
+              {adminShowAll && (
+                <div className={isExpandingAdmin ? "section-expanding" : ""}>
+                  {adminCircles.slice(3).map((ac) => {
+                    const isActive = path === `/admin/${ac.slug}`
+                    return (
+                      <button
+                        key={ac.id}
+                        onClick={() => navigate(`/admin/${ac.slug}`)}
+                        className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                          isActive
+                            ? "bg-blue-50 text-blue-700 font-medium"
+                            : "text-quiet-muted hover:bg-quiet-aged hover:text-quiet-slate"
+                        }`}
+                      >
+                        <CircleIcon name={ac.name} avatarUrl={ac.avatar_url} size="sm" />
+                        <span className="truncate flex-1 text-left">{ac.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
               {adminCircles.length > 3 && (
                 <button
                   onClick={() => setAdminShowAll(!adminShowAll)}
@@ -150,6 +225,9 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
                 </button>
               )}
             </div>
+          )}
+          {!adminExpanded && isExpandingAdmin && (
+            <div className="section-collapsing" />
           )}
         </div>
       )}
