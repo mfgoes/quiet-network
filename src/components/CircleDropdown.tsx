@@ -12,31 +12,22 @@ interface CircleDropdownProps {
   circles: Circle[]
   selectedSlug?: string
   currentCircle?: Circle | null
-  userId: string; // Added userId to props for user-specific favorites
+  userId: string
+  favoritedCircleIds?: string[]
+  onToggleFavorite?: (circleId: string, e: React.MouseEvent) => void
 }
 
-export function CircleDropdown({ circles, selectedSlug, currentCircle, userId }: CircleDropdownProps) {
+export function CircleDropdown({ 
+  circles, 
+  selectedSlug, 
+  currentCircle, 
+  userId,
+  favoritedCircleIds = [],
+  onToggleFavorite
+}: CircleDropdownProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const navigate = useNavigate() // Re-added useNavigate
-  const [favoritedCircleIds, setFavoritedCircleIds] = useState<string[]>([]);
-
-  // Load favorites from localStorage on mount
-  useEffect(() => {
-    if (userId) {
-      const storedFavorites = localStorage.getItem(`favorites_${userId}`);
-      if (storedFavorites) {
-        setFavoritedCircleIds(JSON.parse(storedFavorites));
-      }
-    }
-  }, [userId]);
-
-  // Save favorites to localStorage whenever they change
-  useEffect(() => {
-    if (userId) {
-      localStorage.setItem(`favorites_${userId}`, JSON.stringify(favoritedCircleIds));
-    }
-  }, [favoritedCircleIds, userId]);
+  const navigate = useNavigate()
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -120,7 +111,7 @@ export function CircleDropdown({ circles, selectedSlug, currentCircle, userId }:
                   <span className="truncate">{circle.name}</span>
                 </Link>
                 <button
-                  onClick={(e) => toggleFavorite(circle.id, e)}
+                  onClick={(e) => onToggleFavorite?.(circle.id, e)}
                   className="p-2 rounded-full hover:bg-quiet-border/50 mr-2" // Added mr-2 for spacing
                   aria-label={isFavorited ? "Unfavorite" : "Favorite"}
                 >

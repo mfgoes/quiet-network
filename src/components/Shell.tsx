@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Link } from "react-router-dom"
 import { CircleIcon } from "@/components/CircleIcon"
+import { Star } from "lucide-react"
 import type { Circle } from "@/types"
 
 export function Shell({
@@ -28,6 +29,25 @@ export function Shell({
     }
   }, [userId])
 
+  // Save favorites to localStorage whenever they change
+  useEffect(() => {
+    if (userId) {
+      localStorage.setItem(`favorites_${userId}`, JSON.stringify(favoritedCircleIds))
+    }
+  }, [favoritedCircleIds, userId])
+
+  const toggleFavorite = useCallback((circleId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    setFavoritedCircleIds(prev => {
+      if (prev.includes(circleId)) {
+        return prev.filter(id => id !== circleId)
+      } else {
+        return [...prev, circleId]
+      }
+    })
+  }, [])
+
   const favoriteCircles = circles?.filter(c => favoritedCircleIds.includes(c.id)) || []
   const otherCircles = circles?.filter(c => !favoritedCircleIds.includes(c.id)) || []
   return (
@@ -42,14 +62,22 @@ export function Shell({
                   <h3 className="text-xs font-medium text-quiet-muted mb-2">FAVORITES</h3>
                   <div className="space-y-1">
                     {favoriteCircles.map(circle => (
-                      <Link
-                        key={circle.id}
-                        to={`/${circle.slug}`}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-quiet-slate hover:bg-quiet-aged"
-                      >
-                        <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
-                        <span className="truncate">{circle.name}</span>
-                      </Link>
+                      <div key={circle.id} className="flex items-center">
+                        <Link
+                          to={`/${circle.slug}`}
+                          className="flex flex-1 items-center gap-2 px-3 py-2 rounded-lg text-sm text-quiet-slate hover:bg-quiet-aged"
+                        >
+                          <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
+                          <span className="truncate">{circle.name}</span>
+                        </Link>
+                        <button
+                          onClick={(e) => toggleFavorite(circle.id, e)}
+                          className="p-2 rounded-full hover:bg-quiet-border/50 mr-2"
+                          aria-label={favoritedCircleIds.includes(circle.id) ? "Unfavorite" : "Favorite"}
+                        >
+                          <Star className={`h-4 w-4 ${favoritedCircleIds.includes(circle.id) ? "text-yellow-500 fill-current" : "text-quiet-muted"}`} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -59,14 +87,22 @@ export function Shell({
                 <h3 className="text-xs font-medium text-quiet-muted mb-2">ALL CIRCLES</h3>
                 <div className="space-y-1">
                   {otherCircles.map(circle => (
-                    <Link
-                      key={circle.id}
-                      to={`/${circle.slug}`}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-quiet-slate hover:bg-quiet-aged"
-                    >
-                      <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
-                      <span className="truncate">{circle.name}</span>
-                    </Link>
+                    <div key={circle.id} className="flex items-center">
+                      <Link
+                        to={`/${circle.slug}`}
+                        className="flex flex-1 items-center gap-2 px-3 py-2 rounded-lg text-sm text-quiet-slate hover:bg-quiet-aged"
+                      >
+                        <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
+                        <span className="truncate">{circle.name}</span>
+                      </Link>
+                      <button
+                        onClick={(e) => toggleFavorite(circle.id, e)}
+                        className="p-2 rounded-full hover:bg-quiet-border/50 mr-2"
+                        aria-label={favoritedCircleIds.includes(circle.id) ? "Unfavorite" : "Favorite"}
+                      >
+                        <Star className={`h-4 w-4 ${favoritedCircleIds.includes(circle.id) ? "text-yellow-500 fill-current" : "text-quiet-muted"}`} />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
