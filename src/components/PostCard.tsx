@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom" // Import useNavigate
 import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown, Archive, Pencil, Link2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -174,6 +174,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const [editContent, setEditContent] = useState(post.content)
   const [editTags, setEditTags] = useState<string[]>(post.tags || [])
   const contentRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate() // Initialize useNavigate
 
   const handleReplyCountChange = useCallback((delta: number) => {
     setReplyCountDelta((prev) => prev + delta)
@@ -248,11 +249,18 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
 
   const postDetailUrl = post.circles?.slug ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`;
 
+  const handleCardClick = useCallback(() => {
+    // Only navigate if not in editing mode
+    if (!isEditing) {
+      navigate(postDetailUrl);
+    }
+  }, [isEditing, navigate, postDetailUrl]);
+
   return (
     <div className="relative">
-      <Link
-        to={postDetailUrl}
-        className={`group relative block overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass} hover:bg-quiet-border/20 transition-colors`}
+      <div
+        className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass} hover:bg-quiet-border/20 transition-colors cursor-pointer`}
+        onClick={handleCardClick} // Make the entire div clickable
       >
         {/* Header */}
         <div className="mb-2 flex items-center justify-between">
@@ -281,7 +289,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               </>
             )}
             {post.circles && (
-              <div onClick={(e) => e.stopPropagation()}>
+              <div onClick={(e) => e.stopPropagation()}> {/* Stop propagation for the Popover/Link inside CircleBadge */}
                 <CircleBadge
                   name={post.circles.name}
                   slug={post.circles.slug}
@@ -508,7 +516,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
             })}
           </div>
         )}
-      </Link>
+      </div>
 
       {/* Upvote + Reply */}
       {onUpvote && !post.is_welcome && (
