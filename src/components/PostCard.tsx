@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react"
-import { Link, useNavigate } from "react-router-dom" // Import useNavigate
+import { Link, useNavigate } from "react-router-dom"
 import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown, Archive, Pencil, Link2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -142,6 +142,7 @@ function CircleBadge({ name, slug, description, avatarUrl }: { name: string; slu
           className="flex items-center gap-1 rounded-full bg-quiet-border/40 px-2 py-0.5 text-[11px] text-quiet-muted transition-colors hover:bg-quiet-border/70 hover:text-quiet-slate"
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}
+          onClick={(e) => e.stopPropagation()} // Stop propagation for the Link inside CircleBadge
         >
           <CircleIcon name={name} avatarUrl={avatarUrl} size="xs" />
           <span>{name}</span>
@@ -174,7 +175,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const [editContent, setEditContent] = useState(post.content)
   const [editTags, setEditTags] = useState<string[]>(post.tags || [])
   const contentRef = useRef<HTMLDivElement>(null)
-  const navigate = useNavigate() // Initialize useNavigate
+  // const navigate = useNavigate() // useNavigate is not needed if using Link directly
 
   const handleReplyCountChange = useCallback((delta: number) => {
     setReplyCountDelta((prev) => prev + delta)
@@ -249,144 +250,14 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
 
   const postDetailUrl = post.circles?.slug ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`;
 
-  const handleCardClick = useCallback(() => {
-    // Only navigate if not in editing mode
-    if (!isEditing) {
-      navigate(postDetailUrl);
-    }
-  }, [isEditing, navigate, postDetailUrl]);
-
   return (
     <div className="relative">
-      <div
-        className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass} hover:bg-quiet-border/20 transition-colors cursor-pointer`}
-        onClick={handleCardClick} // Make the entire div clickable
-      >
-        {/* Header */}
-        <div className="mb-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {authorUsername ? (
-              <Link to={`/user/${authorUsername}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                <img
-                  src={avatarUrl(authorAvatar)}
-                  alt="avatar"
-                  className="h-7 w-7 rounded-full object-cover"
-                />
-                <span className="text-sm font-medium text-quiet-slate">
-                  {authorName}
-                </span>
-              </Link>
-            ) : (
-              <>
-                <img
-                  src={avatarUrl(authorAvatar)}
-                  alt="avatar"
-                  className="h-7 w-7 rounded-full object-cover"
-                />
-                <span className="text-sm font-medium text-quiet-slate">
-                  {authorName}
-                </span>
-              </>
-            )}
-            {post.circles && (
-              <div onClick={(e) => e.stopPropagation()}> {/* Stop propagation for the Popover/Link inside CircleBadge */}
-                <CircleBadge
-                  name={post.circles.name}
-                  slug={post.circles.slug}
-                  description={post.circles.description ?? undefined}
-                  avatarUrl={post.circles.avatar_url}
-                />
-              </div>
-            )}
-            <span className="text-xs text-quiet-muted">{age}</span>
-            {post.edited && (
-              <span className="text-xs text-quiet-muted italic">(edited)</span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            {post.is_welcome && (
-              <Badge variant="pinned">
-                <Pin className="mr-1 h-3 w-3" />
-                Pinned
-              </Badge>
-            )}
-            {post.is_permanent && !post.is_welcome && (
-              <Badge variant="permanent">
-                <Archive className="mr-1 h-3 w-3" />
-                Permanent
-              </Badge>
-            )}
-            {expiry && (
-              <Badge variant={expiry.isUrgent ? "expiring" : "default"}>
-                {expiry.isUrgent && <Clock className="mr-1 h-3 w-3" />}
-                {expiry.label}
-              </Badge>
-            )}
-            {isAdminOrMod && onMakePermanent && !post.is_welcome && (
-              post.is_permanent ? (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onMakePermanent(post.id, false); }}
-                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
-                  title="Make ephemeral"
-                  aria-label="Make ephemeral"
-                >
-                  <Clock className="h-3.5 w-3.5" />
-                </button>
-              ) : (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onMakePermanent(post.id, true); }}
-                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
-                  title="Make permanent"
-                  aria-label="Make permanent"
-                >
-                  <Archive className="h-3.5 w-3.5" />
-                </button>
-              )
-            )}
-            {post.circles?.slug && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const shareUrl = `${window.location.origin}/${post.circles?.slug}/p/${post.id}`
-                  navigator.clipboard.writeText(shareUrl).then(() => {
-                    // Could add toast notification here
-                  }).catch(() => {
-                    // Silently fail if clipboard not available
-                  })
-                }}
-                className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
-                aria-label="Copy link"
-                title="Copy link"
-              >
-                <Link2 className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {isOwn && canEdit(post) && onEdit && !post.is_welcome && (
-              <button
-                onClick={(e) => { e.stopPropagation(); handleEdit(); }}
-                className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-accent group-hover:inline-flex"
-                aria-label="Edit post"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete(post.id); }}
-                className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-warm group-hover:inline-flex"
-                aria-label="Delete post"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Content with height limiting */}
-        {isEditing ? (
-          // Edit mode
-          <div className="space-y-2" onClick={(e) => e.stopPropagation()}> {/* Stop propagation for edit mode */}
+      {/* The main Link wrapper for the entire card content */}
+      {/* Conditional rendering to prevent Link from wrapping when editing */}
+      {isEditing ? (
+        <div className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
+          {/* Content when editing */}
+          <div className="space-y-2">
             <textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
@@ -435,8 +306,132 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               </button>
             </div>
           </div>
-        ) : (
-          // Normal view mode
+        </div>
+      ) : (
+        <Link
+          to={postDetailUrl}
+          className={`group relative block overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass} hover:bg-quiet-border/20 transition-colors`}
+        >
+          {/* Header */}
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {authorUsername ? (
+                <Link to={`/user/${authorUsername}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                  <img
+                    src={avatarUrl(authorAvatar)}
+                    alt="avatar"
+                    className="h-7 w-7 rounded-full object-cover"
+                  />
+                  <span className="text-sm font-medium text-quiet-slate">
+                    {authorName}
+                  </span>
+                </Link>
+              ) : (
+                <>
+                  <img
+                    src={avatarUrl(authorAvatar)}
+                    alt="avatar"
+                    className="h-7 w-7 rounded-full object-cover"
+                  />
+                  <span className="text-sm font-medium text-quiet-slate">
+                    {authorName}
+                  </span>
+                </>
+              )}
+              {post.circles && (
+                <CircleBadge
+                  name={post.circles.name}
+                  slug={post.circles.slug}
+                  description={post.circles.description ?? undefined}
+                  avatarUrl={post.circles.avatar_url}
+                />
+              )}
+              <span className="text-xs text-quiet-muted">{age}</span>
+              {post.edited && (
+                <span className="text-xs text-quiet-muted italic">(edited)</span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {post.is_welcome && (
+                <Badge variant="pinned">
+                  <Pin className="mr-1 h-3 w-3" />
+                  Pinned
+                </Badge>
+              )}
+              {post.is_permanent && !post.is_welcome && (
+                <Badge variant="permanent">
+                  <Archive className="mr-1 h-3 w-3" />
+                  Permanent
+                </Badge>
+              )}
+              {expiry && (
+                <Badge variant={expiry.isUrgent ? "expiring" : "default"}>
+                  {expiry.isUrgent && <Clock className="mr-1 h-3 w-3" />}
+                  {expiry.label}
+                </Badge>
+              )}
+              {isAdminOrMod && onMakePermanent && !post.is_welcome && (
+                post.is_permanent ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onMakePermanent(post.id, false); }}
+                    className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
+                    title="Make ephemeral"
+                    aria-label="Make ephemeral"
+                  >
+                    <Clock className="h-3.5 w-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onMakePermanent(post.id, true); }}
+                    className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
+                    title="Make permanent"
+                    aria-label="Make permanent"
+                  >
+                    <Archive className="h-3.5 w-3.5" />
+                  </button>
+                )
+              )}
+              {post.circles?.slug && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const shareUrl = `${window.location.origin}/${post.circles?.slug}/p/${post.id}`
+                    navigator.clipboard.writeText(shareUrl).then(() => {
+                      // Could add toast notification here
+                    }).catch(() => {
+                      // Silently fail if clipboard not available
+                    })
+                  }}
+                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
+                  aria-label="Copy link"
+                  title="Copy link"
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {isOwn && canEdit(post) && onEdit && !post.is_welcome && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleEdit(); }}
+                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-accent group-hover:inline-flex"
+                  aria-label="Edit post"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(post.id); }}
+                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-warm group-hover:inline-flex"
+                  aria-label="Delete post"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Content with height limiting */}
           <div className="relative">
             <div
               ref={contentRef}
@@ -476,49 +471,50 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               />
             )}
           </div>
-        )}
 
-        {/* Expand/Collapse button */}
-        {needsExpand && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setIsExpanded((prev) => !prev); }}
-            className="mt-1 flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
-          >
-            {isExpanded ? (
-              <>
-                <ChevronUp className="h-3.5 w-3.5" />
-                <span>Show less</span>
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-3.5 w-3.5" />
-                <span>Show more</span>
-              </>
-            )}
-          </button>
-        )}
+          {/* Expand/Collapse button */}
+          {needsExpand && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsExpanded((prev) => !prev); }}
+              className="mt-1 flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="h-3.5 w-3.5" />
+                  <span>Show less</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  <span>Show more</span>
+                </>
+              )}
+            </button>
+          )}
 
-        {/* Tags */}
-        {post.tags && post.tags.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {post.tags.map((tagId) => {
-              const tag = getTagDef(tagId)
-              if (!tag) return null
-              return (
-                <span
-                  key={tagId}
-                  className="rounded-full px-2 py-0.5 text-[11px] text-quiet-slate"
-                  style={{ backgroundColor: tag.color }}
-                >
-                  {tag.label}
-                </span>
-              )
-            })}
-          </div>
-        )}
-      </div>
+          {/* Tags */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {post.tags.map((tagId) => {
+                const tag = getTagDef(tagId)
+                if (!tag) return null
+                return (
+                  <span
+                    key={tagId}
+                    className="rounded-full px-2 py-0.5 text-[11px] text-quiet-slate"
+                    style={{ backgroundColor: tag.color }}
+                  >
+                    {tag.label}
+                  </span>
+                )
+              })}
+            </div>
+          )}
+        </Link>
+      )}
 
-      {/* Upvote + Reply */}
+
+      {/* Upvote + Reply (these are outside the main Link wrapper to be independently clickable) */}
       {onUpvote && !post.is_welcome && (
         <div className="mt-3 flex items-center gap-2">
           <button
@@ -548,7 +544,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
         </div>
       )}
 
-      {/* Reply thread */}
+      {/* Reply thread (also outside the main Link wrapper) */}
       {repliesOpen && !post.is_welcome && (
         <div className="mt-3">
           <ReplySection
