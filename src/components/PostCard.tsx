@@ -246,274 +246,275 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const authorUsername = post.profiles?.username
   const isOwn = userId === post.author_id
 
+  const postDetailUrl = post.circles?.slug ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`;
+
   return (
-    <div className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
-      {/* Header */}
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {authorUsername ? (
-            <Link to={`/user/${authorUsername}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <img
-                src={avatarUrl(authorAvatar)}
-                alt="avatar"
-                className="h-7 w-7 rounded-full object-cover"
-              />
-              <span className="text-sm font-medium text-quiet-slate">
-                {authorName}
-              </span>
-            </Link>
-          ) : (
-            <>
-              <img
-                src={avatarUrl(authorAvatar)}
-                alt="avatar"
-                className="h-7 w-7 rounded-full object-cover"
-              />
-              <span className="text-sm font-medium text-quiet-slate">
-                {authorName}
-              </span>
-            </>
-          )}
-          {post.circles && (
-            <CircleBadge
-              name={post.circles.name}
-              slug={post.circles.slug}
-              description={post.circles.description ?? undefined}
-              avatarUrl={post.circles.avatar_url}
-            />
-          )}
-          {post.circles?.slug ? (
-            <Link
-              to={`/${post.circles.slug}/p/${post.id}`}
-              className="text-xs text-quiet-muted hover:text-quiet-slate hover:underline"
-            >
-              {age}
-            </Link>
-          ) : (
-            <span className="text-xs text-quiet-muted">{age}</span>
-          )}
-          {post.edited && (
-            <span className="text-xs text-quiet-muted italic">(edited)</span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          {post.is_welcome && (
-            <Badge variant="pinned">
-              <Pin className="mr-1 h-3 w-3" />
-              Pinned
-            </Badge>
-          )}
-          {post.is_permanent && !post.is_welcome && (
-            <Badge variant="permanent">
-              <Archive className="mr-1 h-3 w-3" />
-              Permanent
-            </Badge>
-          )}
-          {expiry && (
-            <Badge variant={expiry.isUrgent ? "expiring" : "default"}>
-              {expiry.isUrgent && <Clock className="mr-1 h-3 w-3" />}
-              {expiry.label}
-            </Badge>
-          )}
-          {isAdminOrMod && onMakePermanent && !post.is_welcome && (
-            post.is_permanent ? (
-              <button
-                onClick={() => onMakePermanent(post.id, false)}
-                className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
-                title="Make ephemeral"
-                aria-label="Make ephemeral"
-              >
-                <Clock className="h-3.5 w-3.5" />
-              </button>
+    <div className="relative">
+      <Link
+        to={postDetailUrl}
+        className={`group relative block overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass} hover:bg-quiet-border/20 transition-colors`}
+      >
+        {/* Header */}
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {authorUsername ? (
+              <Link to={`/user/${authorUsername}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                <img
+                  src={avatarUrl(authorAvatar)}
+                  alt="avatar"
+                  className="h-7 w-7 rounded-full object-cover"
+                />
+                <span className="text-sm font-medium text-quiet-slate">
+                  {authorName}
+                </span>
+              </Link>
             ) : (
-              <button
-                onClick={() => onMakePermanent(post.id, true)}
-                className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
-                title="Make permanent"
-                aria-label="Make permanent"
-              >
-                <Archive className="h-3.5 w-3.5" />
-              </button>
-            )
-          )}
-          {post.circles?.slug && (
-            <button
-              onClick={() => {
-                const shareUrl = `${window.location.origin}/${post.circles?.slug}/p/${post.id}`
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                  // Could add toast notification here
-                }).catch(() => {
-                  // Silently fail if clipboard not available
-                })
-              }}
-              className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
-              aria-label="Copy link"
-              title="Copy link"
-            >
-              <Link2 className="h-3.5 w-3.5" />
-            </button>
-          )}
-          {isOwn && canEdit(post) && onEdit && !post.is_welcome && (
-            <button
-              onClick={handleEdit}
-              className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-accent group-hover:inline-flex"
-              aria-label="Edit post"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-          )}
-          {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
-            <button
-              onClick={() => onDelete(post.id)}
-              className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-warm group-hover:inline-flex"
-              aria-label="Delete post"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-      </div>
+              <>
+                <img
+                  src={avatarUrl(authorAvatar)}
+                  alt="avatar"
+                  className="h-7 w-7 rounded-full object-cover"
+                />
+                <span className="text-sm font-medium text-quiet-slate">
+                  {authorName}
+                </span>
+              </>
+            )}
+            {post.circles && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <CircleBadge
+                  name={post.circles.name}
+                  slug={post.circles.slug}
+                  description={post.circles.description ?? undefined}
+                  avatarUrl={post.circles.avatar_url}
+                />
+              </div>
+            )}
+            <span className="text-xs text-quiet-muted">{age}</span>
+            {post.edited && (
+              <span className="text-xs text-quiet-muted italic">(edited)</span>
+            )}
+          </div>
 
-      {/* Content with height limiting */}
-      {isEditing ? (
-        // Edit mode
-        <div className="space-y-2">
-          <textarea
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            className="w-full min-h-[120px] resize-none rounded-md border border-quiet-accent bg-quiet-offwhite p-3 text-sm text-quiet-slate focus:border-quiet-accent focus:outline-none"
-          />
-
-          {/* Tag selector in edit mode */}
-          <div className="flex flex-wrap gap-1.5">
-            {TAGS.map((tag) => {
-              const isSelected = editTags.includes(tag.id)
-              const isDisabled = !isSelected && editTags.length >= 3
-              return (
+          <div className="flex items-center gap-1.5">
+            {post.is_welcome && (
+              <Badge variant="pinned">
+                <Pin className="mr-1 h-3 w-3" />
+                Pinned
+              </Badge>
+            )}
+            {post.is_permanent && !post.is_welcome && (
+              <Badge variant="permanent">
+                <Archive className="mr-1 h-3 w-3" />
+                Permanent
+              </Badge>
+            )}
+            {expiry && (
+              <Badge variant={expiry.isUrgent ? "expiring" : "default"}>
+                {expiry.isUrgent && <Clock className="mr-1 h-3 w-3" />}
+                {expiry.label}
+              </Badge>
+            )}
+            {isAdminOrMod && onMakePermanent && !post.is_welcome && (
+              post.is_permanent ? (
                 <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => toggleEditTag(tag.id)}
-                  disabled={isDisabled}
-                  className={`rounded-full px-2.5 py-0.5 text-xs transition-all ${
-                    isSelected
-                      ? "text-quiet-slate ring-1 ring-quiet-accent"
-                      : isDisabled
-                        ? "text-quiet-muted/50 opacity-50 cursor-not-allowed"
-                        : "text-quiet-slate hover:ring-1 hover:ring-quiet-border"
-                  }`}
-                  style={{ backgroundColor: isSelected ? tag.color : `${tag.color}80` }}
+                  onClick={(e) => { e.stopPropagation(); onMakePermanent(post.id, false); }}
+                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
+                  title="Make ephemeral"
+                  aria-label="Make ephemeral"
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onMakePermanent(post.id, true); }}
+                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
+                  title="Make permanent"
+                  aria-label="Make permanent"
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                </button>
+              )
+            )}
+            {post.circles?.slug && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const shareUrl = `${window.location.origin}/${post.circles?.slug}/p/${post.id}`
+                  navigator.clipboard.writeText(shareUrl).then(() => {
+                    // Could add toast notification here
+                  }).catch(() => {
+                    // Silently fail if clipboard not available
+                  })
+                }}
+                className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
+                aria-label="Copy link"
+                title="Copy link"
+              >
+                <Link2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {isOwn && canEdit(post) && onEdit && !post.is_welcome && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleEdit(); }}
+                className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-accent group-hover:inline-flex"
+                aria-label="Edit post"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(post.id); }}
+                className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-warm group-hover:inline-flex"
+                aria-label="Delete post"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Content with height limiting */}
+        {isEditing ? (
+          // Edit mode
+          <div className="space-y-2" onClick={(e) => e.stopPropagation()}> {/* Stop propagation for edit mode */}
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full min-h-[120px] resize-none rounded-md border border-quiet-accent bg-quiet-offwhite p-3 text-sm text-quiet-slate focus:border-quiet-accent focus:outline-none"
+            />
+
+            {/* Tag selector in edit mode */}
+            <div className="flex flex-wrap gap-1.5">
+              {TAGS.map((tag) => {
+                const isSelected = editTags.includes(tag.id)
+                const isDisabled = !isSelected && editTags.length >= 3
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleEditTag(tag.id)}
+                    disabled={isDisabled}
+                    className={`rounded-full px-2.5 py-0.5 text-xs transition-all ${
+                      isSelected
+                        ? "text-quiet-slate ring-1 ring-quiet-accent"
+                        : isDisabled
+                          ? "text-quiet-muted/50 opacity-50 cursor-not-allowed"
+                          : "text-quiet-slate hover:ring-1 hover:ring-quiet-border"
+                    }`}
+                    style={{ backgroundColor: isSelected ? tag.color : `${tag.color}80` }}
+                  >
+                    {tag.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={handleCancelEdit}
+                className="rounded-md px-3 py-1.5 text-sm text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-slate"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={!editContent.trim()}
+                className="rounded-md bg-quiet-accent px-3 py-1.5 text-sm text-white hover:bg-quiet-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Normal view mode
+          <div className="relative">
+            <div
+              ref={contentRef}
+              className={`transition-all ${
+                needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
+              }`}
+            >
+              {/* Content */}
+              {isHtml ? (
+                <div
+                  className="post-content text-sm leading-relaxed text-quiet-slate"
+                  dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
+                />
+              ) : (
+                <div
+                  className="post-content text-sm leading-relaxed text-quiet-slate"
+                  dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
+                />
+              )}
+
+              {/* Link previews */}
+              {filteredLinkUrls.length > 0 && (
+                <div className="mt-1">
+                  {filteredLinkUrls.map((url) => (
+                    <LinkPreview key={url} url={url} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Gradient fade when collapsed */}
+            {needsExpand && !isExpanded && (
+              <div
+                className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
+                  bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
+                } to-transparent pointer-events-none`}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Expand/Collapse button */}
+        {needsExpand && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setIsExpanded((prev) => !prev); }}
+            className="mt-1 flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="h-3.5 w-3.5" />
+                <span>Show less</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3.5 w-3.5" />
+                <span>Show more</span>
+              </>
+            )}
+          </button>
+        )}
+
+        {/* Tags */}
+        {post.tags && post.tags.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {post.tags.map((tagId) => {
+              const tag = getTagDef(tagId)
+              if (!tag) return null
+              return (
+                <span
+                  key={tagId}
+                  className="rounded-full px-2 py-0.5 text-[11px] text-quiet-slate"
+                  style={{ backgroundColor: tag.color }}
                 >
                   {tag.label}
-                </button>
+                </span>
               )
             })}
           </div>
-
-          <div className="flex gap-2 justify-end">
-            <button
-              onClick={handleCancelEdit}
-              className="rounded-md px-3 py-1.5 text-sm text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-slate"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSaveEdit}
-              disabled={!editContent.trim()}
-              className="rounded-md bg-quiet-accent px-3 py-1.5 text-sm text-white hover:bg-quiet-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      ) : (
-        // Normal view mode
-        <div className="relative">
-          <div
-            ref={contentRef}
-            className={`transition-all ${
-              needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
-            }`}
-          >
-            {/* Content */}
-            {isHtml ? (
-              <div
-                className="post-content text-sm leading-relaxed text-quiet-slate"
-                dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
-              />
-            ) : (
-              <div
-                className="post-content text-sm leading-relaxed text-quiet-slate"
-                dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
-              />
-            )}
-
-            {/* Link previews */}
-            {filteredLinkUrls.length > 0 && (
-              <div className="mt-1">
-                {filteredLinkUrls.map((url) => (
-                  <LinkPreview key={url} url={url} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Gradient fade when collapsed */}
-          {needsExpand && !isExpanded && (
-            <div
-              className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
-                bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
-              } to-transparent pointer-events-none`}
-            />
-          )}
-        </div>
-      )}
-
-      {/* Expand/Collapse button */}
-      {needsExpand && (
-        <button
-          onClick={() => setIsExpanded((prev) => !prev)}
-          className="mt-1 flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
-        >
-          {isExpanded ? (
-            <>
-              <ChevronUp className="h-3.5 w-3.5" />
-              <span>Show less</span>
-            </>
-          ) : (
-            <>
-              <ChevronDown className="h-3.5 w-3.5" />
-              <span>Show more</span>
-            </>
-          )}
-        </button>
-      )}
-
-      {/* Tags */}
-      {post.tags && post.tags.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {post.tags.map((tagId) => {
-            const tag = getTagDef(tagId)
-            if (!tag) return null
-            return (
-              <span
-                key={tagId}
-                className="rounded-full px-2 py-0.5 text-[11px] text-quiet-slate"
-                style={{ backgroundColor: tag.color }}
-              >
-                {tag.label}
-              </span>
-            )
-          })}
-        </div>
-      )}
+        )}
+      </Link>
 
       {/* Upvote + Reply */}
       {onUpvote && !post.is_welcome && (
         <div className="mt-3 flex items-center gap-2">
           <button
-            onClick={() => handleUpvoteClick(post.id)}
+            onClick={(e) => { e.stopPropagation(); handleUpvoteClick(post.id); }}
             className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               post.user_upvoted
                 ? "bg-quiet-accent/20 text-quiet-slate"
@@ -524,7 +525,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
             {post.upvote_count > 0 && <span>{post.upvote_count}</span>}
           </button>
           <button
-            onClick={() => setRepliesOpen((prev) => !prev)}
+            onClick={(e) => { e.stopPropagation(); setRepliesOpen((prev) => !prev); }}
             className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               repliesOpen
                 ? "bg-quiet-accent/20 text-quiet-slate"
