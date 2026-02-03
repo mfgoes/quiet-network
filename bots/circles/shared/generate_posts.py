@@ -11,9 +11,34 @@ url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
-# Load posts
-with open("posts.json", "r") as f:
-    posts_data = json.load(f)
+# Load all JSON files from posts directory
+posts_dir = "posts"
+posts_data = []
+
+# Ensure posts directory exists
+if not os.path.exists(posts_dir):
+    print(f"Creating posts directory: {posts_dir}")
+    os.makedirs(posts_dir)
+
+# Load all JSON files
+for filename in os.listdir(posts_dir):
+    if filename.endswith('.json'):
+        try:
+            file_path = os.path.join(posts_dir, filename)
+            with open(file_path, "r") as f:
+                file_posts = json.load(f)
+                if isinstance(file_posts, list):
+                    posts_data.extend(file_posts)
+                else:
+                    print(f"Warning: Skipping {filename} - expected list of posts")
+        except json.JSONDecodeError:
+            print(f"Error: Could not parse JSON file: {filename}")
+        except Exception as e:
+            print(f"Error processing {filename}: {str(e)}")
+
+if not posts_data:
+    print("No posts found in posts directory")
+    exit(1)
 
 # Helper function to generate random timestamp: today or yesterday +-12h
 def random_post_time():
