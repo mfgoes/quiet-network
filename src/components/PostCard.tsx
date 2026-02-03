@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useLocation } from "react-router-dom" // Import useLocation
 import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown, Archive, Pencil, Link2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -166,7 +166,6 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
   const bgClass = useMemo(() => getAgeTint(post), [post])
-  const [repliesOpen, setRepliesOpen] = useState(false)
   const [replyCountDelta, setReplyCountDelta] = useState(0)
   const [isExpanded, setIsExpanded] = useState(false)
   const [needsExpand, setNeedsExpand] = useState(false)
@@ -175,7 +174,13 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const [editContent, setEditContent] = useState(post.content)
   const [editTags, setEditTags] = useState<string[]>(post.tags || [])
   const contentRef = useRef<HTMLDivElement>(null)
-  // const navigate = useNavigate() // useNavigate is not needed if using Link directly
+  const location = useLocation() // Get current location
+
+  const postDetailUrl = post.circles?.slug ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`;
+  const isDedicatedPostPage = location.pathname === postDetailUrl;
+
+  // Initialize repliesOpen based on whether it's a dedicated post page
+  const [repliesOpen, setRepliesOpen] = useState(isDedicatedPostPage);
 
   const handleReplyCountChange = useCallback((delta: number) => {
     setReplyCountDelta((prev) => prev + delta)
@@ -247,8 +252,6 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const authorAvatar = post.profiles?.avatar_emoji ?? "house"
   const authorUsername = post.profiles?.username
   const isOwn = userId === post.author_id
-
-  const postDetailUrl = post.circles?.slug ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`;
 
   return (
     <div className="relative">
