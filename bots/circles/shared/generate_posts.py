@@ -12,7 +12,7 @@ key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
 # Load all JSON files from posts directory
-posts_dir = "posts"
+posts_dir = os.path.join(os.path.dirname(__file__), "posts")
 posts_data = []
 
 # Ensure posts directory exists
@@ -21,7 +21,13 @@ if not os.path.exists(posts_dir):
     os.makedirs(posts_dir)
 
 # Load all JSON files
-for filename in os.listdir(posts_dir):
+try:
+    files = os.listdir(posts_dir)
+except Exception as e:
+    print(f"Error accessing directory {posts_dir}: {str(e)}")
+    exit(1)
+
+for filename in files:
     if filename.endswith('.json'):
         try:
             file_path = os.path.join(posts_dir, filename)
