@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown, Archive, Pencil } from "lucide-react"
+import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown, Archive, Pencil, Link2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { LinkPreview } from "@/components/LinkPreview"
@@ -282,7 +282,16 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               avatarUrl={post.circles.avatar_url}
             />
           )}
-          <span className="text-xs text-quiet-muted">{age}</span>
+          {post.circles?.slug ? (
+            <Link
+              to={`/${post.circles.slug}/p/${post.id}`}
+              className="text-xs text-quiet-muted hover:text-quiet-slate hover:underline"
+            >
+              {age}
+            </Link>
+          ) : (
+            <span className="text-xs text-quiet-muted">{age}</span>
+          )}
           {post.edited && (
             <span className="text-xs text-quiet-muted italic">(edited)</span>
           )}
@@ -327,6 +336,23 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                 <Archive className="h-3.5 w-3.5" />
               </button>
             )
+          )}
+          {post.circles?.slug && (
+            <button
+              onClick={() => {
+                const shareUrl = `${window.location.origin}/${post.circles?.slug}/p/${post.id}`
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                  // Could add toast notification here
+                }).catch(() => {
+                  // Silently fail if clipboard not available
+                })
+              }}
+              className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
+              aria-label="Copy link"
+              title="Copy link"
+            >
+              <Link2 className="h-3.5 w-3.5" />
+            </button>
           )}
           {isOwn && canEdit(post) && onEdit && !post.is_welcome && (
             <button
