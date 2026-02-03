@@ -4,7 +4,7 @@ import { PenLine, X } from "lucide-react"
 import { getTagDef } from "@/types"
 import { useAllMemberPosts, usePosts } from "@/lib/hooks"
 import { PostComposer } from "@/components/PostComposer"
-import { PostCard } from "@/components/PostCard"
+import { PostCard } from "@/components/PostCard.tsx" // Added .tsx extension
 import { CircleDropdown } from "@/components/CircleDropdown"
 import { CircleIcon } from "@/components/CircleIcon"
 import { Button } from "@/components/ui/button"
