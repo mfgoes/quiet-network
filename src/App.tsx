@@ -15,6 +15,7 @@ import { Shell } from "@/components/Shell"
 import { AdminPanel } from "@/components/AdminPanel"
 import { HomeFeed } from "@/components/HomeFeed"
 import { CircleFeedRoute } from "@/components/CircleFeedRoute"
+import { PostDetailRoute } from "@/components/PostDetailRoute"
 import { ExplorePage } from "@/components/ExplorePage"
 import { Button } from "@/components/ui/button"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -260,6 +261,26 @@ function AppRoutes() {
         />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/user/:username" element={<PublicProfileRoute />} />
+        <Route
+          path="/p/:postId"
+          element={
+            <PostDetailRoute
+              userId={user.id}
+              memberCircleIds={circles.map((c) => c.id)}
+              circleRoles={circleRoles}
+            />
+          }
+        />
+        <Route
+          path="/:circleSlug/p/:postId"
+          element={
+            <PostDetailRoute
+              userId={user.id}
+              memberCircleIds={circles.map((c) => c.id)}
+              circleRoles={circleRoles}
+            />
+          }
+        />
         <Route
           path="/admin/:circleSlug"
           element={

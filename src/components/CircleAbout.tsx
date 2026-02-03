@@ -1,6 +1,6 @@
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { ChevronDown, LogOut, Pencil, Shield, ExternalLink, Plus, Sparkles, Trash2, Camera } from "lucide-react"
+import { ChevronDown, LogOut, Pencil, Shield, ExternalLink, Plus, Sparkles, Trash2, Camera, Star } from "lucide-react"
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -23,6 +23,8 @@ interface CircleAboutProps {
   onJoin?: () => Promise<void>
   joining?: boolean
   sidebar?: boolean
+  isFavorited?: boolean
+  onToggleFavorite?: () => void
 }
 
 const MAX_AVATAR_SIZE = 100 * 1024 // 100 KB
@@ -416,7 +418,7 @@ function CircleBanner({ circle, isAdminOrMod, onUploadAvatar }: { circle: Circle
   )
 }
 
-export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAvatar, onLeave, onJoin, joining, sidebar }: CircleAboutProps) {
+export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAvatar, onLeave, onJoin, joining, sidebar, isFavorited, onToggleFavorite }: CircleAboutProps) {
   const [open, setOpen] = useState(false)
 
   // Desktop sidebar: separate cards
@@ -436,8 +438,22 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
         {/* About / Rules card with banner */}
         <div className="rounded-lg border border-quiet-border bg-white overflow-hidden">
           <CircleBanner circle={circle} isAdminOrMod={isAdminOrMod} onUploadAvatar={onUploadAvatar} />
-          <div className="px-4 pt-8 pb-3 border-b border-quiet-border">
-            <h3 className="text-sm font-medium text-quiet-slate">About / Rules</h3>
+          <div className="px-4 pt-8 pb-3 border-b border-quiet-border flex items-center justify-between">
+            <h3 className="text-sm font-medium text-quiet-slate">{circle.name}</h3>
+            {onToggleFavorite && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  onToggleFavorite()
+                }}
+                className="p-1.5 rounded-full hover:bg-quiet-border/50 transition-colors"
+                aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+              >
+                <Star className={`h-4 w-4 transition-colors ${isFavorited ? "text-yellow-500 fill-current" : "text-quiet-muted"}`} />
+              </button>
+            )}
           </div>
           <div className="px-4 py-3">
             <AboutContent circle={circle} userId={userId} onUpdate={onUpdate} />
@@ -480,14 +496,30 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
     <Collapsible open={open} onOpenChange={setOpen} className="mb-4">
       <div className="rounded-lg border border-quiet-border bg-white overflow-hidden">
         <CircleBanner circle={circle} isAdminOrMod={isAdminOrMod} onUploadAvatar={onUploadAvatar} />
-        <CollapsibleTrigger className="flex w-full items-center justify-between px-4 pt-8 pb-3 text-sm font-medium text-quiet-slate hover:bg-quiet-aged transition-colors">
-          <span>About / Rules</span>
-          <ChevronDown
-            className={`h-4 w-4 text-quiet-muted transition-transform ${
-              open ? "rotate-180" : ""
-            }`}
-          />
-        </CollapsibleTrigger>
+        <div className="flex items-center justify-between px-4 pt-8 pb-3">
+          <CollapsibleTrigger className="flex flex-1 items-center justify-between text-sm font-medium text-quiet-slate hover:bg-quiet-aged transition-colors -mx-4 px-4 -my-3 py-3">
+            <span>{circle.name}</span>
+            <ChevronDown
+              className={`h-4 w-4 text-quiet-muted transition-transform ${
+                open ? "rotate-180" : ""
+              }`}
+            />
+          </CollapsibleTrigger>
+          {onToggleFavorite && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                onToggleFavorite()
+              }}
+              className="p-1.5 rounded-full hover:bg-quiet-border/50 transition-colors ml-2"
+              aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+              title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Star className={`h-4 w-4 transition-colors ${isFavorited ? "text-yellow-500 fill-current" : "text-quiet-muted"}`} />
+            </button>
+          )}
+        </div>
 
         <CollapsibleContent>
           <div className="border-t border-quiet-border px-4 py-3">

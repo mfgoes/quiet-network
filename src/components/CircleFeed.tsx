@@ -16,6 +16,8 @@ interface CircleFeedProps {
   joining: boolean
   onUpdateCircle: (updates: { about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null }) => Promise<void>
   onUploadAvatar?: (file: File) => Promise<{ url: string | null; error: unknown }>
+  isFavorited?: boolean
+  onToggleFavorite?: () => void
 }
 
 export function CircleFeed({
@@ -28,6 +30,8 @@ export function CircleFeed({
   joining,
   onUpdateCircle,
   onUploadAvatar,
+  isFavorited,
+  onToggleFavorite,
 }: CircleFeedProps) {
   const circleId = circle.id
   const { posts, loading, createPost, updatePost, deletePost, toggleUpvote, makePermanent } = usePosts(circleId, userId)
@@ -60,7 +64,7 @@ export function CircleFeed({
     <>
       {/* Mobile: collapsible above feed */}
       <div className="lg:hidden">
-        <CircleAbout circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} />
+        <CircleAbout circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} isFavorited={isFavorited} onToggleFavorite={onToggleFavorite} />
       </div>
 
       <div className="lg:grid lg:grid-cols-[1fr_280px] lg:gap-6">
@@ -133,7 +137,7 @@ export function CircleFeed({
 
         {/* Desktop: sidebar */}
         <div className="hidden lg:block">
-          <CircleAbout sidebar circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} />
+          <CircleAbout sidebar circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} isFavorited={isFavorited} onToggleFavorite={onToggleFavorite} />
         </div>
       </div>
     </>

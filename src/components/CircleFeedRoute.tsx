@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { useCircleBySlug } from "@/lib/hooks"
@@ -32,9 +32,44 @@ export function CircleFeedRoute({
   const { circle, loading, refetch: refetchCircle } = useCircleBySlug(circleSlug)
   const navigate = useNavigate()
   const [joining, setJoining] = useState(false)
+  const [favoritedCircleIds, setFavoritedCircleIds] = useState<string[]>([])
+  const isFirstRender = useRef(true)
+
+  // Load favorites from localStorage on mount
+  useEffect(() => {
+    if (userId) {
+      const storedFavorites = localStorage.getItem(`favorites_${userId}`)
+      if (storedFavorites) {
+        setFavoritedCircleIds(JSON.parse(storedFavorites))
+      }
+    }
+  }, [userId])
+
+  // Save favorites to localStorage whenever they change (skip first render to avoid overwriting loaded data)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    if (userId) {
+      localStorage.setItem(`favorites_${userId}`, JSON.stringify(favoritedCircleIds))
+    }
+  }, [favoritedCircleIds, userId])
+
+  const toggleFavorite = useCallback(() => {
+    if (!circle) return
+    setFavoritedCircleIds(prev => {
+      if (prev.includes(circle.id)) {
+        return prev.filter(id => id !== circle.id)
+      } else {
+        return [...prev, circle.id]
+      }
+    })
+  }, [circle])
 
   const isMember = circle ? memberCircleIds.includes(circle.id) : false
   const isAdminOrMod = circle ? ["admin", "moderator"].includes(circleRoles[circle.id] ?? "") || circle.created_by === userId : false
+  const isFavorited = circle ? favoritedCircleIds.includes(circle.id) : false
 
   if (loading) {
     return <p className="text-center text-sm text-quiet-muted">Loading...</p>
@@ -79,6 +114,8 @@ export function CircleFeedRoute({
             if (!result.error) await refetchCircle()
             return result
           }}
+          isFavorited={isFavorited}
+          onToggleFavorite={toggleFavorite}
         />
       </div>
     </>

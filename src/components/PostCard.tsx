@@ -142,7 +142,6 @@ function CircleBadge({ name, slug, description, avatarUrl }: { name: string; slu
           className="flex items-center gap-1 rounded-full bg-quiet-border/40 px-2 py-0.5 text-[11px] text-quiet-muted transition-colors hover:bg-quiet-border/70 hover:text-quiet-slate"
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}
-          onClick={(e) => e.stopPropagation()} // Stop propagation for the Link inside CircleBadge
         >
           <CircleIcon name={name} avatarUrl={avatarUrl} size="xs" />
           <span>{name}</span>
@@ -177,7 +176,8 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const location = useLocation() // Get current location
 
   const postDetailUrl = post.circles?.slug ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`;
-  const isDedicatedPostPage = location.pathname === postDetailUrl;
+  // Check if we're on the post detail page (matches both /p/:id and /:circle/p/:id formats)
+  const isDedicatedPostPage = location.pathname === `/p/${post.id}` || location.pathname === `/${post.circles?.slug}/p/${post.id}`;
 
   // Initialize repliesOpen based on whether it's a dedicated post page
   const [repliesOpen, setRepliesOpen] = useState(isDedicatedPostPage);
@@ -255,8 +255,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
 
   return (
     <div className="relative">
-      {/* The main Link wrapper for the entire card content */}
-      {/* Conditional rendering to prevent Link from wrapping when editing */}
+      {/* Conditional rendering to prevent extra wrapper when editing */}
       {isEditing ? (
         <div className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
           {/* Content when editing */}
@@ -311,15 +310,12 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
           </div>
         </div>
       ) : (
-        <Link
-          to={postDetailUrl}
-          className={`group relative block overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass} hover:bg-quiet-border/20 transition-colors`}
-        >
-          {/* Header */}
+        <div className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
+          {/* Header - not clickable */}
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {authorUsername ? (
-                <Link to={`/user/${authorUsername}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                <Link to={`/user/${authorUsername}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                   <img
                     src={avatarUrl(authorAvatar)}
                     alt="avatar"
@@ -377,7 +373,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               {isAdminOrMod && onMakePermanent && !post.is_welcome && (
                 post.is_permanent ? (
                   <button
-                    onClick={(e) => { e.stopPropagation(); onMakePermanent(post.id, false); }}
+                    onClick={() => onMakePermanent(post.id, false)}
                     className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
                     title="Make ephemeral"
                     aria-label="Make ephemeral"
@@ -386,7 +382,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                   </button>
                 ) : (
                   <button
-                    onClick={(e) => { e.stopPropagation(); onMakePermanent(post.id, true); }}
+                    onClick={() => onMakePermanent(post.id, true)}
                     className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
                     title="Make permanent"
                     aria-label="Make permanent"
@@ -397,8 +393,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               )}
               {post.circles?.slug && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={() => {
                     const shareUrl = `${window.location.origin}/${post.circles?.slug}/p/${post.id}`
                     navigator.clipboard.writeText(shareUrl).then(() => {
                       // Could add toast notification here
@@ -415,7 +410,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               )}
               {isOwn && canEdit(post) && onEdit && !post.is_welcome && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleEdit(); }}
+                  onClick={handleEdit}
                   className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-accent group-hover:inline-flex"
                   aria-label="Edit post"
                 >
@@ -424,7 +419,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               )}
               {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onDelete(post.id); }}
+                  onClick={() => onDelete(post.id)}
                   className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-warm group-hover:inline-flex"
                   aria-label="Delete post"
                 >
@@ -434,51 +429,93 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
             </div>
           </div>
 
-          {/* Content with height limiting */}
-          <div className="relative">
-            <div
-              ref={contentRef}
-              className={`transition-all ${
-                needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
-              }`}
-            >
-              {/* Content */}
-              {isHtml ? (
-                <div
-                  className="post-content text-sm leading-relaxed text-quiet-slate"
-                  dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
-                />
-              ) : (
-                <div
-                  className="post-content text-sm leading-relaxed text-quiet-slate"
-                  dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
-                />
-              )}
+          {/* Content with height limiting - clickable only when not on detail page */}
+          {isDedicatedPostPage ? (
+            <div className="block relative">
+              <div
+                ref={contentRef}
+                className={`transition-all ${
+                  needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
+                }`}
+              >
+                {/* Content */}
+                {isHtml ? (
+                  <div
+                    className="post-content text-sm leading-relaxed text-quiet-slate"
+                    dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
+                  />
+                ) : (
+                  <div
+                    className="post-content text-sm leading-relaxed text-quiet-slate"
+                    dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
+                  />
+                )}
 
-              {/* Link previews */}
-              {filteredLinkUrls.length > 0 && (
-                <div className="mt-1">
-                  {filteredLinkUrls.map((url) => (
-                    <LinkPreview key={url} url={url} />
-                  ))}
-                </div>
+                {/* Link previews */}
+                {filteredLinkUrls.length > 0 && (
+                  <div className="mt-1">
+                    {filteredLinkUrls.map((url) => (
+                      <LinkPreview key={url} url={url} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Gradient fade when collapsed */}
+              {needsExpand && !isExpanded && (
+                <div
+                  className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
+                    bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
+                  } to-transparent pointer-events-none`}
+                />
               )}
             </div>
-
-            {/* Gradient fade when collapsed */}
-            {needsExpand && !isExpanded && (
+          ) : (
+            <Link to={postDetailUrl} className="block relative group/content">
               <div
-                className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
-                  bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
-                } to-transparent pointer-events-none`}
-              />
-            )}
-          </div>
+                ref={contentRef}
+                className={`transition-all ${
+                  needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
+                }`}
+              >
+                {/* Content */}
+                {isHtml ? (
+                  <div
+                    className="post-content text-sm leading-relaxed text-quiet-slate group-hover/content:text-quiet-accent transition-colors"
+                    dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
+                  />
+                ) : (
+                  <div
+                    className="post-content text-sm leading-relaxed text-quiet-slate group-hover/content:text-quiet-accent transition-colors"
+                    dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
+                  />
+                )}
 
-          {/* Expand/Collapse button */}
+                {/* Link previews */}
+                {filteredLinkUrls.length > 0 && (
+                  <div className="mt-1">
+                    {filteredLinkUrls.map((url) => (
+                      <LinkPreview key={url} url={url} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Gradient fade when collapsed */}
+              {needsExpand && !isExpanded && (
+                <div
+                  className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
+                    bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
+                  } to-transparent pointer-events-none`}
+                />
+              )}
+            </Link>
+          )}
+
+          {/* Expand/Collapse button - outside clickable area */}
           {needsExpand && (
             <button
-              onClick={(e) => { e.stopPropagation(); setIsExpanded((prev) => !prev); }}
+              onClick={() => setIsExpanded((prev) => !prev)}
               className="mt-1 flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
             >
               {isExpanded ? (
@@ -495,7 +532,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
             </button>
           )}
 
-          {/* Tags */}
+          {/* Tags - outside clickable area */}
           {post.tags && post.tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {post.tags.map((tagId) => {
@@ -513,15 +550,15 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               })}
             </div>
           )}
-        </Link>
+        </div>
       )}
 
 
-      {/* Upvote + Reply (these are outside the main Link wrapper to be independently clickable) */}
+      {/* Upvote + Reply (outside the clickable content area) */}
       {onUpvote && !post.is_welcome && (
         <div className="mt-3 flex items-center gap-2">
           <button
-            onClick={(e) => { e.stopPropagation(); handleUpvoteClick(post.id); }}
+            onClick={() => handleUpvoteClick(post.id)}
             className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               post.user_upvoted
                 ? "bg-quiet-accent/20 text-quiet-slate"
@@ -532,7 +569,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
             {post.upvote_count > 0 && <span>{post.upvote_count}</span>}
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); setRepliesOpen((prev) => !prev); }}
+            onClick={() => setRepliesOpen((prev) => !prev)}
             className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               repliesOpen
                 ? "bg-quiet-accent/20 text-quiet-slate"
@@ -547,7 +584,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
         </div>
       )}
 
-      {/* Reply thread (also outside the main Link wrapper) */}
+      {/* Reply thread */}
       {repliesOpen && !post.is_welcome && (
         <div className="mt-3">
           <ReplySection

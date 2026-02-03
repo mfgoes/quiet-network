@@ -1,12 +1,12 @@
-import { useState, useMemo, useRef, useEffect } from "react"
+import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { PenLine, X } from "lucide-react"
 import { getTagDef } from "@/types"
 import { useAllMemberPosts, usePosts } from "@/lib/hooks"
 import { PostComposer } from "@/components/PostComposer"
 import { PostCard } from "@/components/PostCard.tsx" // Added .tsx extension
-import { CircleDropdown } from "@/components/CircleDropdown"
 import { CircleIcon } from "@/components/CircleIcon"
+import { Shell } from "@/components/Shell"
 import { Button } from "@/components/ui/button"
 import type { Circle } from "@/types"
 
@@ -60,6 +60,7 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
   const navigate = useNavigate()
   const circleIds = useMemo(() => circles.map((c) => c.id), [circles])
   const [favoritedCircleIds, setFavoritedCircleIds] = useState<string[]>([])
+  const isFirstRender = useRef(true)
 
   // Load favorites from localStorage on mount
   useEffect(() => {
@@ -71,8 +72,12 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
     }
   }, [userId])
 
-  // Save favorites to localStorage whenever they change
+  // Save favorites to localStorage whenever they change (skip first render to avoid overwriting loaded data)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
     if (userId) {
       localStorage.setItem(`favorites_${userId}`, JSON.stringify(favoritedCircleIds))
     }
@@ -132,12 +137,7 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
   }, [composerState])
 
   return (
-    <Shell 
-      circles={circles} 
-      userId={userId}
-      favoritedCircleIds={favoritedCircleIds}
-      onToggleFavorite={toggleFavorite}
-    >
+    <Shell>
       {/* Composer overlay */}
       {composerState !== "closed" && composerState !== "picking" && (
         <div className="mb-4">
@@ -149,7 +149,26 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
         </div>
       )}
 
-      <CircleDropdown circles={circles} />
+      {/* Favorite Circles */}
+      {favoritedCircleIds.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-xs font-medium text-quiet-muted mb-2">FAVORITES</h3>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {circles
+              .filter(c => favoritedCircleIds.includes(c.id))
+              .map(circle => (
+                <button
+                  key={circle.id}
+                  onClick={() => navigate(`/${circle.slug}`)}
+                  className="flex items-center gap-2 shrink-0 rounded-lg border border-quiet-border bg-white px-3 py-2 text-sm text-quiet-slate hover:bg-quiet-aged transition-colors"
+                >
+                  <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
+                  <span className="truncate">{circle.name}</span>
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Tag filter bar */}
       {availableTags.length > 0 && (
