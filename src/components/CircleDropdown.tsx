@@ -39,19 +39,6 @@ export function CircleDropdown({
     return () => document.removeEventListener("mousedown", handleClick)
   }, [])
 
-  const toggleFavorite = useCallback((circleId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent dropdown from closing or navigating
-    e.preventDefault(); // Prevent default link behavior if star is inside a link
-
-    setFavoritedCircleIds(prev => {
-      if (prev.includes(circleId)) {
-        return prev.filter(id => id !== circleId);
-      } else {
-        return [...prev, circleId];
-      }
-    });
-  }, []);
-
   const sortedCircles = useMemo(() => {
     const favorites = circles.filter(circle => favoritedCircleIds.includes(circle.id));
     const nonFavorites = circles.filter(circle => !favoritedCircleIds.includes(circle.id));
@@ -112,8 +99,9 @@ export function CircleDropdown({
                 </Link>
                 <button
                   onClick={(e) => onToggleFavorite?.(circle.id, e)}
-                  className="p-2 rounded-full hover:bg-quiet-border/50 mr-2" // Added mr-2 for spacing
-                  aria-label={isFavorited ? "Unfavorite" : "Favorite"}
+                  className="p-2 rounded-full hover:bg-quiet-border/50 mr-2 group/star"
+                  aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                  title={isFavorited ? "Remove from favorites" : "Add to favorites"}
                 >
                   <Star className={`h-4 w-4 ${isFavorited ? "text-yellow-500 fill-current" : "text-quiet-muted"}`} />
                 </button>

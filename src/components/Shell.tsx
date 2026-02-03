@@ -72,8 +72,9 @@ export function Shell({
                         </Link>
                         <button
                           onClick={(e) => toggleFavorite(circle.id, e)}
-                          className="p-2 rounded-full hover:bg-quiet-border/50 mr-2"
-                          aria-label={favoritedCircleIds.includes(circle.id) ? "Unfavorite" : "Favorite"}
+                          className="p-2 rounded-full hover:bg-quiet-border/50 mr-2 group/star"
+                          aria-label={favoritedCircleIds.includes(circle.id) ? "Remove from favorites" : "Add to favorites"}
+                          title={favoritedCircleIds.includes(circle.id) ? "Remove from favorites" : "Add to favorites"}
                         >
                           <Star className={`h-4 w-4 ${favoritedCircleIds.includes(circle.id) ? "text-yellow-500 fill-current" : "text-quiet-muted"}`} />
                         </button>

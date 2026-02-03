@@ -59,6 +59,36 @@ function HomeComposer({
 export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
   const navigate = useNavigate()
   const circleIds = useMemo(() => circles.map((c) => c.id), [circles])
+  const [favoritedCircleIds, setFavoritedCircleIds] = useState<string[]>([])
+
+  // Load favorites from localStorage on mount
+  useEffect(() => {
+    if (userId) {
+      const storedFavorites = localStorage.getItem(`favorites_${userId}`)
+      if (storedFavorites) {
+        setFavoritedCircleIds(JSON.parse(storedFavorites))
+      }
+    }
+  }, [userId])
+
+  // Save favorites to localStorage whenever they change
+  useEffect(() => {
+    if (userId) {
+      localStorage.setItem(`favorites_${userId}`, JSON.stringify(favoritedCircleIds))
+    }
+  }, [favoritedCircleIds, userId])
+
+  const toggleFavorite = useCallback((circleId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    setFavoritedCircleIds(prev => {
+      if (prev.includes(circleId)) {
+        return prev.filter(id => id !== circleId)
+      } else {
+        return [...prev, circleId]
+      }
+    })
+  }, [])
   const { posts, loading, toggleUpvote, updatePost, deletePost, makePermanent } = useAllMemberPosts(circleIds, userId)
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [composerState, setComposerState] = useState<"closed" | "picking" | Circle>("closed")
