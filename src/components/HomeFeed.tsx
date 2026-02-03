@@ -102,7 +102,7 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
   }, [composerState])
 
   return (
-    <>
+    <Shell circles={circles} userId={userId}>
       {/* Composer overlay */}
       {composerState !== "closed" && composerState !== "picking" && (
         <div className="mb-4">
@@ -242,6 +242,6 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
           ))}
         </div>
       )}
-    </>
+    </Shell>
   )
 }
