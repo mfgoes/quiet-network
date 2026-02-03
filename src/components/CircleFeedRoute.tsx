@@ -88,7 +88,23 @@ export function CircleFeedRoute({
 
   return (
     <>
-      <CircleDropdown circles={circles} selectedSlug={circleSlug} currentCircle={circle} />
+      <CircleDropdown
+        circles={circles}
+        selectedSlug={circleSlug}
+        currentCircle={circle}
+        favoritedCircleIds={favoritedCircleIds}
+        onToggleFavorite={(circleId, e) => {
+          e.stopPropagation()
+          e.preventDefault()
+          setFavoritedCircleIds(prev => {
+            if (prev.includes(circleId)) {
+              return prev.filter(id => id !== circleId)
+            } else {
+              return [...prev, circleId]
+            }
+          })
+        }}
+      />
       <div className="mt-4">
         <CircleFeed
           circle={circle}

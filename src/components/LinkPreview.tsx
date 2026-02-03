@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo } from "react"
 import { ExternalLink } from "lucide-react"
 import { YouTubeEmbed, extractYouTubeId } from "@/components/YouTubeEmbed"
 import { GoogleMapsEmbed, GoogleMapsLinkCard, extractMapCoords, isGoogleMapsUrl } from "@/components/GoogleMapsEmbed"

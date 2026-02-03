@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from "react" // Added useCallback
+import { useState, useRef, useEffect, useMemo } from "react"
 import { Link, useNavigate } from "react-router-dom" // Added useNavigate back
 import { ChevronDown, Star } from "lucide-react" // Import Star icon
 import { CircleIcon } from "@/components/CircleIcon"
@@ -12,16 +12,14 @@ interface CircleDropdownProps {
   circles: Circle[]
   selectedSlug?: string
   currentCircle?: Circle | null
-  userId: string
   favoritedCircleIds?: string[]
   onToggleFavorite?: (circleId: string, e: React.MouseEvent) => void
 }
 
-export function CircleDropdown({ 
-  circles, 
-  selectedSlug, 
-  currentCircle, 
-  userId,
+export function CircleDropdown({
+  circles,
+  selectedSlug,
+  currentCircle,
   favoritedCircleIds = [],
   onToggleFavorite
 }: CircleDropdownProps) {

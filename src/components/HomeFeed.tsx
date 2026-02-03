@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { PenLine, X } from "lucide-react"
 import { getTagDef } from "@/types"
@@ -83,17 +83,6 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
     }
   }, [favoritedCircleIds, userId])
 
-  const toggleFavorite = useCallback((circleId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    setFavoritedCircleIds(prev => {
-      if (prev.includes(circleId)) {
-        return prev.filter(id => id !== circleId)
-      } else {
-        return [...prev, circleId]
-      }
-    })
-  }, [])
   const { posts, loading, toggleUpvote, updatePost, deletePost, makePermanent } = useAllMemberPosts(circleIds, userId)
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [composerState, setComposerState] = useState<"closed" | "picking" | Circle>("closed")

@@ -587,7 +587,7 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
       )
     )
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("posts")
       .update({
         content,
@@ -883,7 +883,7 @@ export function usePosts(circleId: string | undefined, userId?: string) {
       )
     )
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("posts")
       .update({
         content,
