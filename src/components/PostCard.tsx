@@ -312,46 +312,98 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
       ) : (
         <div className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
           {/* Header - not clickable */}
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {authorUsername ? (
-                <Link to={`/user/${authorUsername}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                  <img
-                    src={avatarUrl(authorAvatar)}
-                    alt="avatar"
-                    className="h-7 w-7 rounded-full object-cover"
-                  />
-                  <span className="text-sm font-medium text-quiet-slate">
-                    {authorName}
-                  </span>
-                </Link>
-              ) : (
-                <>
-                  <img
-                    src={avatarUrl(authorAvatar)}
-                    alt="avatar"
-                    className="h-7 w-7 rounded-full object-cover"
-                  />
-                  <span className="text-sm font-medium text-quiet-slate">
-                    {authorName}
-                  </span>
-                </>
-              )}
-              {post.circles && (
-                <CircleBadge
-                  name={post.circles.name}
-                  slug={post.circles.slug}
-                  description={post.circles.description ?? undefined}
-                  avatarUrl={post.circles.avatar_url}
-                />
-              )}
-              <span className="text-xs text-quiet-muted">{age}</span>
-              {post.edited && (
-                <span className="text-xs text-quiet-muted italic">(edited)</span>
-              )}
-            </div>
+          <div className="mb-2">
+            {/* First row: Avatar + Name + Circle */}
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
+                {authorUsername ? (
+                  <Link to={`/user/${authorUsername}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0 flex-shrink">
+                    <img
+                      src={avatarUrl(authorAvatar)}
+                      alt="avatar"
+                      className="h-7 w-7 rounded-full object-cover flex-shrink-0"
+                    />
+                    <span className="text-sm font-medium text-quiet-slate truncate">
+                      {authorName}
+                    </span>
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-2 min-w-0 flex-shrink">
+                    <img
+                      src={avatarUrl(authorAvatar)}
+                      alt="avatar"
+                      className="h-7 w-7 rounded-full object-cover flex-shrink-0"
+                    />
+                    <span className="text-sm font-medium text-quiet-slate truncate">
+                      {authorName}
+                    </span>
+                  </div>
+                )}
+                {post.circles && !isDedicatedPostPage && (
+                  <div className="hidden sm:block flex-shrink-0">
+                    <CircleBadge
+                      name={post.circles.name}
+                      slug={post.circles.slug}
+                      description={post.circles.description ?? undefined}
+                      avatarUrl={post.circles.avatar_url}
+                    />
+                  </div>
+                )}
+              </div>
 
-            <div className="flex items-center gap-1.5">
+              {/* Mobile action buttons - top right */}
+              <div className="sm:hidden flex items-center gap-1.5 flex-shrink-0">
+                {isAdminOrMod && onMakePermanent && !post.is_welcome && (
+                  post.is_permanent ? (
+                    <button
+                      onClick={() => onMakePermanent(post.id, false)}
+                      className="rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate"
+                      title="Make ephemeral"
+                      aria-label="Make ephemeral"
+                    >
+                      <Clock className="h-3.5 w-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onMakePermanent(post.id, true)}
+                      className="rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate"
+                      title="Make permanent"
+                      aria-label="Make permanent"
+                    >
+                      <Archive className="h-3.5 w-3.5" />
+                    </button>
+                  )
+                )}
+                {post.circles?.slug && (
+                  <button
+                    onClick={() => {
+                      const shareUrl = `${window.location.origin}/${post.circles?.slug}/p/${post.id}`
+                      navigator.clipboard.writeText(shareUrl).then(() => {
+                        // Could add toast notification here
+                      }).catch(() => {
+                        // Silently fail if clipboard not available
+                      })
+                    }}
+                    className="rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate"
+                    aria-label="Copy link"
+                    title="Copy link"
+                  >
+                    <Link2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
+                  <button
+                    onClick={() => onDelete(post.id)}
+                    className="rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-warm"
+                    aria-label="Delete post"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Desktop action buttons */}
+              <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
               {post.is_welcome && (
                 <Badge variant="pinned">
                   <Pin className="mr-1 h-3 w-3" />
@@ -425,6 +477,35 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
+              )}
+              </div>
+            </div>
+
+            {/* Second row: Age + Badges */}
+            <div className="flex items-center gap-x-1.5 gap-y-1 flex-wrap">
+              <span className="text-xs text-quiet-muted flex-shrink-0">{age}</span>
+              {post.edited && (
+                <span className="hidden sm:inline text-xs text-quiet-muted italic flex-shrink-0">(edited)</span>
+              )}
+
+              {/* Mobile badges */}
+              {post.is_welcome && (
+                <Badge variant="pinned" className="sm:hidden flex-shrink-0">
+                  <Pin className="mr-1 h-3 w-3" />
+                  Pinned
+                </Badge>
+              )}
+              {post.is_permanent && !post.is_welcome && (
+                <Badge variant="permanent" className="sm:hidden flex-shrink-0">
+                  <Archive className="mr-1 h-3 w-3" />
+                  Permanent
+                </Badge>
+              )}
+              {expiry && (
+                <Badge variant={expiry.isUrgent ? "expiring" : "default"} className="sm:hidden flex-shrink-0">
+                  {expiry.isUrgent && <Clock className="mr-1 h-3 w-3" />}
+                  {expiry.label}
+                </Badge>
               )}
             </div>
           </div>

@@ -18,6 +18,20 @@ export function PostDetailRoute({ userId, memberCircleIds, circleRoles = {} }: P
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const handleBackClick = () => {
+    // If the post has a circle, navigate to it
+    if (post?.circles?.slug) {
+      navigate(`/${post.circles.slug}`)
+    } else {
+      // Fallback: go back if possible, otherwise home
+      if (window.history.length > 1) {
+        navigate(-1)
+      } else {
+        navigate('/')
+      }
+    }
+  }
+
   useEffect(() => {
     if (!postId) return
 
@@ -108,7 +122,7 @@ export function PostDetailRoute({ userId, memberCircleIds, circleRoles = {} }: P
   if (loading) {
     return (
       <div>
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" onClick={handleBackClick}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <p className="mt-4 text-center text-sm text-quiet-muted">Loading...</p>
@@ -119,7 +133,7 @@ export function PostDetailRoute({ userId, memberCircleIds, circleRoles = {} }: P
   if (!post) {
     return (
       <div>
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" onClick={handleBackClick}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <p className="mt-4 text-center text-sm text-quiet-muted">Post not found.</p>
@@ -133,7 +147,7 @@ export function PostDetailRoute({ userId, memberCircleIds, circleRoles = {} }: P
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" onClick={handleBackClick}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         {post.circles && (
