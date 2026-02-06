@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Bell, Mail, Calendar, MessageCircle, Check } from "lucide-react"
 import { useNotificationPreferences } from "@/lib/hooks"
-import { Button } from "@/components/ui/button"
+import type { NotificationPreferences } from "@/types"
 
 interface NotificationSettingsProps {
   userId: string
@@ -12,7 +12,10 @@ export function NotificationSettings({ userId }: NotificationSettingsProps) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  const handleToggle = async (key: keyof typeof preferences, value: boolean) => {
+  const handleToggle = async (
+    key: keyof Pick<NotificationPreferences, 'notify_on_replies' | 'notify_on_mentions' | 'notify_weekly_digest' | 'notify_on_circle_updates'>,
+    value: boolean
+  ) => {
     if (!preferences) return
 
     setSaving(true)
