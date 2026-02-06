@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { PostCard } from "@/components/PostCard"
+import { PostMetaTags } from "@/components/PostMetaTags"
 import { Button } from "@/components/ui/button"
 import type { Post } from "@/types"
 
@@ -146,6 +147,7 @@ export function PostDetailRoute({ userId, memberCircleIds, circleRoles = {} }: P
 
   return (
     <div>
+      <PostMetaTags post={post} />
       <div className="mb-4 flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={handleBackClick}>
           <ArrowLeft className="h-4 w-4" />

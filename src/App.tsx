@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from "react-router-dom"
+import { HelmetProvider } from "react-helmet-async"
 import { ArrowLeft } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth, useProfile, useCircles, useAllCircles, usePublicProfile, useAdminCircles } from "@/lib/hooks"
@@ -23,11 +24,13 @@ import type { Circle, CircleRole, Profile as ProfileType } from "@/types"
 
 function App() {
   return (
-    <BrowserRouter>
-      <TooltipProvider delayDuration={300}>
-        <AppRoutes />
-      </TooltipProvider>
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <TooltipProvider delayDuration={300}>
+          <AppRoutes />
+        </TooltipProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   )
 }
 
