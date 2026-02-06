@@ -92,6 +92,17 @@ function AppRoutes() {
 
   // Not signed in
   if (!user) {
+    // Allow viewing posts without authentication
+    if (location.pathname.match(/^\/p\//)) {
+      return (
+        <Shell>
+          <PostDetailRoute
+            onJoinClick={() => navigate("/")}
+          />
+        </Shell>
+      )
+    }
+
     if (showAbout || location.pathname === "/about") {
       return (
         <Shell
@@ -282,6 +293,7 @@ function AppRoutes() {
               userId={user.id}
               memberCircleIds={circles.map((c) => c.id)}
               circleRoles={circleRoles}
+              onJoinClick={() => navigate("/")}
             />
           }
         />
@@ -292,6 +304,7 @@ function AppRoutes() {
               userId={user.id}
               memberCircleIds={circles.map((c) => c.id)}
               circleRoles={circleRoles}
+              onJoinClick={() => navigate("/")}
             />
           }
         />

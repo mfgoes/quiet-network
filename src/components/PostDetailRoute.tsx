@@ -4,16 +4,18 @@ import { ArrowLeft } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { PostCard } from "@/components/PostCard"
 import { PostMetaTags } from "@/components/PostMetaTags"
+import { JoinBanner } from "@/components/JoinBanner"
 import { Button } from "@/components/ui/button"
 import type { Post } from "@/types"
 
 interface PostDetailRouteProps {
-  userId: string
-  memberCircleIds: string[]
+  userId?: string
+  memberCircleIds?: string[]
   circleRoles?: Record<string, string>
+  onJoinClick?: () => void
 }
 
-export function PostDetailRoute({ userId, memberCircleIds, circleRoles = {} }: PostDetailRouteProps) {
+export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}, onJoinClick }: PostDetailRouteProps) {
   const { postId } = useParams<{ postId: string }>()
   const navigate = useNavigate()
   const [post, setPost] = useState<Post | null>(null)
@@ -52,7 +54,7 @@ export function PostDetailRoute({ userId, memberCircleIds, circleRoles = {} }: P
           .eq("post_id", postId)
 
         const upvoteCount = upvoteData?.length ?? 0
-        const userUpvoted = upvoteData?.some(u => u.user_id === userId) ?? false
+        const userUpvoted = userId ? (upvoteData?.some(u => u.user_id === userId) ?? false) : false
 
         setPost({
           ...data,
@@ -65,10 +67,10 @@ export function PostDetailRoute({ userId, memberCircleIds, circleRoles = {} }: P
     }
 
     fetchPost()
-  }, [postId])
+  }, [postId, userId])
 
   const handleUpvote = async (postId: string) => {
-    if (!post) return
+    if (!post || !userId) return
 
     // Check if already upvoted
     const { data: existing } = await supabase
@@ -81,11 +83,11 @@ export function PostDetailRoute({ userId, memberCircleIds, circleRoles = {} }: P
     if (existing) {
       // Remove upvote
       await supabase.from("upvotes").delete().eq("post_id", postId).eq("user_id", userId)
-      setPost({ ...post, upvote_count: (post.upvote_count || 0) - 1 })
+      setPost({ ...post, upvote_count: (post.upvote_count || 0) - 1, user_upvoted: false })
     } else {
       // Add upvote
       await supabase.from("upvotes").insert({ post_id: postId, user_id: userId })
-      setPost({ ...post, upvote_count: (post.upvote_count || 0) + 1 })
+      setPost({ ...post, upvote_count: (post.upvote_count || 0) + 1, user_upvoted: true })
     }
   }
 
@@ -142,12 +144,14 @@ export function PostDetailRoute({ userId, memberCircleIds, circleRoles = {} }: P
     )
   }
 
-  const isMember = memberCircleIds.includes(post.circle_id)
-  const isAdminOrMod = ["admin", "moderator"].includes(circleRoles[post.circle_id] ?? "")
+  const isMember = userId ? memberCircleIds.includes(post.circle_id) : false
+  const isAdminOrMod = userId ? ["admin", "moderator"].includes(circleRoles[post.circle_id] ?? "") : false
+  const isAuthenticated = !!userId
 
   return (
     <div>
       <PostMetaTags post={post} />
+      {!isAuthenticated && onJoinClick && <JoinBanner onJoin={onJoinClick} />}
       <div className="mb-4 flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={handleBackClick}>
           <ArrowLeft className="h-4 w-4" />
