@@ -1,11 +1,8 @@
 {
   "installCommand": "npm install --legacy-peer-deps",
   "rewrites": [
+    { "source": "/p/:postId", "destination": "/api/og" },
+    { "source": "/:circleSlug/p/:postId", "destination": "/api/og" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ],
-  "functions": {
-    "api/_middleware.js": {
-      "runtime": "edge"
-    }
-  }
+  ]
 }
