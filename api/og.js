@@ -25,17 +25,35 @@ function extractPostId(pathname) {
   return match ? match[1] : null
 }
 
-// Strip HTML tags and truncate text
+// Strip HTML tags, markdown formatting, and truncate text
 function sanitizeText(html, maxLength = 200) {
   const text = html
-    .replace(/<[^>]*>/g, '')
-    .replace(/&[^;]+;/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/&[^;]+;/g, ' ') // Remove HTML entities
+    .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold markdown
+    .replace(/\*([^*]+)\*/g, '$1') // Remove italic markdown
+    .replace(/#{1,6}\s+/g, '') // Remove heading markdown
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // Convert links to text
+    .replace(/`([^`]+)`/g, '$1') // Remove code formatting
+    .replace(/\s+/g, ' ') // Normalize whitespace
     .trim()
 
   return text.length > maxLength
     ? text.slice(0, maxLength).trim() + '...'
     : text
+}
+
+// Extract image URL from post content
+function extractImageUrl(content) {
+  // Try to find img src
+  const imgMatch = content.match(/<img[^>]+src="([^"]+)"/)
+  if (imgMatch) return imgMatch[1]
+
+  // Try to find image URLs (common image extensions)
+  const imageUrlMatch = content.match(/(https?:\/\/[^\s<>"]+\.(?:jpg|jpeg|png|gif|webp))/i)
+  if (imageUrlMatch) return imageUrlMatch[1]
+
+  return null
 }
 
 // Extract first URL from post content
@@ -99,26 +117,30 @@ function generateMetaTags(post, siteUrl) {
   const author = escapeHtml(post.profiles?.display_name || 'Someone')
   const circle = escapeHtml(post.circles?.name || 'a circle')
   const content = sanitizeText(post.content, 200)
-  const url = extractFirstUrl(post.content)
+  const sharedUrl = extractFirstUrl(post.content)
 
+  // Build title with circle name
   let title = `${author} in ${circle}`
-  if (url) {
+  if (sharedUrl) {
     try {
-      const domain = new URL(url).hostname.replace('www.', '')
-      title = `${author} shared ${domain}`
+      const domain = new URL(sharedUrl).hostname.replace('www.', '')
+      title = `${author} shared in ${circle}`
     } catch (e) {
-      // Invalid URL, use default
+      // Invalid URL, keep default
     }
   }
 
   const description = escapeHtml(content || `A post by ${author} in ${circle}`)
 
-  let imageUrl = `${siteUrl}/images/landscape_with_boats.jpg`
-  if (url) {
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
-    if (imageExtensions.some(ext => url.toLowerCase().includes(ext))) {
-      imageUrl = url
-    }
+  // Choose image: 1) Image from post content, 2) Circle avatar, 3) Default landscape
+  let imageUrl = extractImageUrl(post.content)
+
+  if (!imageUrl && post.circles?.avatar_url) {
+    imageUrl = post.circles.avatar_url
+  }
+
+  if (!imageUrl) {
+    imageUrl = `${siteUrl}/images/landscape_with_boats.jpg`
   }
 
   const postUrl = post.circles?.slug
