@@ -21,7 +21,9 @@
       "Bash(env:*)",
       "Bash(python3:*)",
       "Bash(pip3 install:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(open:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

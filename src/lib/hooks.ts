@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser, Reply } from "@/types"
+import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser, Reply, NotificationPreferences } from "@/types"
 import { slugify } from "@/types"
 
 // ─── Auth ────────────────────────────────────────────
@@ -303,16 +303,38 @@ export function useAllCircles() {
   const [loading, setLoading] = useState(true)
 
   const fetchAll = useCallback(async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from("circles")
-      .select("*")
-      .order("created_at", { ascending: false })
+    const MAX_RETRIES = 2
 
-    if (!error && data) {
-      setAllCircles(data as Circle[])
+    const attemptFetch = async (retryCount = 0): Promise<void> => {
+      const { data, error } = await supabase
+        .from("circles")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (!error && data) {
+        setAllCircles(data as Circle[])
+        setLoading(false)
+      } else if (error) {
+        // Check if it's an auth error
+        const isAuthError =
+          error.code === 'PGRST301' || // JWT expired
+          error.code === 'PGRST302' || // JWT invalid
+          error.message?.toLowerCase().includes('jwt') ||
+          error.message?.toLowerCase().includes('auth')
+
+        if (isAuthError && retryCount < MAX_RETRIES) {
+          console.log(`Auth error fetching circles, retrying... (attempt ${retryCount + 1}/${MAX_RETRIES})`)
+          await new Promise(resolve => setTimeout(resolve, 500 * (retryCount + 1)))
+          await attemptFetch(retryCount + 1)
+        } else {
+          console.error('Error fetching all circles:', error)
+          setLoading(false)
+        }
+      }
     }
-    setLoading(false)
+
+    setLoading(true)
+    await attemptFetch()
   }, [])
 
   useEffect(() => {
@@ -1443,4 +1465,68 @@ export function useAdminCircleMemberCounts(circleIds: string[]) {
   }, [key])
 
   return { memberCounts }
+}
+
+// ─── Notification Preferences ──────────────────────────────────
+
+export function useNotificationPreferences(userId: string | undefined) {
+  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const fetchPreferences = useCallback(async () => {
+    if (!userId) {
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    const { data, error } = await supabase
+      .from("notification_preferences")
+      .select("*")
+      .eq("user_id", userId)
+      .single()
+
+    if (!error && data) {
+      setPreferences(data as NotificationPreferences)
+    } else if (error && error.code === 'PGRST116') {
+      // Row not found, create default preferences
+      const { data: newData } = await supabase
+        .from("notification_preferences")
+        .insert({ user_id: userId })
+        .select()
+        .single()
+
+      if (newData) {
+        setPreferences(newData as NotificationPreferences)
+      }
+    }
+    setLoading(false)
+  }, [userId])
+
+  const updatePreferences = useCallback(
+    async (updates: Partial<NotificationPreferences>) => {
+      if (!userId) return null
+
+      const { data, error } = await supabase
+        .from("notification_preferences")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .select()
+        .single()
+
+      if (!error && data) {
+        setPreferences(data as NotificationPreferences)
+        return null
+      }
+
+      return error
+    },
+    [userId]
+  )
+
+  useEffect(() => {
+    fetchPreferences()
+  }, [fetchPreferences])
+
+  return { preferences, loading, updatePreferences, refetch: fetchPreferences }
 }

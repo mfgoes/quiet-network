@@ -14,6 +14,18 @@ export interface Profile {
   is_bot?: boolean
 }
 
+export interface NotificationPreferences {
+  id: string
+  user_id: string
+  notify_on_replies: boolean
+  notify_on_mentions: boolean
+  notify_weekly_digest: boolean
+  notify_on_circle_updates: boolean
+  push_enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface Post {
   id: string
   circle_id: string
