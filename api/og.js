@@ -155,7 +155,9 @@ export const config = {
 export default async function handler(request) {
   const url = new URL(request.url)
   const userAgent = request.headers.get('user-agent') || ''
-  const pathname = url.pathname
+
+  // Get the original path from query parameter (passed by rewrite)
+  const pathname = url.searchParams.get('path') || url.pathname
 
   // Only process post detail pages with crawler user agents
   const postId = extractPostId(pathname)
