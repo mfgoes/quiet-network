@@ -2,12 +2,16 @@
  * Lightweight markdown-to-HTML parser for Quiet Network posts.
  *
  * Supported syntax:
- *   **bold**      → <strong>bold</strong>
- *   _italic_      → <em>italic</em>
- *   __underline__ → <u>underline</u>
- *   [text](url)   → <a href="url">text</a>
- *   - list item   → <li>list item</li>  (wrapped in <ul>)
- *   bare URLs     → <a href="url">url</a>
+ *   # Heading 1      → <h1>Heading 1</h1>
+ *   ## Heading 2     → <h2>Heading 2</h2>
+ *   ### Heading 3    → <h3>Heading 3</h3>
+ *   #### Heading 4   → <h4>Heading 4</h4>
+ *   **bold**         → <strong>bold</strong>
+ *   _italic_         → <em>italic</em>
+ *   __underline__    → <u>underline</u>
+ *   [text](url)      → <a href="url">text</a>
+ *   - list item      → <li>list item</li>  (wrapped in <ul>)
+ *   bare URLs        → <a href="url">url</a>
  */
 
 function escapeHtml(text: string): string {
@@ -52,6 +56,19 @@ export function parseMarkdown(text: string): string {
 
   for (const line of lines) {
     const trimmed = line.trimStart()
+
+    // Check for heading: # through ####
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/)
+    if (headingMatch) {
+      if (inList) {
+        htmlParts.push("</ul>")
+        inList = false
+      }
+      const level = headingMatch[1].length
+      const content = headingMatch[2]
+      htmlParts.push(`<h${level}>${parseInline(content)}</h${level}>`)
+      continue
+    }
 
     // Bullet list item: starts with "- "
     if (trimmed.startsWith("- ")) {

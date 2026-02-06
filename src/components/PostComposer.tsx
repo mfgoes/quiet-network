@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react"
-import { Lightbulb, Send, Tag, Bold, Italic, Underline, List, Smile, Link2 } from "lucide-react"
+import { Lightbulb, Send, Tag, Bold, Italic, Underline, List, Smile, Link2, Heading2 } from "lucide-react"
 import { toast } from "sonner"
 import data from "@emoji-mart/data"
 import Picker from "@emoji-mart/react"
@@ -215,6 +215,30 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
           title="Underline (__text__)"
         >
           <Underline className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const ta = textareaRef.current
+            if (!ta) return
+            const { selectionStart, value } = ta
+            // Insert "## " at the start of the current line
+            const lineStart = value.lastIndexOf("\n", selectionStart - 1) + 1
+            const before = value.slice(0, lineStart)
+            const after = value.slice(lineStart)
+            if (after.match(/^#+\s/)) return // already a heading
+            const newValue = `${before}## ${after}`
+            setText(newValue)
+            requestAnimationFrame(() => {
+              ta.focus()
+              const cursor = selectionStart + 3
+              ta.setSelectionRange(cursor, cursor)
+            })
+          }}
+          className={toolbarBtn}
+          title="Heading (## Heading)"
+        >
+          <Heading2 className="h-4 w-4" />
         </button>
         <button
           type="button"

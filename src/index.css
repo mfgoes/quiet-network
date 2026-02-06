@@ -138,6 +138,48 @@ h1, h2 {
   color: #1d4ed8;
 }
 
+.post-content h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin: 0.5rem 0 0.25rem 0;
+  line-height: 1.2;
+}
+
+.post-content h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.5rem 0 0.25rem 0;
+  line-height: 1.2;
+}
+
+.post-content h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0.5rem 0 0.25rem 0;
+  line-height: 1.2;
+}
+
+.post-content h4 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0.375rem 0 0.25rem 0;
+  line-height: 1.2;
+}
+
+.post-content h5 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0.375rem 0 0.25rem 0;
+  line-height: 1.2;
+}
+
+.post-content h6 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin: 0.375rem 0 0.25rem 0;
+  line-height: 1.2;
+}
+
 /* ─── Upvote jump animation ──────────────────────────── */
 
 @keyframes upvote-jump {
