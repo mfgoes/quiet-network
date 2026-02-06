@@ -2,5 +2,10 @@
   "installCommand": "npm install --legacy-peer-deps",
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/_middleware.js": {
+      "runtime": "edge"
+    }
+  }
 }

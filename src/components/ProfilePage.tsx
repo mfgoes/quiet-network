@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
 import { SocialIcon } from "@/components/SocialIcon"
-import { NotificationSettings } from "@/components/NotificationSettings"
 import { AVATAR_OPTIONS, avatarUrl } from "@/types"
 import type { Profile, ProfileLink } from "@/types"
 
@@ -26,11 +25,12 @@ interface ProfilePageProps {
   }) => Promise<void>
   onSignOut: () => void
   onAbout: () => void
+  onNotificationSettings: () => void
   onLeaveAllCircles: () => Promise<void>
   onDeleteAccount: () => Promise<void>
 }
 
-export function ProfilePage({ profile, onSave, onSignOut, onAbout, onLeaveAllCircles, onDeleteAccount }: ProfilePageProps) {
+export function ProfilePage({ profile, onSave, onSignOut, onAbout, onNotificationSettings, onLeaveAllCircles, onDeleteAccount }: ProfilePageProps) {
   const [editing, setEditing] = useState(false)
   const [displayName, setDisplayName] = useState(profile.display_name)
   const [username, setUsername] = useState(profile.username)
@@ -39,7 +39,6 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onLeaveAllCir
   const [links, setLinks] = useState<ProfileLink[]>(profile.links ?? [])
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
 
   const memberSince = new Date(profile.created_at).toLocaleDateString("en-US", {
     month: "long",
@@ -117,6 +116,14 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onLeaveAllCir
           <Button
             variant="ghost"
             className="w-full"
+            onClick={onNotificationSettings}
+          >
+            <Bell className="mr-2 h-4 w-4" />
+            Notification Settings
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full"
             onClick={onAbout}
           >
             <Info className="mr-2 h-4 w-4" />
@@ -131,31 +138,6 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onLeaveAllCir
             Sign out
           </Button>
         </div>
-
-        {/* Notification Settings Collapsible */}
-        <Collapsible open={showNotifications} onOpenChange={setShowNotifications}>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              className="w-full justify-between text-quiet-muted hover:text-quiet-slate"
-            >
-              <span className="flex items-center gap-2">
-                <Bell className="h-4 w-4" />
-                Notification Settings
-              </span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${
-                  showNotifications ? "rotate-180" : ""
-                }`}
-              />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-4">
-            <div className="rounded-xl border border-quiet-border bg-white p-4">
-              <NotificationSettings userId={profile.id} />
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
 
         <DangerZone
           onLeaveAllCircles={onLeaveAllCircles}

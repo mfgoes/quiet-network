@@ -1,38 +1,36 @@
-// Vercel Edge Middleware for social media preview meta tags
-// Uses standard Web APIs compatible with Vercel Edge Runtime
+// Vercel Edge Middleware for Vite projects
+// Handles dynamic Open Graph meta tags for social media crawlers
 
 // Detect social media crawlers
-function isCrawler(userAgent: string): boolean {
-  const crawlerPatterns = [
-    'facebookexternalhit',
-    'Facebot',
-    'Twitterbot',
-    'LinkedInBot',
-    'WhatsApp',
-    'TelegramBot',
-    'Slackbot',
-    'Discordbot',
-    'ia_archiver', // Alexa
-    'Googlebot', // Google
-  ]
-  return crawlerPatterns.some(pattern =>
-    userAgent.toLowerCase().includes(pattern.toLowerCase())
+function isCrawler(userAgent) {
+  if (!userAgent) return false
+  const ua = userAgent.toLowerCase()
+  return (
+    ua.includes('facebookexternalhit') ||
+    ua.includes('facebot') ||
+    ua.includes('twitterbot') ||
+    ua.includes('linkedinbot') ||
+    ua.includes('whatsapp') ||
+    ua.includes('telegrambot') ||
+    ua.includes('slackbot') ||
+    ua.includes('discordbot') ||
+    ua.includes('ia_archiver') ||
+    ua.includes('googlebot')
   )
 }
 
 // Extract post ID from URL path
-function extractPostId(pathname: string): string | null {
-  // Match /p/:postId or /:circleSlug/p/:postId
+function extractPostId(pathname) {
   const match = pathname.match(/\/p\/([a-f0-9-]+)$/i)
   return match ? match[1] : null
 }
 
 // Strip HTML tags and truncate text
-function sanitizeText(html: string, maxLength: number = 200): string {
+function sanitizeText(html, maxLength = 200) {
   const text = html
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/&[^;]+;/g, ' ') // Remove HTML entities
-    .replace(/\s+/g, ' ') // Normalize whitespace
+    .replace(/<[^>]*>/g, '')
+    .replace(/&[^;]+;/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
 
   return text.length > maxLength
@@ -41,24 +39,21 @@ function sanitizeText(html: string, maxLength: number = 200): string {
 }
 
 // Extract first URL from post content
-function extractFirstUrl(content: string): string | null {
-  // Try HTML href first
-  const hrefMatch = content.match(/href="(https?:\/\/[^"]+)"/)
-  if (hrefMatch) return hrefMatch[1]
+function extractFirstUrl(content) {
+  let match = content.match(/href="(https?:\/\/[^"]+)"/)
+  if (match) return match[1]
 
-  // Try markdown link
-  const mdMatch = content.match(/\]\((https?:\/\/[^\)]+)\)/)
-  if (mdMatch) return mdMatch[1]
+  match = content.match(/\]\((https?:\/\/[^\)]+)\)/)
+  if (match) return match[1]
 
-  // Try bare URL
-  const urlMatch = content.match(/(https?:\/\/[^\s<>"]+)/)
-  if (urlMatch) return urlMatch[1]
+  match = content.match(/(https?:\/\/[^\s<>"]+)/)
+  if (match) return match[1]
 
   return null
 }
 
 // Fetch post data from Supabase
-async function fetchPostData(postId: string) {
+async function fetchPostData(postId) {
   const supabaseUrl = process.env.VITE_SUPABASE_URL
   const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
 
@@ -88,8 +83,8 @@ async function fetchPostData(postId: string) {
   }
 }
 
-// Escape HTML special characters
-function escapeHtml(text: string): string {
+// Escape HTML
+function escapeHtml(text) {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -98,28 +93,25 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;')
 }
 
-// Generate meta tags for a post
-function generateMetaTags(post: any, siteUrl: string): string {
+// Generate meta tags
+function generateMetaTags(post, siteUrl) {
   const author = escapeHtml(post.profiles?.display_name || 'Someone')
   const circle = escapeHtml(post.circles?.name || 'a circle')
   const content = sanitizeText(post.content, 200)
   const url = extractFirstUrl(post.content)
 
-  // Title: author in circle or with URL domain
   let title = `${author} in ${circle}`
   if (url) {
     try {
       const domain = new URL(url).hostname.replace('www.', '')
       title = `${author} shared ${domain}`
     } catch (e) {
-      // Invalid URL, use default title
+      // Invalid URL, use default
     }
   }
 
-  // Description: post content
   const description = escapeHtml(content || `A post by ${author} in ${circle}`)
 
-  // Image: use shared URL as og:image if it's an image, otherwise use default
   let imageUrl = `${siteUrl}/images/landscape_with_boats.jpg`
   if (url) {
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
@@ -128,7 +120,6 @@ function generateMetaTags(post: any, siteUrl: string): string {
     }
   }
 
-  // Post URL
   const postUrl = post.circles?.slug
     ? `${siteUrl}/${post.circles.slug}/p/${post.id}`
     : `${siteUrl}/p/${post.id}`
@@ -151,60 +142,51 @@ function generateMetaTags(post: any, siteUrl: string): string {
     <meta name="twitter:description" content="${description}" />
     <meta name="twitter:image" content="${imageUrl}" />
 
-    <!-- Additional article metadata -->
+    <!-- Additional metadata -->
     <meta property="article:published_time" content="${post.created_at}" />
     <meta property="article:author" content="${author}" />
   `.trim()
 }
 
-export default async function middleware(request: Request) {
+export default async function middleware(request) {
   const url = new URL(request.url)
   const userAgent = request.headers.get('user-agent') || ''
   const pathname = url.pathname
 
-  // Skip non-HTML requests (assets, API calls, etc.)
-  if (
-    pathname.startsWith('/api/') ||
-    pathname.startsWith('/assets/') ||
-    pathname.startsWith('/_next/') ||
-    pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|json)$/)
-  ) {
-    return fetch(request)
-  }
-
-  // Only process post detail pages
+  // Only process post detail pages with crawler user agents
   const postId = extractPostId(pathname)
-  if (!postId) {
-    return fetch(request) // Pass through to normal handling
-  }
-
-  // Only intercept crawler requests
-  if (!isCrawler(userAgent)) {
-    return fetch(request) // Pass through to normal handling
+  if (!postId || !isCrawler(userAgent)) {
+    // Pass through to normal handling
+    return
   }
 
   try {
     // Fetch post data
     const post = await fetchPostData(postId)
     if (!post) {
-      return fetch(request) // Pass through if post not found
+      return // Pass through if post not found
     }
 
-    // Fetch the index.html
+    // Fetch the index.html from the origin
     const indexUrl = new URL('/index.html', request.url)
-    const response = await fetch(indexUrl)
+    const response = await fetch(indexUrl.toString())
+
+    if (!response.ok) {
+      return // Pass through on error
+    }
+
     let html = await response.text()
 
     // Generate meta tags
     const siteUrl = `${url.protocol}//${url.host}`
     const metaTags = generateMetaTags(post, siteUrl)
 
-    // Remove existing meta tags to avoid duplicates
+    // Remove existing meta tags
     html = html.replace(/<meta property="og:[^"]*"[^>]*>\n?/g, '')
     html = html.replace(/<meta name="twitter:[^"]*"[^>]*>\n?/g, '')
     html = html.replace(/<meta name="description"[^>]*>\n?/g, '')
 
-    // Inject new meta tags after the title
+    // Inject new tags
     html = html.replace(
       /(<title>[^<]*<\/title>)/,
       `$1\n    ${metaTags}`
@@ -219,6 +201,6 @@ export default async function middleware(request: Request) {
     })
   } catch (error) {
     console.error('Error in OG middleware:', error)
-    return fetch(request) // Pass through on error
+    return // Pass through on error
   }
 }

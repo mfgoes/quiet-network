@@ -9,6 +9,7 @@ import { ProfileSetup } from "@/components/ProfileSetup"
 import { ProfilePage } from "@/components/ProfilePage"
 import { PublicProfilePage } from "@/components/PublicProfilePage"
 import { AboutPage } from "@/components/AboutPage"
+import { NotificationSettingsPage } from "@/components/NotificationSettingsPage"
 import { BottomNav } from "@/components/BottomNav"
 import { Sidebar } from "@/components/Sidebar"
 import { MobileMenu } from "@/components/MobileMenu"
@@ -257,12 +258,22 @@ function AppRoutes() {
               }}
               onSignOut={signOut}
               onAbout={() => navigate("/about")}
+              onNotificationSettings={() => navigate("/settings/notifications")}
               onLeaveAllCircles={leaveAllCircles}
               onDeleteAccount={deleteAccount}
             />
           }
         />
         <Route path="/about" element={<AboutPage />} />
+        <Route
+          path="/settings/notifications"
+          element={
+            <NotificationSettingsPage
+              userId={user.id}
+              onBack={() => navigate("/profile")}
+            />
+          }
+        />
         <Route path="/user/:username" element={<PublicProfileRoute />} />
         <Route
           path="/p/:postId"
