@@ -54,11 +54,12 @@ function extractFirstUrl(content) {
 
 // Fetch post data from Supabase
 async function fetchPostData(postId) {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL
-  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
+  // Edge functions need runtime env vars (not VITE_ prefixed)
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseKey) {
-    console.error('Missing Supabase credentials')
+    console.error('Missing Supabase credentials. Make sure SUPABASE_URL and SUPABASE_ANON_KEY are set in Vercel environment variables.')
     return null
   }
 
