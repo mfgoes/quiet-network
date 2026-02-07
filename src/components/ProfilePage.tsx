@@ -90,7 +90,7 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onNotificatio
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-md bg-quiet-offwhite px-3 py-1.5 text-sm font-medium text-quiet-slate transition-colors hover:bg-quiet-border/50"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-quiet-offwhite px-3 py-1.5 text-sm font-medium text-quiet-slate transition-colors hover:bg-quiet-border/50 leading-none"
                 >
                   <SocialIcon url={link.url} />
                   <span className="truncate">{link.label}</span>

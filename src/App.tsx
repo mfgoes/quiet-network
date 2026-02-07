@@ -93,12 +93,27 @@ function AppRoutes() {
   // Not signed in
   if (!user) {
     // Allow viewing posts without authentication
-    if (location.pathname.match(/^\/p\//)) {
+    if (location.pathname.match(/^\/p\//) || location.pathname.match(/^\/[^/]+\/p\//)) {
       return (
         <Shell>
-          <PostDetailRoute
-            onJoinClick={() => navigate("/")}
-          />
+          <Routes>
+            <Route
+              path="/p/:postId"
+              element={
+                <PostDetailRoute
+                  onJoinClick={() => navigate("/")}
+                />
+              }
+            />
+            <Route
+              path="/:circleSlug/p/:postId"
+              element={
+                <PostDetailRoute
+                  onJoinClick={() => navigate("/")}
+                />
+              }
+            />
+          </Routes>
         </Shell>
       )
     }

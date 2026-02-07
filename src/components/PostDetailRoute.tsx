@@ -40,30 +40,44 @@ export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}
 
     const fetchPost = async () => {
       setLoading(true)
-      const { data, error } = await supabase
-        .from("posts")
-        .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot), circles(name, slug, description, avatar_url)")
-        .eq("id", postId)
-        .single()
+      try {
+        console.log("Fetching post:", postId, "userId:", userId)
+        const { data, error } = await supabase
+          .from("posts")
+          .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot), circles(name, slug, description, avatar_url)")
+          .eq("id", postId)
+          .single()
 
-      if (!error && data) {
-        // Enrich with upvote data
-        const { data: upvoteData } = await supabase
-          .from("post_upvotes")
-          .select("user_id")
-          .eq("post_id", postId)
+        console.log("Post query result:", { data, error })
 
-        const upvoteCount = upvoteData?.length ?? 0
-        const userUpvoted = userId ? (upvoteData?.some(u => u.user_id === userId) ?? false) : false
+        if (!error && data) {
+          // Enrich with upvote data (skip for anonymous users to avoid permission issues)
+          let upvoteCount = 0
+          let userUpvoted = false
 
-        setPost({
-          ...data,
-          upvote_count: upvoteCount,
-          user_upvoted: userUpvoted,
-          reply_count: 0, // TODO: fetch reply count if needed
-        } as Post)
+          if (userId) {
+            const { data: upvoteData } = await supabase
+              .from("post_upvotes")
+              .select("user_id")
+              .eq("post_id", postId)
+
+            upvoteCount = upvoteData?.length ?? 0
+            userUpvoted = upvoteData?.some(u => u.user_id === userId) ?? false
+          }
+
+          setPost({
+            ...data,
+            upvote_count: upvoteCount,
+            user_upvoted: userUpvoted,
+            reply_count: 0, // TODO: fetch reply count if needed
+          } as Post)
+        }
+      } catch (err) {
+        console.error("Error fetching post:", err)
+      } finally {
+        console.log("Setting loading to false")
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     fetchPost()
