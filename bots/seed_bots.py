@@ -9,13 +9,20 @@ import random
 import uuid
 import urllib.request
 import urllib.error
+import os
 from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
+
+# Load environment variables from circles/shared/.env
+load_dotenv("circles/shared/.env")
 
 # ── Config ──────────────────────────────────────────────────────────────
-SUPABASE_URL = "https://gtlhwapaeytlialzfrao.supabase.co"
-SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0bGh3YXBhZXl0bGlhbHpmcmFvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTY4OTcyNywiZXhwIjoyMDg1MjY1NzI3fQ.q6beenq3ftZpKN0zAUrAs2_yGJJqArG83vrMGF52LGU"
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+CIRCLE_ID = os.getenv("CIRCLE_ID", "309f9c00-d7df-4004-b443-a8f2055c22b4")  # Haarlem (default)
 
-CIRCLE_ID = "309f9c00-d7df-4004-b443-a8f2055c22b4"  # Haarlem
+if not SUPABASE_URL or not SERVICE_ROLE_KEY:
+    raise ValueError("Missing required environment variables: SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY")
 
 # Posts expire in 7 days, duration = 7 days in seconds
 POST_DURATION_SECONDS = 7 * 24 * 3600
@@ -35,7 +42,7 @@ BOT_USERS = [
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 
-def api_request(method, path, body=None, headers_extra=None):
+def api_request(method, path, body=None, headers_extra=None, ignore_errors=None):
     """Make a request to the Supabase REST or Auth API."""
     url = f"{SUPABASE_URL}{path}"
     headers = {
@@ -55,6 +62,9 @@ def api_request(method, path, body=None, headers_extra=None):
             return json.loads(raw) if raw else None
     except urllib.error.HTTPError as e:
         error_body = e.read().decode()
+        # Check if this error should be ignored (e.g., duplicates)
+        if ignore_errors and e.code in ignore_errors:
+            return {"_ignored": True, "code": e.code}
         print(f"  ERROR {e.code}: {error_body}")
         return None
 
@@ -138,38 +148,104 @@ for bot in BOT_USERS:
 
     print(f"  Added {bot['name']} to circle")
 
-# ── Step 4: Insert posts ─────────────────────────────────────────────────
+# ── Step 4: Insert posts from synthetic_content.json ────────────────────
 
-print("\n=== Inserting posts ===")
+print("\n=== Inserting posts from synthetic content ===")
 
-with open("circles/haarlem/posts.json", "r") as f:
-    posts_data = json.load(f)
+with open("circles/haarlem/synthetic_content.json", "r") as f:
+    synthetic_data = json.load(f)
 
-bot_names = list(bot_ids.keys())
+# Map persona IDs to bot user IDs
+persona_to_user_id = {}
+for persona in synthetic_data.get("user_personas", []):
+    persona_name = persona["name"]
+    if persona_name in bot_ids:
+        persona_to_user_id[persona["id"]] = bot_ids[persona_name]
 
-for post_item in posts_data:
-    author_name = random.choice(bot_names)
-    author_id = bot_ids[author_name]
-    created_at = random_past_time()
+# Track post IDs for reply insertion
+synthetic_post_ids = {}
+
+for post_item in synthetic_data.get("posts", []):
+    author_persona = post_item.get("author_id")
+    author_id = persona_to_user_id.get(author_persona)
+
+    if not author_id:
+        print(f"  SKIP: No user found for persona {author_persona}")
+        continue
+
+    # Parse the timestamp from the JSON
+    created_at_str = post_item.get("created_at")
+    created_at = datetime.fromisoformat(created_at_str.replace('Z', '+00:00'))
     expires_at = created_at + timedelta(seconds=POST_DURATION_SECONDS)
 
     result = api_request("POST", "/rest/v1/posts", {
         "circle_id": CIRCLE_ID,
         "author_id": author_id,
-        "content": post_item["post"],
+        "content": post_item["content"],
         "created_at": created_at.isoformat(),
         "expires_at": expires_at.isoformat(),
         "original_duration_seconds": POST_DURATION_SECONDS,
     }, headers_extra={"Prefer": "return=representation"})
 
     if result and len(result) > 0:
-        print(f"  Posted by {author_name}: \"{post_item['post'][:50]}...\" at {created_at.strftime('%Y-%m-%d %H:%M')}")
+        post_db_id = result[0]["id"]
+        synthetic_post_ids[post_item["id"]] = post_db_id
+        print(f"  Posted by {author_persona}: \"{post_item['content'][:50]}...\"")
     else:
-        print(f"  FAILED to post: \"{post_item['post'][:50]}...\"")
+        print(f"  FAILED to post: \"{post_item['content'][:50]}...\"")
 
-# ── Step 5: Random upvotes on posts in the circle ────────────────────────
+# ── Step 5: Insert replies (comments) ────────────────────────────────────
 
-print("\n=== Adding random upvotes ===")
+print("\n=== Inserting replies ===")
+
+reply_count = 0
+for post_item in synthetic_data.get("posts", []):
+    post_synthetic_id = post_item["id"]
+    post_db_id = synthetic_post_ids.get(post_synthetic_id)
+
+    if not post_db_id:
+        continue
+
+    for comment in post_item.get("comments", []):
+        author_persona = comment.get("author_id")
+        author_id = persona_to_user_id.get(author_persona)
+
+        if not author_id:
+            continue
+
+        created_at_str = comment.get("created_at")
+        created_at = datetime.fromisoformat(created_at_str.replace('Z', '+00:00'))
+
+        result = api_request("POST", "/rest/v1/replies", {
+            "post_id": post_db_id,
+            "author_id": author_id,
+            "content": comment["content"],
+            "created_at": created_at.isoformat(),
+        }, headers_extra={"Prefer": "return=representation"})
+
+        if result and len(result) > 0:
+            reply_count += 1
+            reply_db_id = result[0]["id"]
+
+            # Add upvotes to this reply
+            upvote_target = comment.get("upvote_count", 0)
+            if upvote_target > 0:
+                bot_id_list = list(bot_ids.values())
+                # Randomly select voters (excluding author)
+                potential_voters = [bid for bid in bot_id_list if bid != author_id]
+                voters = random.sample(potential_voters, min(upvote_target, len(potential_voters)))
+
+                for voter_id in voters:
+                    api_request("POST", "/rest/v1/reply_upvotes", {
+                        "reply_id": reply_db_id,
+                        "user_id": voter_id,
+                    }, headers_extra={"Prefer": "return=minimal"}, ignore_errors=[409])
+
+print(f"  {reply_count} replies inserted")
+
+# ── Step 6: Add upvotes to posts ─────────────────────────────────────────
+
+print("\n=== Adding upvotes to posts ===")
 
 # Fetch all non-welcome posts in the circle
 all_posts = api_request(
@@ -191,9 +267,9 @@ if all_posts:
             result = api_request("POST", "/rest/v1/post_upvotes", {
                 "post_id": post["id"],
                 "user_id": voter_id,
-            }, headers_extra={"Prefer": "return=minimal"})
-            if result is None:
-                # minimal returns empty on success, HTTPError prints on failure
+            }, headers_extra={"Prefer": "return=minimal"}, ignore_errors=[409])
+            # Success returns None, ignored duplicates return {"_ignored": True}
+            if result is None or (isinstance(result, dict) and result.get("_ignored")):
                 upvote_count += 1
 
     # Correct count: minimal preference returns None on success

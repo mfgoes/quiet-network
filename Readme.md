@@ -107,6 +107,33 @@ npm run dev
 -   "Archive mode" for persistent hobby circles
 -   Native mobile apps (React Native)
 
+### Future Considerations
+
+#### Bot System Modernization
+
+**Current State**: The project includes a Python-based bot system (`bots/` directory) for seeding circles with realistic content. While functional, it has technical debt:
+- Service role keys hardcoded in scripts (security risk)
+- Separate Flask dashboard not integrated with main app
+- Dual Python/TypeScript maintenance
+- Limited extensibility
+
+**Proposed Migration**: Convert to TypeScript for better integration, security, and maintainability.
+
+**Benefits**:
+- **Security**: Environment-only credentials, no hardcoded keys
+- **Integration**: Bot management in admin panel UI
+- **Type Safety**: Full TypeScript type checking
+- **Extensibility**: Easy to add scheduled posting, AI content generation
+- **Single Stack**: One language/ecosystem instead of two
+
+**Migration Options**:
+1. **Lightweight** (1-2 days): Core TypeScript library + CLI scripts
+2. **Full** (1-2 weeks): Edge Functions + Admin UI + Scheduled posting
+
+**When to Consider**: When actively extending bot features, adding new circles regularly, or before public launch.
+
+See `.claude/plans/proud-stargazing-sunbeam.md` for detailed migration design.
+
 ## ⚖️ License & Commercial Use
 
 This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
