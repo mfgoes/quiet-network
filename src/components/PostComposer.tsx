@@ -1,14 +1,16 @@
 import { useState, useCallback, useRef, useEffect } from "react"
-import { Lightbulb, Send, Tag, Bold, Italic, Underline, List, Smile, Link2, Heading2 } from "lucide-react"
+import { Lightbulb, Send, Tag, Bold, Italic, Underline, List, Smile, Link2, Heading2, Image, X } from "lucide-react"
 import { toast } from "sonner"
 import data from "@emoji-mart/data"
 import Picker from "@emoji-mart/react"
+import imageCompression from "browser-image-compression"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { DURATION_OPTIONS, POST_SPARKS, TAGS } from "@/types"
+import { supabase } from "@/lib/supabase"
 
 interface PostComposerProps {
-  onSubmit: (content: string, durationSeconds: number, tags: string[]) => Promise<unknown>
+  onSubmit: (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null) => Promise<unknown>
 }
 
 /**
@@ -55,9 +57,13 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
   const [linkText, setLinkText] = useState("")
   const [linkUrl, setLinkUrl] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const emojiRef = useRef<HTMLDivElement>(null)
   const linkRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const selectedDuration = DURATION_OPTIONS[durationIndex]
 
@@ -76,11 +82,126 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
     })
   }
 
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please select a valid image (JPEG, PNG, WebP, or GIF)")
+      return
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      toast.error("Image must be under 5MB")
+      return
+    }
+
+    setUploadingImage(true)
+    try {
+      // Store original file type and name
+      const originalType = file.type
+      const originalName = file.name
+
+      console.log("Original file:", { type: originalType, size: file.size, name: originalName })
+
+      let finalFile: File
+
+      // Skip compression if file is already small enough
+      if (file.size <= 1024 * 1024) { // 1MB
+        console.log("File already small, skipping compression")
+        finalFile = file
+      } else {
+        // Compress image
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: false,
+        }
+        const compressedBlob = await imageCompression(file, options)
+
+        console.log("Compressed blob:", { type: compressedBlob.type, size: compressedBlob.size })
+
+        // Create File object with correct MIME type
+        finalFile = new File([compressedBlob], originalName, {
+          type: originalType, // Force the original MIME type
+        })
+
+        console.log("Final file:", { type: finalFile.type, size: finalFile.size })
+      }
+
+      setSelectedImage(finalFile)
+
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(finalFile)
+
+      toast.success("Image ready to upload")
+    } catch (error) {
+      console.error("Image compression error:", error)
+      toast.error("Failed to process image")
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const removeImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const uploadImage = async (userId: string): Promise<string | null> => {
+    if (!selectedImage) return null
+
+    try {
+      const fileExt = selectedImage.name.split(".").pop()
+      const fileName = `${userId}/${Date.now()}.${fileExt}`
+
+      const { data, error } = await supabase.storage
+        .from("post-images")
+        .upload(fileName, selectedImage, {
+          cacheControl: "3600",
+          upsert: false,
+        })
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("post-images")
+        .getPublicUrl(data.path)
+
+      return publicUrl
+    } catch (error) {
+      console.error("Image upload error:", error)
+      throw error
+    }
+  }
+
   const handleSubmit = async () => {
-    if (!text.trim()) return
+    if (!text.trim() && !selectedImage) return
     setSubmitting(true)
     try {
-      const error = await onSubmit(text, selectedDuration.seconds, selectedTags)
+      let imageUrl: string | null = null
+
+      if (selectedImage) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          toast.error("You must be logged in to upload images")
+          return
+        }
+        imageUrl = await uploadImage(user.id)
+      }
+
+      const error = await onSubmit(text, selectedDuration.seconds, selectedTags, imageUrl)
       if (error) {
         toast.error("Couldn't share your post. Please try again.")
       } else {
@@ -89,6 +210,7 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
         setShowTags(false)
         setShowEmoji(false)
         setShowLink(false)
+        removeImage()
         toast.success("Shared quietly.")
       }
     } catch {
@@ -265,6 +387,32 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
           <List className="h-4 w-4" />
         </button>
 
+        {/* Image upload button */}
+        <div className="relative">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingImage || !!selectedImage}
+            className={`rounded p-1.5 transition-colors ${
+              selectedImage
+                ? "bg-quiet-accent text-white"
+                : uploadingImage
+                ? "text-quiet-muted/50 cursor-not-allowed"
+                : "text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-slate"
+            }`}
+            title="Add image"
+          >
+            <Image className="h-4 w-4" />
+          </button>
+        </div>
+
         {/* Link button + popover */}
         <div className="relative" ref={linkRef}>
           <button
@@ -344,6 +492,25 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
           )}
         </div>
       </div>
+
+      {/* Image preview */}
+      {imagePreview && (
+        <div className="mt-3 relative inline-block">
+          <img
+            src={imagePreview}
+            alt="Preview"
+            className="max-h-48 rounded-lg border border-quiet-border object-cover"
+          />
+          <button
+            type="button"
+            onClick={removeImage}
+            className="absolute -top-2 -right-2 rounded-full bg-quiet-slate p-1 text-white shadow-lg transition-colors hover:bg-quiet-accent"
+            title="Remove image"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Selected tags */}
       {selectedTags.length > 0 && (
@@ -435,11 +602,11 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
         </button>
         <Button
           onClick={handleSubmit}
-          disabled={!text.trim() || submitting}
+          disabled={(!text.trim() && !selectedImage) || submitting}
           size="sm"
         >
           <Send className="mr-1.5 h-3.5 w-3.5" />
-          Share quietly
+          {submitting ? "Sharing..." : "Share quietly"}
         </Button>
       </div>
     </div>

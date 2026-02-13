@@ -519,6 +519,17 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                   needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
                 }`}
               >
+                {/* Image */}
+                {post.image_url && (
+                  <div className="mb-3">
+                    <img
+                      src={post.image_url}
+                      alt="Post image"
+                      className="max-h-96 rounded-lg border border-quiet-border object-cover w-full"
+                    />
+                  </div>
+                )}
+
                 {/* Content */}
                 {isHtml ? (
                   <div
@@ -552,45 +563,59 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               )}
             </div>
           ) : (
-            <Link to={postDetailUrl} className="block relative group/content">
-              <div
-                ref={contentRef}
-                className={`transition-all ${
-                  needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
-                }`}
-              >
-                {/* Content */}
-                {isHtml ? (
-                  <div
-                    className="post-content text-sm leading-relaxed text-quiet-slate group-hover/content:text-quiet-accent transition-colors"
-                    dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
+            <div className="block relative">
+              {/* Image - clickable to post detail */}
+              {post.image_url && (
+                <Link to={postDetailUrl} className="block mb-3">
+                  <img
+                    src={post.image_url}
+                    alt="Post image"
+                    className="max-h-96 rounded-lg border border-quiet-border object-cover w-full hover:opacity-95 transition-opacity"
                   />
-                ) : (
-                  <div
-                    className="post-content text-sm leading-relaxed text-quiet-slate group-hover/content:text-quiet-accent transition-colors"
-                    dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
-                  />
-                )}
-
-                {/* Link previews */}
-                {filteredLinkUrls.length > 0 && (
-                  <div className="mt-1">
-                    {filteredLinkUrls.map((url) => (
-                      <LinkPreview key={url} url={url} />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Gradient fade when collapsed */}
-              {needsExpand && !isExpanded && (
-                <div
-                  className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
-                    bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
-                  } to-transparent pointer-events-none`}
-                />
+                </Link>
               )}
-            </Link>
+
+              {/* Content - clickable to post detail */}
+              <Link to={postDetailUrl} className="block relative group/content">
+                <div
+                  ref={contentRef}
+                  className={`transition-all ${
+                    needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
+                  }`}
+                >
+                  {/* Content */}
+                  {isHtml ? (
+                    <div
+                      className="post-content text-sm leading-relaxed text-quiet-slate group-hover/content:text-quiet-accent transition-colors"
+                      dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
+                    />
+                  ) : (
+                    <div
+                      className="post-content text-sm leading-relaxed text-quiet-slate group-hover/content:text-quiet-accent transition-colors"
+                      dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
+                    />
+                  )}
+                </div>
+
+                {/* Gradient fade when collapsed */}
+                {needsExpand && !isExpanded && (
+                  <div
+                    className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
+                      bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
+                    } to-transparent pointer-events-none`}
+                  />
+                )}
+              </Link>
+
+              {/* Link previews - outside Link to avoid nested anchors */}
+              {filteredLinkUrls.length > 0 && (
+                <div className="mt-1">
+                  {filteredLinkUrls.map((url) => (
+                    <LinkPreview key={url} url={url} />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Expand/Collapse button - outside clickable area */}

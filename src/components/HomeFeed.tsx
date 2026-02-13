@@ -28,8 +28,8 @@ function HomeComposer({
 }) {
   const { createPost } = usePosts(circle.id, userId)
 
-  const handleSubmit = async (content: string, durationSeconds: number, tags: string[]) => {
-    const error = await createPost(content, durationSeconds, userId, tags)
+  const handleSubmit = async (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null) => {
+    const error = await createPost(content, durationSeconds, userId, tags, imageUrl)
     if (!error) onDone()
     return error
   }

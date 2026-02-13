@@ -24,11 +24,15 @@ SYNTHETIC_FILE = SCRIPT_DIR / "circles" / "haarlem" / "synthetic_content.json"
 ENV_FILE = SCRIPT_DIR / "circles" / "shared" / ".env"
 
 
-def run_script(script_path, args=None):
+def run_script(script_path, args=None, extra_env=None):
     """Run a Python script and capture output."""
     cmd = [sys.executable, str(script_path)]
     if args:
         cmd.extend(args)
+
+    env = os.environ.copy()
+    if extra_env:
+        env.update(extra_env)
 
     try:
         result = subprocess.run(
@@ -37,6 +41,7 @@ def run_script(script_path, args=None):
             text=True,
             timeout=120,
             cwd=str(SCRIPT_DIR),
+            env=env,
         )
         return {
             "ok": result.returncode == 0,
@@ -114,8 +119,21 @@ def status():
 
 @app.route("/api/seed", methods=["POST"])
 def seed():
-    """Run the seed_bots.py script."""
-    return jsonify(run_script(SEED_SCRIPT))
+    """Run the seed_bots.py script with optional circle override."""
+    data = request.get_json(silent=True) or {}
+
+    extra_env = {}
+    if data.get("circle_id"):
+        extra_env["CIRCLE_ID"] = data["circle_id"]
+    if data.get("circle_name"):
+        # Sanitize: lowercase, spaces → underscores, for use as directory name
+        name = data["circle_name"].lower().replace(" ", "_")
+        extra_env["CIRCLE_NAME"] = name
+    if data.get("circle_description"):
+        extra_env["CIRCLE_DESCRIPTION"] = data["circle_description"]
+    # circle_category intentionally omitted — not a column in the circles table
+
+    return jsonify(run_script(SEED_SCRIPT, extra_env=extra_env or None))
 
 
 @app.route("/api/posts")
@@ -140,6 +158,18 @@ def view_synthetic():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/content-status")
+def content_status():
+    """Return which circle slugs have a manually created synthetic_content.json."""
+    circles_dir = SCRIPT_DIR / "circles"
+    has_content = []
+    if circles_dir.exists():
+        for subdir in circles_dir.iterdir():
+            if subdir.is_dir() and (subdir / "synthetic_content.json").exists():
+                has_content.append(subdir.name)
+    return jsonify({"circles_with_content": has_content})
+
+
 @app.route("/api/circles")
 def list_circles():
     """Fetch available circles from Supabase."""
@@ -162,7 +192,7 @@ def list_circles():
         import urllib.request
         import urllib.error
 
-        api_url = f"{supabase_url}/rest/v1/circles?select=id,name,description"
+        api_url = f"{supabase_url}/rest/v1/circles?select=id,name,description&order=name.asc"
         headers = {
             "apikey": service_key,
             "Authorization": f"Bearer {service_key}",

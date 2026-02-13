@@ -37,8 +37,8 @@ export function CircleFeed({
   const { posts, loading, createPost, updatePost, deletePost, toggleUpvote, makePermanent } = usePosts(circleId, userId)
   const [activeTag, setActiveTag] = useState<string | null>(null)
 
-  const handleNewPost = async (content: string, durationSeconds: number, tags: string[]) => {
-    await createPost(content, durationSeconds, userId, tags)
+  const handleNewPost = async (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null) => {
+    await createPost(content, durationSeconds, userId, tags, imageUrl)
   }
 
   const handleUpdatePost = async (postId: string, content: string, tags: string[]) => {

@@ -25,6 +25,15 @@ export function useAuth() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      // Check if user has a session but no rememberMe flag
+      // This means browser was closed and user didn't want to stay logged in
+      if (data.session && !sessionStorage.getItem('rememberMe')) {
+        supabase.auth.signOut()
+        setSession(null)
+        setLoading(false)
+        return
+      }
+
       setSession(data.session)
       setLoading(false)
       // Fire-and-forget — don't block auth on this
@@ -49,18 +58,37 @@ export function useAuth() {
 
   const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ email, password })
+
+    if (!error) {
+      // Auto-remember new users
+      sessionStorage.setItem('rememberMe', 'true')
+    }
+
     return error
   }
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe = true) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
+
+    if (!error) {
+      if (rememberMe) {
+        // Set a flag in sessionStorage to indicate the user wants to be remembered
+        // This flag persists across page reloads but is cleared when browser closes
+        sessionStorage.setItem('rememberMe', 'true')
+      } else {
+        // Don't set the flag - session will be cleared when browser closes
+        sessionStorage.removeItem('rememberMe')
+      }
+    }
+
     return error
   }
 
   const signOut = async () => {
+    sessionStorage.removeItem('rememberMe')
     await supabase.auth.signOut()
   }
 
@@ -825,7 +853,8 @@ export function usePosts(circleId: string | undefined, userId?: string) {
     content: string,
     durationSeconds: number,
     authorId: string,
-    tags: string[] = []
+    tags: string[] = [],
+    imageUrl?: string | null
   ) => {
     const now = new Date()
     const expiresAt = new Date(now.getTime() + durationSeconds * 1000)
@@ -837,6 +866,7 @@ export function usePosts(circleId: string | undefined, userId?: string) {
       expires_at: expiresAt.toISOString(),
       original_duration_seconds: durationSeconds,
       tags,
+      image_url: imageUrl,
     })
 
     console.log("[createPost]", { circleId, authorId, error })

@@ -23,7 +23,17 @@
       "Bash(pip3 install:*)",
       "Bash(npm run dev:*)",
       "Bash(open:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git stash:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(python server.py:*)",
+      "Bash(pip install:*)",
+      "Bash(./circles/shared/venv/Scripts/pip install:*)"
     ]
   }
 }

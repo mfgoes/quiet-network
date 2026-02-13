@@ -1,0 +1,666 @@
+{
+  "metadata": {
+    "generated_at": "2026-02-12T10:00:00Z",
+    "circle": "jakarta",
+    "description": "Synthetic engagement content for Jakarta community circle",
+    "total_posts": 18,
+    "total_comments": 48,
+    "estimated_total_upvotes": 162,
+    "content_themes": [
+      "specialty_coffee",
+      "street_food",
+      "commute_tips",
+      "flooding_alerts",
+      "city_parks",
+      "family_activities",
+      "neighbourhood_life",
+      "weekend_escapes",
+      "expat_newcomer",
+      "community_events"
+    ],
+    "date_range": "2026-02-01 to 2026-02-12",
+    "language_mix": "Primarily English with natural Indonesian phrases (macet, banjir, warung, ojek, dll)"
+  },
+
+  "user_personas": [
+    {
+      "id": "bob",
+      "name": "Bob",
+      "traits": "Brave urban cyclist, MRT enthusiast, tech-savvy, always finding smarter ways to get around Jakarta",
+      "typical_content": "Commute hacks, MRT tips, cycling spots, app recommendations"
+    },
+    {
+      "id": "carla",
+      "name": "Carla",
+      "traits": "Foodie and social organiser, knows every warung and rooftop bar, warm personality, heavy emoji user",
+      "typical_content": "Food discoveries, restaurant reviews, organising group outings"
+    },
+    {
+      "id": "daniel",
+      "name": "Daniel",
+      "traits": "History enthusiast, fascinated by Batavia and Betawi culture, thoughtful, detail-oriented",
+      "typical_content": "Kota Tua visits, colonial history, cultural events, museum tips"
+    },
+    {
+      "id": "emma",
+      "name": "Emma",
+      "traits": "Freelance designer, works from specialty cafes, early morning person, always hunting for good filter coffee",
+      "typical_content": "Cafe reviews, coworking spots, creative projects, South Jakarta life"
+    },
+    {
+      "id": "frank",
+      "name": "Frank",
+      "traits": "Long-term expat, runs a small import business, deeply practical, deep knowledge of how Jakarta really works",
+      "typical_content": "Practical tips, expat logistics, neighbourhood advice, honest assessments"
+    },
+    {
+      "id": "greta",
+      "name": "Greta",
+      "traits": "Nature lover, photographer, finds green patches in the urban sprawl, environmentally aware",
+      "typical_content": "Parks, green spaces, photography spots, sustainability in the city"
+    },
+    {
+      "id": "henk",
+      "name": "Henk",
+      "traits": "Seen-it-all expat of 12 years, dry humour, occasionally blunt, ultimately helpful and knowledgeable",
+      "typical_content": "Jakarta realities, neighbourhood changes, honest recommendations, flood warnings"
+    },
+    {
+      "id": "iris",
+      "name": "Iris",
+      "traits": "Young local professional, social butterfly, always at new restaurant openings and rooftop events",
+      "typical_content": "Events, new openings, nightlife, weekend plans"
+    },
+    {
+      "id": "jack",
+      "name": "Jack",
+      "traits": "Recently relocated expat, genuinely curious, learning Bahasa Indonesia, asking the questions everyone else forgot to ask",
+      "typical_content": "Newcomer questions, cultural observations, learning Jakarta basics"
+    },
+    {
+      "id": "alice",
+      "name": "Alice",
+      "traits": "Expat parent with two kids, organised, practical, building a community life in South Jakarta",
+      "typical_content": "Family activities, kids recommendations, school tips, Kemang life"
+    }
+  ],
+
+  "posts": [
+    {
+      "id": "post_001",
+      "author_id": "emma",
+      "content": "Finally found my go-to work cafe in Kemang — Tanamera on Kemang Raya. Filter coffee is genuinely excellent, fast WiFi, and people leave you alone. Been here three mornings in a row. Worth knowing about if you work remotely.",
+      "image_url": "/images/placeholder_posts/cafe.jpg",
+      "created_at": "2026-02-10T08:15:00Z",
+      "upvote_count": 14,
+      "comments": [
+        {
+          "id": "comment_001_01",
+          "author_id": "carla",
+          "content": "Tanamera is great! The cold brew there is honestly better than most places in Singapore. Glad you found it ☕",
+          "created_at": "2026-02-10T09:05:00Z",
+          "upvote_count": 4
+        },
+        {
+          "id": "comment_001_02",
+          "author_id": "henk",
+          "content": "Good call on Kemang. Avoid going after 5pm though, the traffic getting out of there is... special.",
+          "created_at": "2026-02-10T09:40:00Z",
+          "upvote_count": 7
+        },
+        {
+          "id": "comment_001_03",
+          "author_id": "jack",
+          "content": "Is Kemang far from Sudirman? Still figuring out which areas are actually close to each other vs. look close on a map.",
+          "created_at": "2026-02-10T10:20:00Z",
+          "upvote_count": 2
+        },
+        {
+          "id": "comment_001_04",
+          "author_id": "emma",
+          "content": "About 30 minutes by Grab outside rush hour, 45-60 in traffic. Close-ish but Jakarta-close, you know.",
+          "created_at": "2026-02-10T11:00:00Z",
+          "upvote_count": 3
+        }
+      ]
+    },
+    {
+      "id": "post_002",
+      "author_id": "henk",
+      "content": "Banjir alert for anyone in Pluit and Penjaringan — water is rising near the coast end of Jalan Pluit Selatan. Not serious yet but worth watching if you live or work up there. The usual spots after heavy rain.",
+      "created_at": "2026-02-09T07:30:00Z",
+      "upvote_count": 22,
+      "comments": [
+        {
+          "id": "comment_002_01",
+          "author_id": "frank",
+          "content": "Thanks for the heads up. Pumping station near there has been unreliable since December. BMKG is showing more rain tonight too.",
+          "created_at": "2026-02-09T07:55:00Z",
+          "upvote_count": 8
+        },
+        {
+          "id": "comment_002_02",
+          "author_id": "alice",
+          "content": "Good to know, we were thinking of going to Ancol this weekend. Might postpone.",
+          "created_at": "2026-02-09T08:20:00Z",
+          "upvote_count": 3
+        },
+        {
+          "id": "comment_002_03",
+          "author_id": "henk",
+          "content": "Ancol should be fine, it's further east. It's really just the Pluit canals that back up.",
+          "created_at": "2026-02-09T09:00:00Z",
+          "upvote_count": 5
+        }
+      ]
+    },
+    {
+      "id": "post_003",
+      "author_id": "carla",
+      "content": "Found a warung near Blok M that's been there since 1987 and has the best nasi campur I've had in months. Ibu Sari's — it's on a side street behind the bus terminal. Cash only, closes at 2pm. Don't sleep on it 🍛",
+      "image_url": "/images/placeholder_posts/snack.png",
+      "created_at": "2026-02-08T13:30:00Z",
+      "upvote_count": 19,
+      "comments": [
+        {
+          "id": "comment_003_01",
+          "author_id": "iris",
+          "content": "Adding this to my list immediately. The old-school places always win.",
+          "created_at": "2026-02-08T14:10:00Z",
+          "upvote_count": 5
+        },
+        {
+          "id": "comment_003_02",
+          "author_id": "jack",
+          "content": "What's in nasi campur? I see it everywhere but still not 100% sure what I'm ordering.",
+          "created_at": "2026-02-08T14:45:00Z",
+          "upvote_count": 3
+        },
+        {
+          "id": "comment_003_03",
+          "author_id": "carla",
+          "content": "Rice with a mix of small dishes — a bit of everything! Usually some meat, veggies, tempeh, sambal. Each warung has their own combination. It's perfect for trying loads of flavours at once 😊",
+          "created_at": "2026-02-08T15:20:00Z",
+          "upvote_count": 7
+        },
+        {
+          "id": "comment_003_04",
+          "author_id": "frank",
+          "content": "Blok M area has some of the most authentic old Jakarta food left. Carla's right to highlight it.",
+          "created_at": "2026-02-08T16:05:00Z",
+          "upvote_count": 4
+        }
+      ]
+    },
+    {
+      "id": "post_004",
+      "author_id": "daniel",
+      "content": "Spent a Sunday morning at Kota Tua and it's genuinely worth the trek for anyone who hasn't been. The Batavia Cafe in the old town square, the Museum Bank Indonesia, the Dutch colonial architecture — it tells a different side of this city's history. Less crowded if you go before 10am.",
+      "created_at": "2026-02-07T15:00:00Z",
+      "upvote_count": 16,
+      "comments": [
+        {
+          "id": "comment_004_01",
+          "author_id": "greta",
+          "content": "The light in Fatahillah Square in the morning is stunning for photography. I keep meaning to go back with a proper camera.",
+          "created_at": "2026-02-07T15:40:00Z",
+          "upvote_count": 5
+        },
+        {
+          "id": "comment_004_02",
+          "author_id": "jack",
+          "content": "Is it safe to walk around that area? I've heard mixed things.",
+          "created_at": "2026-02-07T16:30:00Z",
+          "upvote_count": 2
+        },
+        {
+          "id": "comment_004_03",
+          "author_id": "daniel",
+          "content": "Totally fine during the day. Just keep an eye on your phone and bags as you would anywhere in a busy tourist spot. The surrounding area (Glodok etc.) is actually fascinating too.",
+          "created_at": "2026-02-07T17:15:00Z",
+          "upvote_count": 6
+        }
+      ]
+    },
+    {
+      "id": "post_005",
+      "author_id": "bob",
+      "content": "MRT tip that took me way too long to figure out: top up your Jakcard at the station vending machines, not just the counters. Takes 30 seconds and the machines are almost always free. Saves the queue every morning.",
+      "image_url": "/images/placeholder_posts/street_city.jpg",
+      "created_at": "2026-02-06T08:00:00Z",
+      "upvote_count": 18,
+      "comments": [
+        {
+          "id": "comment_005_01",
+          "author_id": "jack",
+          "content": "I've been queuing at the counter for two weeks. Life changing information, thank you.",
+          "created_at": "2026-02-06T08:30:00Z",
+          "upvote_count": 6
+        },
+        {
+          "id": "comment_005_02",
+          "author_id": "iris",
+          "content": "Also the GoPay/OVO integration works at most gates now if you prefer contactless. Bob do you know if the SCBD extension is actually opening this year?",
+          "created_at": "2026-02-06T09:15:00Z",
+          "upvote_count": 4
+        },
+        {
+          "id": "comment_005_03",
+          "author_id": "bob",
+          "content": "The phase 2 stations are supposed to open mid-year but I'd say assume late-year based on past patterns. The Fatmawati to HI section is the one to watch.",
+          "created_at": "2026-02-06T10:00:00Z",
+          "upvote_count": 5
+        }
+      ]
+    },
+    {
+      "id": "post_006",
+      "author_id": "greta",
+      "content": "Taman Suropati in Menteng is probably my favourite green spot in central Jakarta right now. Old trees, good benches, relatively quiet on weekday mornings. The kind of place you forget you're in the middle of a mega-city.",
+      "image_url": "/images/placeholder_posts/park.jpg",
+      "created_at": "2026-02-05T09:00:00Z",
+      "upvote_count": 20,
+      "comments": [
+        {
+          "id": "comment_006_01",
+          "author_id": "alice",
+          "content": "We take the kids there sometimes! There's a small playground section too. It's one of the nicer areas in Central Jakarta.",
+          "created_at": "2026-02-05T09:45:00Z",
+          "upvote_count": 4
+        },
+        {
+          "id": "comment_006_02",
+          "author_id": "emma",
+          "content": "Haven't been since they repainted the surrounding colonial houses. Must have changed quite a bit.",
+          "created_at": "2026-02-05T10:30:00Z",
+          "upvote_count": 2
+        },
+        {
+          "id": "comment_006_03",
+          "author_id": "greta",
+          "content": "The houses look great now actually. Very photogenic in the early morning light. Recommend going before 8am on a weekend if you want it mostly to yourself.",
+          "created_at": "2026-02-05T11:15:00Z",
+          "upvote_count": 5
+        }
+      ]
+    },
+    {
+      "id": "post_007",
+      "author_id": "alice",
+      "content": "Anyone know good indoor activity places for kids in South Jakarta? Looking for something for a rainy Saturday that isn't a mall. My two are 6 and 9. We've done all the usual malls already.",
+      "image_url": "/images/placeholder_posts/playground1.jpg",
+      "created_at": "2026-02-04T14:00:00Z",
+      "upvote_count": 11,
+      "comments": [
+        {
+          "id": "comment_007_01",
+          "author_id": "carla",
+          "content": "Kidzania in Pacific Place is popular — they do mini job role experiences, kids love it. Book online in advance though, it fills up on weekends.",
+          "created_at": "2026-02-04T14:40:00Z",
+          "upvote_count": 6
+        },
+        {
+          "id": "comment_007_02",
+          "author_id": "iris",
+          "content": "There's also a cooking class for kids at a studio in Kebayoran Baru. Can't remember the name but I'll find it and share.",
+          "created_at": "2026-02-04T15:20:00Z",
+          "upvote_count": 3
+        },
+        {
+          "id": "comment_007_03",
+          "author_id": "alice",
+          "content": "Kidzania! Yes I keep hearing about that — haven't done it yet. Thanks both!",
+          "created_at": "2026-02-04T16:00:00Z",
+          "upvote_count": 2
+        }
+      ]
+    },
+    {
+      "id": "post_008",
+      "author_id": "henk",
+      "content": "Hot take: the construction on Jalan Sudirman has been 'about 3 more months' for literally two years. Don't plan anything time-sensitive that involves that stretch between 7 and 9am. You've been warned.",
+      "created_at": "2026-02-03T10:45:00Z",
+      "upvote_count": 15,
+      "comments": [
+        {
+          "id": "comment_008_01",
+          "author_id": "frank",
+          "content": "It's the underground cable work. They hit unexpected issues with the drainage infrastructure. Genuinely complicated but yes, the timeline estimates have been... optimistic.",
+          "created_at": "2026-02-03T11:20:00Z",
+          "upvote_count": 5
+        },
+        {
+          "id": "comment_008_02",
+          "author_id": "bob",
+          "content": "MRT solves this completely. Seriously the best thing to happen to Jakarta commuting in decades.",
+          "created_at": "2026-02-03T12:00:00Z",
+          "upvote_count": 8
+        },
+        {
+          "id": "comment_008_03",
+          "author_id": "henk",
+          "content": "MRT is great IF you live and work near a station. Lot of people don't. But yes, if you can use it, use it.",
+          "created_at": "2026-02-03T13:30:00Z",
+          "upvote_count": 6
+        }
+      ]
+    },
+    {
+      "id": "post_009",
+      "author_id": "iris",
+      "content": "The new rooftop bar at Pullman Central Park is finally open and it's legitimately good — great view of West Jakarta, reasonable prices for the setting. Anyone interested in doing a group sunset drinks there?",
+      "created_at": "2026-02-02T19:30:00Z",
+      "upvote_count": 13,
+      "comments": [
+        {
+          "id": "comment_009_01",
+          "author_id": "carla",
+          "content": "I'm in! Weekends or a weekday evening? 🍹",
+          "created_at": "2026-02-02T20:10:00Z",
+          "upvote_count": 3
+        },
+        {
+          "id": "comment_009_02",
+          "author_id": "emma",
+          "content": "Would love to but Central Park is quite a trek for me from Kemang. Worth it for a good group though.",
+          "created_at": "2026-02-02T20:45:00Z",
+          "upvote_count": 2
+        },
+        {
+          "id": "comment_009_03",
+          "author_id": "bob",
+          "content": "There's a TransJakarta corridor that goes pretty close actually. Takes about 40 min from Blok M. Surprisingly okay journey.",
+          "created_at": "2026-02-02T21:15:00Z",
+          "upvote_count": 4
+        }
+      ]
+    },
+    {
+      "id": "post_010",
+      "author_id": "frank",
+      "content": "Weekend tip if you haven't done it recently: the toll road to Puncak is actually manageable on Saturday mornings if you leave before 6am. By 8 it's a nightmare. The payoff is worth it — cool air, good warung breakfast up in the hills.",
+      "created_at": "2026-02-01T07:00:00Z",
+      "upvote_count": 17,
+      "comments": [
+        {
+          "id": "comment_010_01",
+          "author_id": "alice",
+          "content": "We did this last month! Left at 5:45am and it was wonderful. Kids slept most of the way and woke up in the mountains.",
+          "created_at": "2026-02-01T08:00:00Z",
+          "upvote_count": 6
+        },
+        {
+          "id": "comment_010_02",
+          "author_id": "greta",
+          "content": "The tea plantations past Cipanas are beautiful in the morning mist. I've taken some of my best photos there.",
+          "created_at": "2026-02-01T09:20:00Z",
+          "upvote_count": 4
+        },
+        {
+          "id": "comment_010_03",
+          "author_id": "jack",
+          "content": "Do you need to book the toll or just pay at the gate? And is it rental car or can you Grab up there?",
+          "created_at": "2026-02-01T10:10:00Z",
+          "upvote_count": 2
+        },
+        {
+          "id": "comment_010_04",
+          "author_id": "frank",
+          "content": "Pay at gate with e-toll card. Grab can take you but it adds up — better to rent for the day or share a car with a few people.",
+          "created_at": "2026-02-01T11:00:00Z",
+          "upvote_count": 5
+        }
+      ]
+    },
+    {
+      "id": "post_011",
+      "author_id": "jack",
+      "content": "Genuine question — how do people handle the heat here in the dry season? I'm from Northern Europe and this is my first tropical city. AC everywhere helps but stepping outside at 2pm still feels like walking into a wall.",
+      "created_at": "2026-02-11T14:00:00Z",
+      "upvote_count": 12,
+      "comments": [
+        {
+          "id": "comment_011_01",
+          "author_id": "henk",
+          "content": "You never fully adjust, you just stop noticing how sweaty you are. More practically: light linen clothing, always carry water, plan outdoor things before 10am or after 5pm.",
+          "created_at": "2026-02-11T14:30:00Z",
+          "upvote_count": 9
+        },
+        {
+          "id": "comment_011_02",
+          "author_id": "iris",
+          "content": "Es kelapa muda (fresh coconut) from a street vendor is the move. Rehydrates you and costs almost nothing. You'll see them everywhere.",
+          "created_at": "2026-02-11T15:00:00Z",
+          "upvote_count": 7
+        },
+        {
+          "id": "comment_011_03",
+          "author_id": "alice",
+          "content": "I lived in Singapore before and Jakarta is hotter and more humid. But honestly after 6 months your body does adapt somewhat. Give it time.",
+          "created_at": "2026-02-11T15:45:00Z",
+          "upvote_count": 4
+        }
+      ]
+    },
+    {
+      "id": "post_012",
+      "author_id": "daniel",
+      "content": "Did anyone else know that Pasar Baru (the old shopping street in Central Jakarta) has been there since 1820? It was one of the main European shopping districts in Batavia. Some of the buildings are original. Worth a walk even if you're not buying anything.",
+      "created_at": "2026-02-10T16:00:00Z",
+      "upvote_count": 11,
+      "comments": [
+        {
+          "id": "comment_012_01",
+          "author_id": "greta",
+          "content": "The textile shops in there have amazing old signage. Really good for detail photography.",
+          "created_at": "2026-02-10T16:45:00Z",
+          "upvote_count": 3
+        },
+        {
+          "id": "comment_012_02",
+          "author_id": "jack",
+          "content": "Jakarta is older than I expected honestly. I had the impression it was all new but there's real history here.",
+          "created_at": "2026-02-10T17:30:00Z",
+          "upvote_count": 4
+        }
+      ]
+    },
+    {
+      "id": "post_013",
+      "author_id": "iris",
+      "content": "Jakarta Fashion Week is back at Senayan City next week. Free entry for most of the shows if you register online. Worth going even just for the atmosphere — the crowd-watching alone is worth it.",
+      "image_url": "/images/placeholder_posts/movie_screenshot.jpg",
+      "created_at": "2026-02-09T18:00:00Z",
+      "upvote_count": 9,
+      "comments": [
+        {
+          "id": "comment_013_01",
+          "author_id": "carla",
+          "content": "Oh I always forget to register and then miss it every year 😅 sharing the link if you have it?",
+          "created_at": "2026-02-09T18:40:00Z",
+          "upvote_count": 3
+        },
+        {
+          "id": "comment_013_02",
+          "author_id": "emma",
+          "content": "I went two years ago — the local designer shows are genuinely impressive. Indonesian batik fashion has come a long way.",
+          "created_at": "2026-02-09T19:20:00Z",
+          "upvote_count": 4
+        }
+      ]
+    },
+    {
+      "id": "post_014",
+      "author_id": "carla",
+      "content": "Big news for the south Jakarta food scene: Namaaz Dining has reopened in Cipete after their renovation. If you've never been, it's a multi-course molecular Indonesian tasting menu — genuinely unique experience. Pricey but worth it for a special dinner.",
+      "created_at": "2026-02-08T20:00:00Z",
+      "upvote_count": 14,
+      "comments": [
+        {
+          "id": "comment_014_01",
+          "author_id": "iris",
+          "content": "I've been wanting to try Namaaz for ages! Is it the kind of place you'd go with a partner or better in a group?",
+          "created_at": "2026-02-08T20:45:00Z",
+          "upvote_count": 2
+        },
+        {
+          "id": "comment_014_02",
+          "author_id": "carla",
+          "content": "Honestly great either way! It's theatrical — each course has a presentation element — so a partner or small group both work really well.",
+          "created_at": "2026-02-08T21:30:00Z",
+          "upvote_count": 4
+        },
+        {
+          "id": "comment_014_03",
+          "author_id": "frank",
+          "content": "Book at least 2 weeks ahead. It was nearly impossible to get a table before they renovated.",
+          "created_at": "2026-02-09T07:45:00Z",
+          "upvote_count": 5
+        }
+      ]
+    },
+    {
+      "id": "post_015",
+      "author_id": "bob",
+      "content": "Slightly unusual post but: anyone actually cycled in Jakarta? Not just in a mall or park — actual city cycling. I've been trying the Sudirman-Thamrin car-free day on Sundays and it's genuinely brilliant. 26km of clean road, zero traffic. The city feels completely different.",
+      "created_at": "2026-02-07T09:00:00Z",
+      "upvote_count": 16,
+      "comments": [
+        {
+          "id": "comment_015_01",
+          "author_id": "greta",
+          "content": "Car-free Sunday is one of my favourite things about this city. The Monas backdrop with no cars in sight is special.",
+          "created_at": "2026-02-07T09:40:00Z",
+          "upvote_count": 6
+        },
+        {
+          "id": "comment_015_02",
+          "author_id": "henk",
+          "content": "It's the one morning Jakarta doesn't feel like it's trying to kill you as a cyclist. I'll say that.",
+          "created_at": "2026-02-07T10:20:00Z",
+          "upvote_count": 8
+        },
+        {
+          "id": "comment_015_03",
+          "author_id": "jack",
+          "content": "Wait, the whole city centre is closed to traffic? Every Sunday morning?",
+          "created_at": "2026-02-07T11:00:00Z",
+          "upvote_count": 3
+        },
+        {
+          "id": "comment_015_04",
+          "author_id": "bob",
+          "content": "6am-11am, Sudirman and Thamrin. Huge area. Grab a bike from the Gowes app and go — costs almost nothing.",
+          "created_at": "2026-02-07T11:30:00Z",
+          "upvote_count": 5
+        }
+      ]
+    },
+    {
+      "id": "post_016",
+      "author_id": "henk",
+      "content": "Menteng is changing fast. Three more old Dutch villas on Jalan Diponegoro converted to commercial use this month. I understand why it happens economically but it's a shame — those buildings won't be restored the same way if ever demolished.",
+      "created_at": "2026-02-06T17:30:00Z",
+      "upvote_count": 10,
+      "comments": [
+        {
+          "id": "comment_016_01",
+          "author_id": "daniel",
+          "content": "There's a heritage registration petition going around for the remaining Menteng colonial streetscape. Have you signed it? I can share the link.",
+          "created_at": "2026-02-06T18:10:00Z",
+          "upvote_count": 5
+        },
+        {
+          "id": "comment_016_02",
+          "author_id": "henk",
+          "content": "Send it over. Though honestly my faith in these things getting the buildings protected is low. But still worth trying.",
+          "created_at": "2026-02-06T19:00:00Z",
+          "upvote_count": 3
+        }
+      ]
+    },
+    {
+      "id": "post_017",
+      "author_id": "greta",
+      "content": "If you want a photo that looks like it was taken somewhere else entirely, try the reservoir path at Situ Lembang in Menteng around 6:30am. Mist on the water, herons, old trees. It exists in the middle of Jakarta and most people don't know about it.",
+      "created_at": "2026-02-05T07:15:00Z",
+      "upvote_count": 18,
+      "comments": [
+        {
+          "id": "comment_017_01",
+          "author_id": "emma",
+          "content": "I've walked past Situ Lembang dozens of times and never stopped to actually look. Adding this to next week's morning routine.",
+          "created_at": "2026-02-05T08:00:00Z",
+          "upvote_count": 4
+        },
+        {
+          "id": "comment_017_02",
+          "author_id": "alice",
+          "content": "Is it okay to bring kids? I'm always looking for morning spots that aren't too chaotic.",
+          "created_at": "2026-02-05T09:00:00Z",
+          "upvote_count": 2
+        },
+        {
+          "id": "comment_017_03",
+          "author_id": "greta",
+          "content": "Perfect for kids honestly — flat path, safe, usually quiet in the early morning. Just bring mosquito repellent.",
+          "created_at": "2026-02-05T09:45:00Z",
+          "upvote_count": 4
+        }
+      ]
+    },
+    {
+      "id": "post_018",
+      "author_id": "carla",
+      "content": "Thinking it would be fun to do a community street food walk sometime — pick a neighbourhood like Glodok or Pasar Baru, explore together, eat as much as possible. Who'd be up for it? No pressure, just testing the waters 🌶️",
+      "created_at": "2026-02-04T12:30:00Z",
+      "upvote_count": 21,
+      "comments": [
+        {
+          "id": "comment_018_01",
+          "author_id": "jack",
+          "content": "Yes! This would be so useful for me as a newcomer. I don't know what to order half the time when I'm exploring alone.",
+          "created_at": "2026-02-04T13:00:00Z",
+          "upvote_count": 5
+        },
+        {
+          "id": "comment_018_02",
+          "author_id": "daniel",
+          "content": "Glodok is perfect for this — Chinatown-meets-Betawi, incredible street food scene and a lot of history to narrate while eating. I'd be happy to play tour guide.",
+          "created_at": "2026-02-04T13:30:00Z",
+          "upvote_count": 7
+        },
+        {
+          "id": "comment_018_03",
+          "author_id": "iris",
+          "content": "Count me in! Weekend mornings work best before the heat kicks in.",
+          "created_at": "2026-02-04T14:00:00Z",
+          "upvote_count": 4
+        },
+        {
+          "id": "comment_018_04",
+          "author_id": "bob",
+          "content": "Glodok is accessible by MRT to Kota then short walk. I can sort out the directions.",
+          "created_at": "2026-02-04T14:40:00Z",
+          "upvote_count": 3
+        },
+        {
+          "id": "comment_018_05",
+          "author_id": "carla",
+          "content": "Amazing! I'll set up a poll for dates this weekend. This is going to be great 🙌",
+          "created_at": "2026-02-04T15:15:00Z",
+          "upvote_count": 6
+        }
+      ]
+    }
+  ],
+
+  "implementation_notes": {
+    "image_url_format": "Paths reference static files in /public/images/placeholder_posts/ — no upload needed, images are reused across seedings.",
+    "posts_with_images": ["post_001 (cafe)", "post_003 (snack)", "post_005 (street_city)", "post_006 (park)", "post_007 (playground1)", "post_013 (movie_screenshot)"],
+    "upvote_distribution": "Typical for an active mid-size circle — most posts 10-20 upvotes, high-engagement community posts up to 22.",
+    "timestamp_strategy": "Posts spread over 11 days (Feb 1-11, 2026). Realistic daily timing: morning tips 7-9am, midday food posts 12-2pm, evening social posts 6-8pm.",
+    "content_authenticity": "Indonesian phrases used naturally (banjir, macet, warung, ojek, nasi campur). Real Jakarta landmarks, real neighbourhood names, realistic expat and local perspectives.",
+    "persona_consistency": "Bob: transport/MRT, Carla: food/social, Daniel: history/culture, Emma: cafes/remote work, Frank: practical expat knowledge, Greta: nature/photography, Henk: dry humour/warnings, Iris: events/openings, Jack: newcomer questions, Alice: family life."
+  }
+}

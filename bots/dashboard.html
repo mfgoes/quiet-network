@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiet Network Bot Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #1a202c;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      padding: 2rem;
+    }
+
+    h1 {
+      color: #2d3748;
+      margin-bottom: 0.5rem;
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      color: #718096;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+
+    /* Status Cards */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .status-card {
+      padding: 1.25rem;
+      border-radius: 8px;
+      border-left: 4px solid #cbd5e0;
+      background: #f7fafc;
+      transition: transform 0.2s;
+    }
+
+    .status-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .status-card.ok { border-left-color: #48bb78; background: #f0fff4; }
+    .status-card.warn { border-left-color: #ed8936; background: #fffaf0; }
+    .status-card.bad { border-left-color: #f56565; background: #fff5f5; }
+
+    .status-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #718096;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .status-value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2d3748;
+    }
+
+    /* Buttons */
+    .actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .btn {
+      padding: 0.875rem 1.75rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      color: white;
+    }
+
+    .btn-outline {
+      background: white;
+      color: #4a5568;
+      border: 2px solid #e2e8f0;
+    }
+
+    /* Output Area */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .section-header h2 {
+      font-size: 1.25rem;
+      color: #2d3748;
+    }
+
+    .output-area {
+      background: #1a202c;
+      color: #e2e8f0;
+      padding: 1.5rem;
+      border-radius: 8px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      min-height: 200px;
+      max-height: 500px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-bottom: 2rem;
+    }
+
+    .output-area .err { color: #fc8181; }
+    .output-area .ok { color: #68d391; }
+    .output-area .info { color: #63b3ed; }
+
+    /* Posts Preview */
+    .posts-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .post-card {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1.25rem;
+      transition: box-shadow 0.2s;
+    }
+
+    .post-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .post-content {
+      color: #2d3748;
+      margin-bottom: 0.75rem;
+      line-height: 1.5;
+    }
+
+    .post-replies {
+      padding-left: 1rem;
+      border-left: 2px solid #cbd5e0;
+    }
+
+    .reply {
+      color: #4a5568;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      padding: 0.5rem;
+      background: white;
+      border-radius: 4px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #a0aec0;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .tab {
+      padding: 0.75rem 1.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #718096;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Circle Cards */
+    .circles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .circle-card {
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .circle-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+
+    .circle-card.selected {
+      border-color: #667eea;
+      background: #f0f4ff;
+    }
+
+    .circle-name {
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 0.25rem;
+    }
+
+    .circle-desc {
+      font-size: 0.85rem;
+      color: #718096;
+    }
+
+    .circle-id {
+      font-size: 0.75rem;
+      color: #a0aec0;
+      font-family: monospace;
+      margin-top: 0.5rem;
+    }
+
+    .info-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+
+    .info-badge.active {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .info-badge.inactive {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 Bot Dashboard</h1>
+    <p class="subtitle">Quiet Network Bot Seeder</p>
+
+    <!-- Status Cards -->
+    <div class="status-grid">
+      <div class="status-card" id="card-seed">
+        <div class="status-label">Seed Script</div>
+        <div class="status-value" id="status-seed">Checking...</div>
+      </div>
+      <div class="status-card" id="card-env">
+        <div class="status-label">Configuration</div>
+        <div class="status-value" id="status-env">Checking...</div>
+      </div>
+      <div class="status-card" id="card-posts">
+        <div class="status-label">Posts Ready</div>
+        <div class="status-value" id="status-posts">Checking...</div>
+      </div>
+      <div class="status-card" id="card-synthetic">
+        <div class="status-label">Synthetic Content</div>
+        <div class="status-value" id="status-synthetic">Checking...</div>
+      </div>
+    </div>
+
+    <!-- Circle Selector -->
+    <div style="margin-bottom: 2rem;">
+      <div class="section-header">
+        <h2>Select Circle</h2>
+        <button class="btn btn-outline" style="padding:0.5rem 1rem;font-size:0.85rem" onclick="loadCircles()">
+          🔄 Refresh Circles
+        </button>
+      </div>
+      <div id="circles-container" class="empty-state">
+        Click "Refresh Circles" to load available circles from Supabase
+      </div>
+    </div>
+
+    <!-- Selected Circle Banner -->
+    <div id="selected-banner" style="display:none;margin-bottom:1.5rem;padding:1rem 1.25rem;border-radius:8px;background:#f0f4ff;border:2px solid #667eea;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
+        <div>
+          <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#667eea;font-weight:700;margin-bottom:0.25rem;">Selected Circle</div>
+          <div style="font-weight:700;color:#2d3748;font-size:1.1rem;" id="banner-name"></div>
+          <div style="font-size:0.85rem;color:#4a5568;margin-top:0.25rem;" id="banner-desc"></div>
+          <div style="font-size:0.75rem;color:#a0aec0;font-family:monospace;margin-top:0.25rem;" id="banner-id"></div>
+        </div>
+        <div style="font-size:0.75rem;color:#718096;text-align:right;white-space:nowrap;" id="banner-content-status"></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="btn btn-success" id="btn-seed" onclick="runSeed()">
+        <span>🚀 Seed Bots to Supabase</span>
+      </button>
+      <button class="btn btn-outline" onclick="refreshStatus()">
+        <span>🔄 Refresh Status</span>
+      </button>
+    </div>
+
+    <!-- Output Console -->
+    <div class="section-header">
+      <h2>Console Output</h2>
+      <button class="btn btn-outline" style="padding:0.5rem 1rem;font-size:0.85rem" onclick="clearOutput()">
+        Clear
+      </button>
+    </div>
+    <div class="output-area" id="output">
+      <span class="info">🎯 Ready! Click "Seed Bots to Supabase" to get started.</span>
+    </div>
+
+    <!-- Posts Preview Tabs -->
+    <div class="tabs">
+      <button class="tab" onclick="switchTab('simple')">📄 Simple Posts (Legacy)</button>
+      <button class="tab active" onclick="switchTab('synthetic')">🌟 Synthetic Content (Active)</button>
+    </div>
+
+    <div id="tab-simple" class="tab-content">
+      <div class="section-header">
+        <h2>posts.json <span style="font-size:0.8rem;color:#718096;">(Not currently used for seeding)</span></h2>
+        <button class="btn btn-outline" style="padding:0.5rem 1rem;font-size:0.85rem" onclick="loadPosts()">
+          Reload
+        </button>
+      </div>
+      <p style="color:#718096;margin-bottom:1rem;font-size:0.9rem;">
+        Basic post content without comments or upvotes. This file is not currently being seeded.
+      </p>
+      <div id="posts-container" class="empty-state">
+        Click "Reload" to preview posts
+      </div>
+    </div>
+
+    <div id="tab-synthetic" class="tab-content active">
+      <div class="section-header">
+        <h2>synthetic_content.json <span style="font-size:0.8rem;color:#48bb78;">✓ Active</span></h2>
+        <button class="btn btn-outline" style="padding:0.5rem 1rem;font-size:0.85rem" onclick="loadSynthetic()">
+          Reload
+        </button>
+      </div>
+      <p style="color:#718096;margin-bottom:1rem;font-size:0.9rem;">
+        Full engagement content including 18 posts with realistic comments, upvotes, timestamps, and conversation threads. This content will be seeded when you click "Seed Bots to Supabase".
+      </p>
+      <div id="synthetic-container" class="empty-state">
+        Click "Reload" to preview synthetic content
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = "/api";
+    let busy = false;
+    let selectedCircle = null;  // { id, name, description }
+    let circlesWithContent = new Set();  // slugs that have synthetic_content.json
+
+    function log(text, cls = "") {
+      const el = document.getElementById("output");
+      const line = cls ? `<span class="${cls}">${esc(text)}</span>` : esc(text);
+      el.innerHTML += line + "\n";
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    function clearOutput() {
+      document.getElementById("output").innerHTML = "";
+    }
+
+    function setCard(id, ok, text) {
+      const card = document.getElementById("card-" + id);
+      const val = document.getElementById("status-" + id);
+      card.className = "status-card " + (ok === true ? "ok" : ok === false ? "bad" : "warn");
+      val.textContent = text;
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('tab-' + tab).classList.add('active');
+    }
+
+    async function refreshStatus() {
+      try {
+        const r = await fetch(API + "/status");
+        const d = await r.json();
+        setCard("seed", d.seed_script.ok, d.seed_script.message);
+        setCard("env", d.env.ok, d.env.message);
+        setCard("posts", d.posts_count > 0, d.posts_count + " posts");
+        setCard("synthetic", d.synthetic_count > 0, d.synthetic_count + " posts");
+      } catch (e) {
+        log("Error checking status: " + e.message, "err");
+      }
+    }
+
+    async function runSeed() {
+      if (busy) return;
+      busy = true;
+      document.getElementById("btn-seed").disabled = true;
+      clearOutput();
+
+      if (selectedCircle) {
+        log(`🎯 Seeding circle: ${selectedCircle.name} (${selectedCircle.id})\n`, "info");
+      } else {
+        log("⚠️  No circle selected — using default from .env\n", "info");
+      }
+      log("🚀 Starting bot seeding process...\n", "info");
+
+      try {
+        const body = selectedCircle ? {
+          circle_id: selectedCircle.id,
+          circle_name: selectedCircle.name,
+          circle_description: selectedCircle.description || "",
+        } : {};
+
+        const r = await fetch(API + "/seed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const d = await r.json();
+
+        if (d.stdout) log(d.stdout);
+        if (d.stderr) log(d.stderr, "err");
+
+        if (d.ok) {
+          log("\n✅ Seeding completed successfully!", "ok");
+        } else {
+          log("\n❌ Seeding finished with errors. Check output above.", "err");
+        }
+      } catch (e) {
+        log("❌ Error: " + e.message, "err");
+      }
+
+      busy = false;
+      document.getElementById("btn-seed").disabled = false;
+      refreshStatus();
+    }
+
+    async function loadPosts() {
+      const container = document.getElementById("posts-container");
+      container.innerHTML = '<div class="empty-state">Loading...</div>';
+
+      try {
+        const r = await fetch(API + "/posts");
+        const posts = await r.json();
+
+        if (!Array.isArray(posts) || posts.length === 0) {
+          container.innerHTML = '<div class="empty-state">No posts found</div>';
+          return;
+        }
+
+        container.innerHTML = '<div class="posts-grid">' + posts.map((p, i) => `
+          <div class="post-card">
+            <div class="post-content"><strong>#${i+1}</strong> ${esc(p.post || "(empty)")}</div>
+            ${(p.replies || []).length > 0 ? `
+              <div class="post-replies">
+                ${(p.replies || []).map(r => {
+                  const text = typeof r === "string" ? r : r.text || "";
+                  return `<div class="reply">↳ ${esc(text)}</div>`;
+                }).join("")}
+              </div>
+            ` : ""}
+          </div>
+        `).join("") + '</div>';
+      } catch (e) {
+        container.innerHTML = '<div class="empty-state">Error loading posts</div>';
+      }
+    }
+
+    async function loadSynthetic() {
+      const container = document.getElementById("synthetic-container");
+      container.innerHTML = '<div class="empty-state">Loading...</div>';
+
+      try {
+        const r = await fetch(API + "/synthetic");
+        const data = await r.json();
+
+        if (data.error) {
+          container.innerHTML = '<div class="empty-state">' + esc(data.error) + '</div>';
+          return;
+        }
+
+        const posts = data.posts || [];
+        if (posts.length === 0) {
+          container.innerHTML = '<div class="empty-state">No synthetic posts found</div>';
+          return;
+        }
+
+        container.innerHTML = '<div class="posts-grid">' + posts.slice(0, 5).map((p, i) => `
+          <div class="post-card">
+            <div class="post-content">
+              <strong>#${i+1}</strong> by <em>${p.author_id || "unknown"}</em>
+              <span style="color:#718096;font-size:0.85rem;margin-left:0.5rem;">
+                ⬆ ${p.upvote_count || 0} upvotes · 💬 ${(p.comments || []).length} comments
+              </span><br>
+              ${esc(p.content || "(empty)")}
+            </div>
+            ${(p.comments || []).length > 0 ? `
+              <div class="post-replies">
+                ${(p.comments || []).map(c => `
+                  <div class="reply">
+                    ↳ <em>${c.author_id || "?"}</em>: ${esc(c.content || "")}
+                    <span style="color:#a0aec0;font-size:0.8rem;margin-left:0.5rem;">⬆ ${c.upvote_count || 0}</span>
+                  </div>
+                `).join("")}
+              </div>
+            ` : ""}
+          </div>
+        `).join("") + '</div>';
+
+        if (posts.length > 5) {
+          container.innerHTML += '<div class="empty-state">... and ' + (posts.length - 5) + ' more posts</div>';
+        }
+      } catch (e) {
+        container.innerHTML = '<div class="empty-state">Error loading synthetic content</div>';
+      }
+    }
+
+    async function loadCircles() {
+      const container = document.getElementById("circles-container");
+      container.innerHTML = '<div class="empty-state">Loading circles...</div>';
+
+      try {
+        // Fetch circles and content status in parallel
+        const [circlesRes, statusRes] = await Promise.all([
+          fetch(API + "/circles"),
+          fetch(API + "/content-status"),
+        ]);
+        const circles = await circlesRes.json();
+        const statusData = await statusRes.json();
+        circlesWithContent = new Set(statusData.circles_with_content || []);
+
+        if (circles.error) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <strong>⚠️ Error loading circles</strong><br>
+              ${esc(circles.error)}<br><br>
+              <small>Make sure seed_bots.py has valid Supabase credentials</small>
+            </div>
+          `;
+          return;
+        }
+
+        if (!Array.isArray(circles) || circles.length === 0) {
+          container.innerHTML = '<div class="empty-state">No circles found in Supabase</div>';
+          return;
+        }
+
+        container.innerHTML = '<div class="circles-grid">' + circles.map(c => {
+          const desc = (c.description || "No description").substring(0, 80) + ((c.description || "").length > 80 ? "…" : "");
+          const slug = (c.name || "").toLowerCase().replace(/\s+/g, "_");
+          const hasJson = circlesWithContent.has(slug);
+          const dataAttrs = `data-id="${c.id}" data-name="${esc(c.name || '')}" data-desc="${esc(c.description || '')}" data-slug="${slug}"`;
+          const badge = hasJson
+            ? `<span style="float:right;font-size:0.7rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:10px;background:#c6f6d5;color:#276749;" title="Has curated synthetic_content.json">✓ JSON ready</span>`
+            : `<span style="float:right;font-size:0.7rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:10px;background:#fefcbf;color:#744210;" title="No JSON — will auto-generate from description">⚙ auto-gen</span>`;
+          return `
+            <div class="circle-card" ${dataAttrs} onclick="selectCircle(this)">
+              <div class="circle-name">${esc(c.name || "Unnamed Circle")} ${badge}</div>
+              <div class="circle-desc">${esc(desc)}</div>
+              <div class="circle-id">ID: ${c.id}</div>
+            </div>
+          `;
+        }).join("") + '</div>';
+      } catch (e) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <strong>❌ Error</strong><br>
+            ${esc(e.message)}<br><br>
+            <small>Check console for details</small>
+          </div>
+        `;
+        console.error(e);
+      }
+    }
+
+    function selectCircle(el) {
+      document.querySelectorAll('.circle-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+
+      selectedCircle = {
+        id: el.dataset.id,
+        name: el.dataset.name,
+        description: el.dataset.desc,
+      };
+
+      const slug = el.dataset.slug;
+      const hasJson = circlesWithContent.has(slug);
+
+      // Show selected circle banner
+      const banner = document.getElementById("selected-banner");
+      banner.style.display = "block";
+      document.getElementById("banner-name").textContent = selectedCircle.name;
+      document.getElementById("banner-desc").textContent = selectedCircle.description || "No description";
+      document.getElementById("banner-id").textContent = "ID: " + selectedCircle.id;
+      document.getElementById("banner-content-status").innerHTML = hasJson
+        ? '<span style="color:#276749;font-weight:700;">&#10003; Curated JSON ready</span><br><span style="font-size:0.7rem;color:#4a5568;">Quality content seeding</span>'
+        : '<span style="color:#744210;font-weight:700;">&#9881; Auto-generate</span><br><span style="font-size:0.7rem;color:#4a5568;">Templates from description</span>';
+
+      // Update seed button
+      document.getElementById("btn-seed").querySelector("span").textContent =
+        `Seed Bots \u2192 ${selectedCircle.name}`;
+    }
+
+    // Initial load
+    refreshStatus();
+    loadCircles();
+  </script>
+</body>
+</html>

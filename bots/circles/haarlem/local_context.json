@@ -1,0 +1,95 @@
+{
+  "_comment": "This file provides circle-specific context for content generation and validation. Used by seed_bots.py to ensure bot content is relevant to the circle's interests and location.",
+  "circle_name": "Haarlem",
+  "circle_type": "city",
+  "region": "North Holland, Netherlands",
+  "description": "Historic Dutch city known for its museums, architecture, and vibrant community",
+
+  "landmarks": [
+    {"name": "Grote Markt", "type": "square", "description": "Central market square with medieval architecture"},
+    {"name": "St. Bavo's Church", "type": "church", "description": "Grand Gothic cathedral in the city center"},
+    {"name": "Teylers Museum", "type": "museum", "description": "Oldest museum in the Netherlands, science and art"},
+    {"name": "Frans Hals Museum", "type": "museum", "description": "Art museum featuring Dutch Golden Age paintings"},
+    {"name": "Windmill De Adriaan", "type": "windmill", "description": "Iconic windmill on the Spaarne river"},
+    {"name": "Amsterdamse Poort", "type": "gate", "description": "Medieval city gate, one of the last remaining"},
+    {"name": "Haarlemmerhout", "type": "park", "description": "Oldest public park in the Netherlands"},
+    {"name": "Jopenkerk", "type": "brewery", "description": "Church converted into a brewery and restaurant"}
+  ],
+
+  "streets": [
+    "Grote Houtstraat",
+    "Barteljorisstraat",
+    "Kruisweg",
+    "Gedempte Oude Gracht",
+    "Spaarne",
+    "Zijlstraat",
+    "Schagchelstraat",
+    "Botermarkt",
+    "Warmoesstraat",
+    "Kruisstraat"
+  ],
+
+  "neighborhoods": [
+    {"name": "Centrum", "description": "Historic city center"},
+    {"name": "Haarlem-Noord", "description": "Northern residential area"},
+    {"name": "Haarlem-Oost", "description": "Eastern neighborhoods"},
+    {"name": "Schalkwijk", "description": "Modern residential district"},
+    {"name": "Zuiderpolder", "description": "Newer development area"}
+  ],
+
+  "businesses": [
+    {"name": "De Haarlemse Vlaamsch", "type": "cafe", "description": "Popular local café"},
+    {"name": "Grand Café Brinkmann", "type": "cafe", "description": "Historic café on the Grote Markt"},
+    {"name": "Meneer Paprika", "type": "restaurant", "description": "Vegetarian restaurant"},
+    {"name": "De Leckere", "type": "cafe", "description": "Cozy neighborhood café"},
+    {"name": "Cafe Studio", "type": "cafe", "description": "Trendy café with art exhibitions"},
+    {"name": "Bij Blauw", "type": "bakery", "description": "Artisan bakery"},
+    {"name": "Vishandel Keijser", "type": "shop", "description": "Fresh fish shop"},
+    {"name": "Ekoplaza", "type": "supermarket", "description": "Organic grocery store"}
+  ],
+
+  "activities": [
+    "cycling along the Spaarne",
+    "visiting weekend markets",
+    "exploring museums",
+    "walking through Haarlemmerhout park",
+    "café hopping in the city center",
+    "attending local music events",
+    "shopping on Grote Houtstraat",
+    "visiting the farmers market",
+    "enjoying canal-side walks"
+  ],
+
+  "seasonal_events": [
+    {"name": "Bevrijdingsfestival", "month": "May", "description": "Liberation Day festival"},
+    {"name": "Haarlem Jazz & More", "month": "August", "description": "Annual jazz festival"},
+    {"name": "Haarlemse Stripdagen", "month": "September", "description": "Comic book festival"},
+    {"name": "Sinterklaas Intocht", "month": "November", "description": "Sinterklaas arrival celebration"}
+  ],
+
+  "local_culture": {
+    "language": "Dutch",
+    "known_for": [
+      "birthplace of Frans Hals",
+      "historic hofjes (almshouse courtyards)",
+      "proximity to beach and dunes",
+      "cycling culture",
+      "vibrant café scene"
+    ],
+    "food_specialties": [
+      "stroopwafels",
+      "haring (raw herring)",
+      "bitterballen",
+      "Dutch cheese",
+      "poffertjes"
+    ]
+  },
+
+  "nearby_places": [
+    {"name": "Amsterdam", "distance_km": 20, "description": "Capital city"},
+    {"name": "Zandvoort", "distance_km": 11, "description": "Beach town"},
+    {"name": "Bloemendaal aan Zee", "distance_km": 10, "description": "Beach resort"},
+    {"name": "Nationaal Park Zuid-Kennemerland", "distance_km": 8, "description": "Dune nature reserve"},
+    {"name": "Keukenhof", "distance_km": 25, "description": "Famous tulip gardens"}
+  ]
+}

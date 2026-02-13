@@ -38,6 +38,7 @@ export interface Post {
   is_permanent: boolean
   edited: boolean
   updated_at: string | null
+  image_url: string | null
   profiles?: {
     display_name: string
     avatar_emoji: string
