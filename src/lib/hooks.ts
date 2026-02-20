@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser, Reply, NotificationPreferences } from "@/types"
+import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser, Reply, NotificationPreferences, Notification } from "@/types"
 import { slugify } from "@/types"
 
 // ─── Auth ────────────────────────────────────────────
@@ -44,10 +44,14 @@ export function useAuth() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       if (session?.user) {
         ensureProfile(session.user.id).catch(() => {})
+      }
+      // Auto-remember magic link sign-ins
+      if (event === 'SIGNED_IN' && session && !sessionStorage.getItem('rememberMe')) {
+        sessionStorage.setItem('rememberMe', 'true')
       }
     })
 
@@ -87,6 +91,21 @@ export function useAuth() {
     return error
   }
 
+  const signInWithMagicLink = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin },
+    })
+    return error
+  }
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    return error
+  }
+
   const signOut = async () => {
     sessionStorage.removeItem('rememberMe')
     await supabase.auth.signOut()
@@ -107,7 +126,7 @@ export function useAuth() {
     await supabase.auth.signOut()
   }
 
-  return { session, user, loading, signUp, signIn, signOut, leaveAllCircles, deleteAccount }
+  return { session, user, loading, signUp, signIn, signInWithMagicLink, resetPassword, signOut, leaveAllCircles, deleteAccount }
 }
 
 // ─── Profile ────────────────────────────────────────
@@ -142,6 +161,7 @@ export function useProfile(userId: string | undefined) {
     avatar_emoji: string
     bio: string
     username?: string
+    country?: string | null
     links?: { label: string; url: string }[] | null
   }) => {
     if (!userId) return { error: new Error("No user") }
@@ -197,11 +217,11 @@ export function useCircles(userId: string | undefined) {
     fetchCircles()
   }, [fetchCircles])
 
-  const createCircle = async (name: string, description?: string) => {
+  const createCircle = async (name: string, description?: string, country?: string | null) => {
     const slug = slugify(name)
     const { data, error } = await supabase
       .from("circles")
-      .insert({ name, slug, description, created_by: userId })
+      .insert({ name, slug, description, country, created_by: userId })
       .select()
       .single()
 
@@ -259,7 +279,7 @@ export function useCircles(userId: string | undefined) {
 
   const updateCircle = async (
     circleId: string,
-    updates: { description?: string | null; about?: string | null; rules?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null }
+    updates: { description?: string | null; about?: string | null; rules?: string | null; country?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null }
   ) => {
     const { data, error } = await supabase
       .from("circles")
@@ -1559,4 +1579,88 @@ export function useNotificationPreferences(userId: string | undefined) {
   }, [fetchPreferences])
 
   return { preferences, loading, updatePreferences, refetch: fetchPreferences }
+}
+
+// ─── Notifications ────────────────────────────────────
+
+export function useNotifications(userId: string | undefined) {
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchNotifications = useCallback(async () => {
+    if (!userId) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+
+    const { data, error } = await supabase
+      .from("notifications")
+      .select(`
+        *,
+        actor:profiles!notifications_actor_id_fkey(display_name, avatar_emoji, username),
+        post:posts!notifications_post_id_fkey(content, circle_id, circles(name, slug))
+      `)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50)
+
+    if (!error && data) {
+      setNotifications(data as unknown as Notification[])
+    }
+    setLoading(false)
+  }, [userId])
+
+  useEffect(() => {
+    fetchNotifications()
+  }, [fetchNotifications])
+
+  // Realtime subscription for new notifications
+  useEffect(() => {
+    if (!userId) return
+
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        async () => {
+          // Refetch to get full joins
+          await fetchNotifications()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId, fetchNotifications])
+
+  const unreadCount = notifications.filter((n) => !n.read).length
+
+  const markAsRead = async (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    )
+    await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("id", id)
+  }
+
+  const markAllAsRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", userId)
+      .eq("read", false)
+  }
+
+  return { notifications, unreadCount, loading, markAsRead, markAllAsRead }
 }

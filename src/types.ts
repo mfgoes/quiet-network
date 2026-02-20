@@ -9,6 +9,7 @@ export interface Profile {
   display_name: string
   avatar_emoji: string
   bio: string
+  country?: string | null
   links: ProfileLink[] | null
   created_at: string
   is_bot?: boolean
@@ -24,6 +25,20 @@ export interface NotificationPreferences {
   push_enabled: boolean
   created_at: string
   updated_at: string
+}
+
+export interface Notification {
+  id: string
+  user_id: string
+  type: 'reply' | 'upvote' | 'mention' | 'circle_post'
+  actor_id: string | null
+  post_id: string | null
+  reply_id: string | null
+  circle_id: string | null
+  read: boolean
+  created_at: string
+  actor?: Pick<Profile, 'display_name' | 'avatar_emoji' | 'username'>
+  post?: Pick<Post, 'content' | 'circle_id'> & { circles?: { name: string; slug: string } }
 }
 
 export interface Post {
@@ -91,6 +106,7 @@ export interface Circle {
   latitude: number | null
   longitude: number | null
   radius_km: number
+  country?: string | null
   created_by: string
   created_at: string
 }

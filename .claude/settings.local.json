@@ -33,7 +33,15 @@
       "Bash(taskkill:*)",
       "Bash(python server.py:*)",
       "Bash(pip install:*)",
-      "Bash(./circles/shared/venv/Scripts/pip install:*)"
+      "Bash(./circles/shared/venv/Scripts/pip install:*)",
+      "Bash(git -C /c/Users/Mischa/OneDrive/Documents/GitHub/quiet-network log --all --grep=\"username\" --oneline)",
+      "Bash(git -C /c/Users/Mischa/OneDrive/Documents/GitHub/quiet-network log --oneline --all -- \"supabase/*.sql\")",
+      "Bash(git -C /c/Users/Mischa/OneDrive/Documents/GitHub/quiet-network show HEAD:supabase/schema.sql)",
+      "Bash(git -C /c/Users/Mischa/OneDrive/Documents/GitHub/quiet-network diff HEAD~10..HEAD -- \"supabase/schema.sql\")",
+      "WebFetch(domain:img.youtube.com)",
+      "WebFetch(domain:www.youtube.com)",
+      "WebFetch(domain:gtlhwapaeytlialzfrao.supabase.co)",
+      "Bash(node -e:*)"
     ]
   }
 }

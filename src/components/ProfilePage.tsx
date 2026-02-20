@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ChevronDown, Info, LogOut, Pencil, Plus, Trash2, UserMinus, Bell } from "lucide-react"
 import { toast } from "sonner"
 import { linkifyText } from "@/lib/utils"
@@ -12,15 +12,28 @@ import { SocialIcon } from "@/components/SocialIcon"
 import { AVATAR_OPTIONS, avatarUrl } from "@/types"
 import type { Profile, ProfileLink } from "@/types"
 
+const COUNTRIES = [
+  { code: "NL", label: "Netherlands" },
+  { code: "BE", label: "Belgium" },
+  { code: "DE", label: "Germany" },
+  { code: "FR", label: "France" },
+  { code: "GB", label: "United Kingdom" },
+  { code: "US", label: "United States" },
+  { code: "ID", label: "Indonesia" },
+  { code: "OTHER", label: "Other" },
+]
+
 const MAX_LINKS = 5
 
 interface ProfilePageProps {
+  defaultEditing?: boolean
   profile: Profile
   onSave: (updates: {
     display_name: string
     avatar_emoji: string
     bio: string
     username: string
+    country?: string | null
     links: ProfileLink[] | null
   }) => Promise<void>
   onSignOut: () => void
@@ -30,12 +43,20 @@ interface ProfilePageProps {
   onDeleteAccount: () => Promise<void>
 }
 
-export function ProfilePage({ profile, onSave, onSignOut, onAbout, onNotificationSettings, onLeaveAllCircles, onDeleteAccount }: ProfilePageProps) {
-  const [editing, setEditing] = useState(false)
+export function ProfilePage({ defaultEditing = false, profile, onSave, onSignOut, onAbout, onNotificationSettings, onLeaveAllCircles, onDeleteAccount }: ProfilePageProps) {
+  const [editing, setEditing] = useState(defaultEditing)
+  const countryRef = useRef<HTMLSelectElement>(null)
+
+  useEffect(() => {
+    if (defaultEditing && countryRef.current) {
+      countryRef.current.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+  }, [])
   const [displayName, setDisplayName] = useState(profile.display_name)
   const [username, setUsername] = useState(profile.username)
   const [avatar, setAvatar] = useState(profile.avatar_emoji)
   const [bio, setBio] = useState(profile.bio)
+  const [country, setCountry] = useState(profile.country ?? "")
   const [links, setLinks] = useState<ProfileLink[]>(profile.links ?? [])
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -55,6 +76,7 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onNotificatio
         avatar_emoji: avatar,
         bio: bio.trim(),
         username: username.trim().toLowerCase(),
+        country: country || null,
         links: cleanLinks.length > 0 ? cleanLinks : null,
       })
       setEditing(false)
@@ -78,6 +100,11 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onNotificatio
           </h2>
           {profile.username && (
             <p className="text-sm text-quiet-muted">@{profile.username}</p>
+          )}
+          {profile.country && (
+            <p className="text-xs text-quiet-muted">
+              {COUNTRIES.find((c) => c.code === profile.country)?.label ?? profile.country}
+            </p>
           )}
           {profile.bio && (
             <p className="text-center text-sm text-quiet-muted">{linkifyText(profile.bio)}</p>
@@ -240,6 +267,27 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onNotificatio
         </div>
 
         <div>
+          <label
+            htmlFor="editCountry"
+            className="mb-1 block text-sm text-quiet-muted"
+          >
+            Country <span className="text-quiet-muted/50">(optional)</span>
+          </label>
+          <select
+            id="editCountry"
+            ref={countryRef}
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            className="w-full rounded-md border border-quiet-border bg-white p-2.5 text-sm text-quiet-slate focus:border-quiet-accent focus:outline-none"
+          >
+            <option value="">— not set —</option>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
           <label className="mb-1 block text-sm text-quiet-muted">
             Links <span className="text-quiet-muted/50">(optional)</span>
           </label>
@@ -304,6 +352,7 @@ export function ProfilePage({ profile, onSave, onSignOut, onAbout, onNotificatio
               setUsername(profile.username)
               setAvatar(profile.avatar_emoji)
               setBio(profile.bio)
+              setCountry(profile.country ?? "")
               setLinks(profile.links ?? [])
               setEditing(false)
             }}

@@ -170,6 +170,23 @@ def content_status():
     return jsonify({"circles_with_content": has_content})
 
 
+@app.route("/api/circle-json/<slug>")
+def circle_json(slug):
+    """Return the synthetic_content.json for a given circle slug."""
+    # Sanitize slug to prevent path traversal
+    safe_slug = "".join(c for c in slug if c.isalnum() or c in ("_", "-")).lower()
+    json_path = SCRIPT_DIR / "circles" / safe_slug / "synthetic_content.json"
+    if not json_path.exists():
+        return jsonify({"error": f"No synthetic_content.json found for circle '{safe_slug}'"}), 404
+    try:
+        return app.response_class(
+            json_path.read_text(encoding="utf-8"),
+            mimetype="application/json",
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/circles")
 def list_circles():
     """Fetch available circles from Supabase."""

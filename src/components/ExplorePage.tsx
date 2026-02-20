@@ -4,10 +4,12 @@ import type { Circle } from "@/types"
 interface ExplorePageProps {
   circles: Circle[]
   discoverableCircles: Circle[]
+  userCountry: string | null
   loading: boolean
   onSelect: (circle: Circle) => void
   onCreate: (name: string, description?: string) => Promise<void>
   onJoin: (circle: Circle) => Promise<void>
+  onSetLocation: () => void
 }
 
 export function ExplorePage(props: ExplorePageProps) {

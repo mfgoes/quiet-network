@@ -3,9 +3,9 @@
     "generated_at": "2026-02-12T10:00:00Z",
     "circle": "haarlem",
     "description": "Synthetic engagement content for Haarlem local community circle",
-    "total_posts": 18,
-    "total_comments": 47,
-    "estimated_total_upvotes": 156,
+    "total_posts": 22,
+    "total_comments": 56,
+    "estimated_total_upvotes": 200,
     "content_themes": [
       "coffee_shops",
       "cycling_routes",
@@ -17,7 +17,9 @@
       "community_events"
     ],
     "date_range": "2026-02-01 to 2026-02-12",
-    "language_mix": "Primarily English with occasional Dutch phrases"
+    "language_mix": "Primarily English with occasional Dutch phrases",
+    "media_notes": "4 posts include image_url referencing /public/images/placeholder_posts/ (served at /images/placeholder_posts/ by Vite). 3 posts include YouTube URLs in content text, rendered as rich embeds by the app.",
+    "image_url_format": "Paths reference static files in /public/images/placeholder_posts/ — no upload needed, images are reused across seedings."
   },
 
   "user_personas": [
@@ -88,6 +90,7 @@
       "id": "post_001",
       "author_id": "emma",
       "content": "Anyone else noticed that Extravert on Lange Veerstraat changed their coffee blend? Not complaining though, it's actually really smooth now. Perfect for these grey February mornings.",
+      "image_url": "/images/placeholder_posts/cafe.jpg",
       "created_at": "2026-02-10T08:15:00Z",
       "upvote_count": 12,
       "comments": [
@@ -117,7 +120,7 @@
     {
       "id": "post_002",
       "author_id": "bob",
-      "content": "Cycling route tip: the path along Spaarne towards Spaarndam is finally fixed after winter. Took it this morning and it's smooth riding again. Great for a quick 20km loop if you go around and come back through Schalkwijk.",
+      "content": "Cycling route tip: the path along Spaarne towards Spaarndam is finally fixed after winter. Took it this morning and it's smooth riding again. Great for a quick 20km loop if you go around and come back through Schalkwijk.\n\nhttps://www.youtube.com/watch?v=vylwuvsQKtY",
       "created_at": "2026-02-09T17:30:00Z",
       "upvote_count": 19,
       "comments": [
@@ -185,6 +188,7 @@
       "id": "post_004",
       "author_id": "daniel",
       "content": "If you haven't been to the Frans Hals Museum lately, they have a new exhibit on 17th century Haarlem daily life. Really well done - lots of artifacts and interactive displays. Runs until end of March.",
+      "duration_seconds": 2592000,
       "created_at": "2026-02-07T11:05:00Z",
       "upvote_count": 15,
       "comments": [
@@ -245,6 +249,7 @@
       "id": "post_006",
       "author_id": "greta",
       "content": "Frederikspark this morning was absolutely beautiful with the frost on everything. If you're into photography or just want a peaceful walk, go early before it gets busy. The light right now is perfect.",
+      "image_url": "/images/placeholder_posts/park.jpg",
       "created_at": "2026-02-05T09:30:00Z",
       "upvote_count": 21,
       "comments": [
@@ -298,6 +303,7 @@
       "id": "post_008",
       "author_id": "carla",
       "content": "Just tried the new Indonesian place on Jansstraat (Warung Haarlem) and wow, their rendang is incredible. Portions are generous too. Finally a good Indonesian option in the center!",
+      "image_url": "/images/placeholder_posts/snack.png",
       "created_at": "2026-02-03T20:30:00Z",
       "upvote_count": 17,
       "comments": [
@@ -365,6 +371,7 @@
       "id": "post_010",
       "author_id": "frank",
       "content": "PSA: Construction on Kruisweg starts next Monday and will last about 3 weeks. Plan your routes accordingly if you commute through there. Detour is via Leidsevaart.",
+      "duration_seconds": 172800,
       "created_at": "2026-02-02T10:20:00Z",
       "upvote_count": 13,
       "comments": [
@@ -441,6 +448,7 @@
       "id": "post_013",
       "author_id": "bob",
       "content": "Heads up for cyclists: There's a big puddle that basically becomes a small lake at the intersection near Raaks parking garage when it rains. Nearly wiped out this morning. Be careful around there.",
+      "duration_seconds": 172800,
       "created_at": "2026-02-11T09:15:00Z",
       "upvote_count": 10,
       "comments": [
@@ -494,6 +502,7 @@
       "id": "post_015",
       "author_id": "iris",
       "content": "Did anyone else see the street art that popped up near the Jopenkerk over the weekend? Looks like the same artist who did the piece by the station last month. Really adds some color to that area.",
+      "image_url": "/images/placeholder_posts/street_city.jpg",
       "created_at": "2026-02-09T14:20:00Z",
       "upvote_count": 16,
       "comments": [
@@ -563,6 +572,7 @@
       "id": "post_018",
       "author_id": "carla",
       "content": "Thinking of organizing a casual meetup at a café for people in this group who want to actually meet in person. Would anyone be interested? No pressure, just thought it might be nice to put faces to names!",
+      "duration_seconds": 2592000,
       "created_at": "2026-02-06T12:30:00Z",
       "upvote_count": 18,
       "comments": [
@@ -599,6 +609,106 @@
           "author_id": "carla",
           "content": "Great! I'll create a poll for dates and post it next week. This is exciting!",
           "created_at": "2026-02-06T15:40:00Z",
+          "upvote_count": 4
+        }
+      ]
+    },
+    {
+      "id": "post_019",
+      "author_id": "daniel",
+      "content": "Took some friends visiting from abroad to Windmill De Adriaan yesterday. Forgot how impressive it is up close, especially from the top floor looking out over the Spaarne. Highly recommend if you haven't been.\n\nhttps://www.google.com/maps/search/?api=1&query=Windmill+De+Adriaan+Haarlem",
+      "created_at": "2026-02-11T11:20:00Z",
+      "upvote_count": 10,
+      "comments": [
+        {
+          "id": "comment_019_01",
+          "author_id": "jack",
+          "content": "I keep walking past it and saying 'next weekend'. Thanks for the push, going this Saturday!",
+          "created_at": "2026-02-11T12:05:00Z",
+          "upvote_count": 3
+        },
+        {
+          "id": "comment_019_02",
+          "author_id": "greta",
+          "content": "One of the most photogenic spots in Haarlem. The light at golden hour there is unreal.",
+          "created_at": "2026-02-11T14:30:00Z",
+          "upvote_count": 4
+        }
+      ]
+    },
+    {
+      "id": "post_020",
+      "author_id": "greta",
+      "content": "Weekend tip: Nationaal Park Zuid-Kennemerland is stunning right now. Did a 2-hour loop through the dunes and spotted some Highland cattle. Perfect escape from the city without even needing a car.\n\nhttps://www.google.com/maps/search/?api=1&query=Nationaal+Park+Zuid-Kennemerland",
+      "image_url": "/images/placeholder_posts/park.jpg",
+      "created_at": "2026-02-09T10:45:00Z",
+      "upvote_count": 15,
+      "comments": [
+        {
+          "id": "comment_020_01",
+          "author_id": "bob",
+          "content": "Love that area! You can cycle there from the center in about 20 minutes too.",
+          "created_at": "2026-02-09T11:30:00Z",
+          "upvote_count": 5
+        },
+        {
+          "id": "comment_020_02",
+          "author_id": "alice",
+          "content": "The Highland cattle are such a hit with kids. We go there at least once a month.",
+          "created_at": "2026-02-09T13:15:00Z",
+          "upvote_count": 3
+        },
+        {
+          "id": "comment_020_03",
+          "author_id": "iris",
+          "content": "Is there a good route for beginners? I'm not super outdoorsy but this looks amazing",
+          "created_at": "2026-02-09T15:00:00Z",
+          "upvote_count": 1
+        }
+      ]
+    },
+    {
+      "id": "post_021",
+      "author_id": "iris",
+      "content": "Anyone done the canal boat tour with Rederij 't Smidtje? Thinking of booking it for when my parents visit next month. Want to know if it's actually worth it or just a tourist trap.\n\nhttps://www.google.com/maps/search/?api=1&query=Rederij+t+Smidtje+Haarlem",
+      "created_at": "2026-02-08T16:10:00Z",
+      "upvote_count": 7,
+      "comments": [
+        {
+          "id": "comment_021_01",
+          "author_id": "henk",
+          "content": "Did it last summer with family. Actually really nice, the guide knows a lot about Haarlem's history. Not a trap at all.",
+          "created_at": "2026-02-08T17:00:00Z",
+          "upvote_count": 5
+        },
+        {
+          "id": "comment_021_02",
+          "author_id": "daniel",
+          "content": "Seconding Henk. It's one of those things locals never do but probably should. You see the city from a totally different angle.",
+          "created_at": "2026-02-08T18:20:00Z",
+          "upvote_count": 4
+        }
+      ]
+    },
+    {
+      "id": "post_022",
+      "author_id": "alice",
+      "content": "Discovered the Haarlemmer Kweektuin today — a lovely hidden garden with a small café. Perfect for a quiet coffee break with the kids. Can't believe I've lived here for years and never knew about it!\n\nhttps://www.google.com/maps/search/?api=1&query=Haarlemmer+Kweektuin",
+      "created_at": "2026-02-07T14:00:00Z",
+      "upvote_count": 12,
+      "comments": [
+        {
+          "id": "comment_022_01",
+          "author_id": "emma",
+          "content": "This is exactly the kind of hidden gem I'm always looking for. Adding it to my list!",
+          "created_at": "2026-02-07T14:45:00Z",
+          "upvote_count": 3
+        },
+        {
+          "id": "comment_022_02",
+          "author_id": "carla",
+          "content": "The cake there is really good too. Homemade stuff, nothing fancy but just right.",
+          "created_at": "2026-02-07T15:30:00Z",
           "upvote_count": 4
         }
       ]

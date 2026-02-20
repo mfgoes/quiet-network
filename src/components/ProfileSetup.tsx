@@ -2,12 +2,24 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { AVATAR_OPTIONS, avatarUrl, slugify } from "@/types"
 
+const COUNTRIES = [
+  { code: "NL", label: "Netherlands" },
+  { code: "BE", label: "Belgium" },
+  { code: "DE", label: "Germany" },
+  { code: "FR", label: "France" },
+  { code: "GB", label: "United Kingdom" },
+  { code: "US", label: "United States" },
+  { code: "ID", label: "Indonesia" },
+  { code: "OTHER", label: "Other" },
+]
+
 interface ProfileSetupProps {
   onComplete: (profile: {
     display_name: string
     avatar_emoji: string
     bio: string
     username: string
+    country?: string | null
   }) => Promise<void>
 }
 
@@ -17,6 +29,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
   const [editingUsername, setEditingUsername] = useState(false)
   const [avatar, setAvatar] = useState("house")
   const [bio, setBio] = useState("")
+  const [country, setCountry] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -56,6 +69,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
         avatar_emoji: avatar,
         bio: bio.trim(),
         username: trimmedUsername,
+        country: country || null,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
@@ -171,6 +185,26 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
           <p className="mt-1 text-right text-xs text-quiet-muted/50">
             {bio.length}/160
           </p>
+        </div>
+
+        <div>
+          <label
+            htmlFor="country"
+            className="mb-1 block text-sm text-quiet-muted"
+          >
+            Where are you based? <span className="text-quiet-muted/50">(optional)</span>
+          </label>
+          <select
+            id="country"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            className="w-full rounded-md border border-quiet-border bg-white p-2.5 text-sm text-quiet-slate focus:border-quiet-accent focus:outline-none"
+          >
+            <option value="">— select a country —</option>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.label}</option>
+            ))}
+          </select>
         </div>
 
         {error && <p className="text-sm text-quiet-warm">{error}</p>}

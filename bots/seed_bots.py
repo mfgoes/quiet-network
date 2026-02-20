@@ -44,8 +44,26 @@ if os.path.exists(local_context_path):
 else:
     print(f"Note: No local_context.json found for circle '{CIRCLE_NAME}' (will use circle metadata from DB)")
 
-# Posts expire in 7 days, duration = 7 days in seconds
-POST_DURATION_SECONDS = 7 * 24 * 3600
+# Duration options matching the app's DURATION_OPTIONS (in seconds)
+DURATION_48H = 48 * 3600        # 172800
+DURATION_7D  = 7 * 24 * 3600    # 604800
+DURATION_30D = 30 * 24 * 3600   # 2592000
+
+# Default for backward compat
+POST_DURATION_SECONDS = DURATION_7D
+
+
+def random_weighted_duration():
+    """Pick a random post duration weighted toward 7 days.
+
+    Distribution: 20% 48h, 60% 7d, 20% 30d — creates a feed with posts
+    at different life stages (some almost expired, some fresh, some long-lived).
+    """
+    return random.choices(
+        [DURATION_48H, DURATION_7D, DURATION_30D],
+        weights=[20, 60, 20],
+        k=1,
+    )[0]
 
 BOT_USERS = [
     {"name": "Alice",  "bio": "Coffee enthusiast, loves cycling around Haarlem, occasional photographer.", "emoji": "woman"},
@@ -595,7 +613,52 @@ for bot in BOT_USERS:
 
     print(f"  Added {bot['name']} to circle")
 
-# ── Step 4: Insert posts from synthetic_content.json ────────────────────
+# ── Step 4: Scrub old bot content (avoid duplicates on re-seed) ────────
+
+print(f"\n=== Scrubbing old bot content in {CIRCLE_NAME} circle ===")
+bot_id_list_for_scrub = list(bot_ids.values())
+
+if bot_id_list_for_scrub:
+    # 4a. Delete all bot posts in this circle (cascades to post_upvotes, replies, reply_upvotes)
+    bot_id_csv = ",".join(f'"{bid}"' for bid in bot_id_list_for_scrub)
+    result = api_request(
+        "DELETE",
+        f"/rest/v1/posts?circle_id=eq.{CIRCLE_ID}&author_id=in.({bot_id_csv})&is_welcome=eq.false",
+        headers_extra={"Prefer": "return=representation", "Accept": "application/json"},
+    )
+    deleted_posts = len(result) if result else 0
+    print(f"  Deleted {deleted_posts} old bot posts (cascaded to replies & upvotes)")
+
+    # 4b. Delete bot replies on non-bot posts (e.g. if bots replied to real user posts)
+    result = api_request(
+        "DELETE",
+        f"/rest/v1/replies?author_id=in.({bot_id_csv})",
+        headers_extra={"Prefer": "return=representation", "Accept": "application/json"},
+    )
+    deleted_replies = len(result) if result else 0
+    print(f"  Deleted {deleted_replies} remaining bot replies on non-bot posts")
+
+    # 4c. Delete bot upvotes on non-bot posts
+    result = api_request(
+        "DELETE",
+        f"/rest/v1/post_upvotes?user_id=in.({bot_id_csv})",
+        headers_extra={"Prefer": "return=representation", "Accept": "application/json"},
+    )
+    deleted_upvotes = len(result) if result else 0
+    print(f"  Deleted {deleted_upvotes} remaining bot post upvotes")
+
+    # 4d. Delete bot reply upvotes
+    result = api_request(
+        "DELETE",
+        f"/rest/v1/reply_upvotes?user_id=in.({bot_id_csv})",
+        headers_extra={"Prefer": "return=representation", "Accept": "application/json"},
+    )
+    deleted_reply_upvotes = len(result) if result else 0
+    print(f"  Deleted {deleted_reply_upvotes} remaining bot reply upvotes")
+else:
+    print("  No bot IDs found, skipping scrub")
+
+# ── Step 5: Insert posts from synthetic_content.json ────────────────────
 
 print(f"\n=== Inserting posts for {CIRCLE_NAME} circle ===")
 
@@ -631,6 +694,26 @@ synthetic_post_ids = {}
 post_timestamps = {}  # Maps synthetic post ID to creation timestamp
 content_relevance_scores = []  # Track relevance scores for reporting
 
+# Determine if content came from a curated file (has meaningful JSON timestamps)
+from_curated_file = os.path.exists(content_file)
+
+# Pre-compute time offset for curated content: map JSON date spread onto a
+# window ending at "now", preserving relative spacing between posts.
+time_offset = timedelta(0)
+if from_curated_file:
+    now = datetime.now(timezone.utc)
+    json_timestamps = []
+    for p in synthetic_data.get("posts", []):
+        ts_str = p.get("created_at")
+        if ts_str:
+            json_timestamps.append(datetime.fromisoformat(ts_str.replace('Z', '+00:00')))
+    if json_timestamps:
+        newest_json_ts = max(json_timestamps)
+        time_offset = now - newest_json_ts
+        oldest_json_ts = min(json_timestamps)
+        span_days = (newest_json_ts - oldest_json_ts).total_seconds() / 86400
+        print(f"  Curated timestamps: spanning {span_days:.1f} days, offset by {time_offset.total_seconds()/3600:.1f}h to anchor to now")
+
 for post_item in synthetic_data.get("posts", []):
     author_persona = post_item.get("author_id")
     author_id = persona_to_user_id.get(author_persona)
@@ -644,16 +727,24 @@ for post_item in synthetic_data.get("posts", []):
     validation = validate_content_for_circle(content_text, LOCAL_CONTEXT)
     content_relevance_scores.append(validation["score"])
 
-    # Generate realistic timestamp based on bot's personality and schedule
-    bot_name = persona_to_name.get(author_persona)
-    if bot_name:
-        created_at = realistic_post_time(bot_name)
+    # --- Determine created_at ---
+    if from_curated_file:
+        # Use JSON timestamp shifted to present window (preserving relative spacing)
+        json_time = datetime.fromisoformat(post_item["created_at"].replace('Z', '+00:00'))
+        created_at = json_time + time_offset
     else:
-        # Fallback: parse timestamp from JSON if bot name not found
-        created_at_str = post_item.get("created_at")
-        created_at = datetime.fromisoformat(created_at_str.replace('Z', '+00:00'))
+        # Auto-generated content: use personality-based realistic time
+        bot_name = persona_to_name.get(author_persona)
+        if bot_name:
+            created_at = realistic_post_time(bot_name)
+        else:
+            created_at_str = post_item.get("created_at")
+            created_at = datetime.fromisoformat(created_at_str.replace('Z', '+00:00'))
 
-    expires_at = created_at + timedelta(seconds=POST_DURATION_SECONDS)
+    # --- Determine duration ---
+    # Per-post override from JSON, or random weighted pick
+    duration = post_item.get("duration_seconds", random_weighted_duration())
+    expires_at = created_at + timedelta(seconds=duration)
 
     # Build post payload — include image_url if present in content JSON
     post_payload = {
@@ -662,8 +753,13 @@ for post_item in synthetic_data.get("posts", []):
         "content": post_item["content"],
         "created_at": created_at.isoformat(),
         "expires_at": expires_at.isoformat(),
-        "original_duration_seconds": POST_DURATION_SECONDS,
+        "original_duration_seconds": duration,
     }
+    # Permanent posts never expire (is_permanent flag in DB)
+    is_permanent = post_item.get("permanent", False)
+    if is_permanent:
+        post_payload["is_permanent"] = True
+
     if post_item.get("image_url"):
         post_payload["image_url"] = post_item["image_url"]
 
@@ -675,9 +771,39 @@ for post_item in synthetic_data.get("posts", []):
         post_db_id = result[0]["id"]
         synthetic_post_ids[post_item["id"]] = post_db_id
         post_timestamps[post_item["id"]] = created_at  # Track post timestamp for replies
-        print(f"  Posted by {author_persona}: \"{post_item['content'][:50]}...\"")
+        dur_label = "permanent" if is_permanent else {DURATION_48H: "48h", DURATION_7D: "7d", DURATION_30D: "30d"}.get(duration, f"{duration}s")
+        age_hours = (datetime.now(timezone.utc) - created_at).total_seconds() / 3600
+        print(f"  Posted by {author_persona}: \"{post_item['content'][:50]}...\" (age: {age_hours:.0f}h, duration: {dur_label})")
     else:
         print(f"  FAILED to post: \"{post_item['content'][:50]}...\"")
+
+# Ensure a few posts are near expiration for visual variety (amber "expires in Xh" badges)
+# Pick 2-3 of the oldest posts and adjust their duration so they expire within 1-24 hours
+if synthetic_post_ids and from_curated_file:
+    now = datetime.now(timezone.utc)
+    # Sort posts by age (oldest first) and pick 2-3 candidates
+    aged_posts = sorted(post_timestamps.items(), key=lambda kv: kv[1])
+    near_expire_count = min(3, len(aged_posts))
+    near_expire_candidates = aged_posts[:near_expire_count]
+
+    print(f"\n  Adjusting {near_expire_count} old posts to expire within 1-24h for visual variety...")
+    for syn_id, created_at in near_expire_candidates:
+        db_id = synthetic_post_ids.get(syn_id)
+        if not db_id:
+            continue
+        # Set expires_at to 1-24 hours from now
+        hours_left = random.uniform(1, 24)
+        new_expires_at = now + timedelta(hours=hours_left)
+        new_duration = int((new_expires_at - created_at).total_seconds())
+        # Ensure duration is positive (post must not already be past new expiry)
+        if new_duration <= 0:
+            continue
+
+        result = api_request("PATCH", f"/rest/v1/posts?id=eq.{db_id}", {
+            "expires_at": new_expires_at.isoformat(),
+            "original_duration_seconds": new_duration,
+        }, headers_extra={"Prefer": "return=minimal"})
+        print(f"    {syn_id}: expires in {hours_left:.1f}h")
 
 # Report content relevance statistics
 if content_relevance_scores:
@@ -689,7 +815,7 @@ if content_relevance_scores:
     if avg_score < 0.3:
         print(f"  ⚠ Low relevance - consider adding more circle-specific content")
 
-# ── Step 5: Insert replies (comments) ────────────────────────────────────
+# ── Step 6: Insert replies (comments) ────────────────────────────────────
 
 print("\n=== Inserting replies ===")
 
@@ -764,7 +890,7 @@ for post_item in synthetic_data.get("posts", []):
 
 print(f"  {reply_count} replies inserted")
 
-# ── Step 6: Add upvotes to posts ─────────────────────────────────────────
+# ── Step 7: Add upvotes to posts ─────────────────────────────────────────
 
 print("\n=== Adding upvotes to posts ===")
 

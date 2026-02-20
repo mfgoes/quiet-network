@@ -3,13 +3,14 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, usePa
 import { HelmetProvider } from "react-helmet-async"
 import { ArrowLeft } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-import { useAuth, useProfile, useCircles, useAllCircles, usePublicProfile, useAdminCircles } from "@/lib/hooks"
+import { useAuth, useProfile, useCircles, useAllCircles, usePublicProfile, useAdminCircles, useNotifications } from "@/lib/hooks"
 import { AuthForm } from "@/components/AuthForm"
 import { ProfileSetup } from "@/components/ProfileSetup"
 import { ProfilePage } from "@/components/ProfilePage"
 import { PublicProfilePage } from "@/components/PublicProfilePage"
 import { AboutPage } from "@/components/AboutPage"
 import { NotificationSettingsPage } from "@/components/NotificationSettingsPage"
+import { NotificationsPage } from "@/components/NotificationsPage"
 import { BottomNav } from "@/components/BottomNav"
 import { Sidebar } from "@/components/Sidebar"
 import { MobileMenu } from "@/components/MobileMenu"
@@ -36,7 +37,7 @@ function App() {
 }
 
 function AppRoutes() {
-  const { user, loading: authLoading, signIn, signUp, signOut, leaveAllCircles, deleteAccount } = useAuth()
+  const { user, loading: authLoading, signIn, signUp, signInWithMagicLink, resetPassword, signOut, leaveAllCircles, deleteAccount } = useAuth()
   const {
     profile,
     loading: profileLoading,
@@ -56,6 +57,7 @@ function AppRoutes() {
   } = useCircles(user?.id)
   const { allCircles, loading: allCirclesLoading, refetch: refetchAllCircles } = useAllCircles()
   const { adminCircles, refetch: refetchAdminCircles } = useAdminCircles(user?.id)
+  const { unreadCount } = useNotifications(user?.id)
   const navigate = useNavigate()
   const location = useLocation()
   const [loadingStuck, setLoadingStuck] = useState(false)
@@ -153,18 +155,10 @@ function AppRoutes() {
             className="h-48 w-full object-cover"
           />
           <div className="px-6 py-8">
-            <div className="mb-8 text-center">
-              <h1 className="text-2xl font-semibold text-quiet-slate">
-                Quiet Network
-              </h1>
-              <p className="mt-1 text-sm text-quiet-muted">
-                Your neighborhood, without the noise
-              </p>
-            </div>
-            <AuthForm onSignIn={signIn} onSignUp={signUp} />
+            <AuthForm onSignIn={signIn} onSignUp={signUp} onMagicLink={signInWithMagicLink} onForgotPassword={resetPassword} />
             <button
               onClick={() => setShowAbout(true)}
-              className="mt-6 w-full text-center text-sm text-quiet-accent hover:text-quiet-slate transition-colors"
+              className="mt-8 w-full text-center text-xs text-quiet-muted hover:text-quiet-accent transition-colors"
             >
               Learn more about Quiet Network
             </button>
@@ -182,18 +176,10 @@ function AppRoutes() {
           </div>
           <div className="flex w-1/2 items-center justify-center px-12">
             <div className="w-full max-w-sm">
-              <div className="mb-10 text-center">
-                <h1 className="text-3xl font-semibold text-quiet-slate">
-                  Quiet Network
-                </h1>
-                <p className="mt-2 text-sm text-quiet-muted">
-                  Your neighborhood, without the noise
-                </p>
-              </div>
-              <AuthForm onSignIn={signIn} onSignUp={signUp} />
+              <AuthForm onSignIn={signIn} onSignUp={signUp} onMagicLink={signInWithMagicLink} onForgotPassword={resetPassword} />
               <button
                 onClick={() => setShowAbout(true)}
-                className="mt-6 w-full text-center text-sm text-quiet-accent hover:text-quiet-slate transition-colors"
+                className="mt-8 w-full text-center text-xs text-quiet-muted hover:text-quiet-accent transition-colors"
               >
                 Learn more about Quiet Network
               </button>
@@ -235,7 +221,7 @@ function AppRoutes() {
   }
 
   return (
-    <AppLayout profile={profile} circles={circles} adminCircles={adminCircles}>
+    <AppLayout profile={profile} circles={circles} adminCircles={adminCircles} unreadCount={unreadCount}>
       <Routes>
         <Route
           path="/"
@@ -255,10 +241,11 @@ function AppRoutes() {
               discoverableCircles={allCircles.filter(
                 (ac) => !circles.some((c) => c.id === ac.id)
               )}
+              userCountry={profile?.country ?? null}
               loading={circlesLoading || allCirclesLoading}
               onSelect={(circle) => navigate(`/${circle.slug}`)}
               onCreate={async (name, desc) => {
-                const { data } = await createCircle(name, desc)
+                const { data } = await createCircle(name, desc, profile?.country ?? null)
                 if (data) {
                   refetchAllCircles()
                   refetchAdminCircles()
@@ -270,6 +257,7 @@ function AppRoutes() {
                 refetchAllCircles()
                 navigate(`/${circle.slug}`)
               }}
+              onSetLocation={() => navigate("/profile?edit=1")}
             />
           }
         />
@@ -278,6 +266,7 @@ function AppRoutes() {
           element={
             <ProfilePage
               profile={profile}
+              defaultEditing={location.search.includes("edit=1")}
               onSave={async (updates) => {
                 const { error } = await updateProfile(updates)
                 if (error) throw error
@@ -291,6 +280,10 @@ function AppRoutes() {
           }
         />
         <Route path="/about" element={<AboutPage />} />
+        <Route
+          path="/notifications"
+          element={<NotificationsPage userId={user.id} />}
+        />
         <Route
           path="/settings/notifications"
           element={
@@ -351,7 +344,7 @@ function AppRoutes() {
           }
         />
       </Routes>
-      <BottomNav avatar={profile.avatar_emoji} />
+      <BottomNav avatar={profile.avatar_emoji} unreadCount={unreadCount} />
     </AppLayout>
   )
 }
@@ -362,17 +355,19 @@ function AppLayout({
   profile,
   circles,
   adminCircles = [],
+  unreadCount = 0,
   children,
 }: {
   profile: ProfileType
   circles: Circle[]
   adminCircles?: (Circle & { role: CircleRole })[]
+  unreadCount?: number
   children: React.ReactNode
 }) {
   return (
     <div className="min-h-screen bg-quiet-offwhite">
       <MobileMenu profile={profile} circles={circles} adminCircles={adminCircles} />
-      <Sidebar profile={profile} circles={circles} adminCircles={adminCircles} />
+      <Sidebar profile={profile} circles={circles} adminCircles={adminCircles} unreadCount={unreadCount} />
       <div className="md:ml-60 lg:ml-64">
         <main className="mx-auto max-w-3xl px-4 pb-20 pt-14 md:pb-8 md:pt-8">
           {children}

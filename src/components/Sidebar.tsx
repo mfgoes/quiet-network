@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Home, Compass, User, ChevronDown, Shield, Info } from "lucide-react"
+import { Home, Compass, User, Bell, ChevronDown, Shield, Info } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { avatarUrl } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
@@ -11,9 +11,10 @@ interface SidebarProps {
   profile: Profile
   circles: Circle[]
   adminCircles?: (Circle & { role: CircleRole })[]
+  unreadCount?: number
 }
 
-export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
+export function Sidebar({ profile, circles, adminCircles = [], unreadCount = 0 }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const path = location.pathname
@@ -54,6 +55,7 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
   const navItems = [
     { label: "Home", path: "/", icon: Home },
     { label: "Explore", path: "/explore", icon: Compass },
+    { label: "Notifications", path: "/notifications", icon: Bell },
     { label: "Profile", path: "/profile", icon: User },
     { label: "About", path: "/about", icon: Info },
   ]
@@ -78,8 +80,9 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
         {navItems.map((item) => {
           const isActive =
             item.path === "/"
-              ? path === "/" || (path !== "/explore" && path !== "/profile" && path !== "/about" && !path.startsWith("/user/") && !path.startsWith("/admin/"))
+              ? path === "/" || (path !== "/explore" && path !== "/notifications" && path !== "/profile" && path !== "/about" && !path.startsWith("/user/") && !path.startsWith("/admin/"))
               : path === item.path
+          const showBadge = item.path === "/notifications" && unreadCount > 0
           return (
             <button
               key={item.path}
@@ -91,7 +94,12 @@ export function Sidebar({ profile, circles, adminCircles = [] }: SidebarProps) {
               }`}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1 text-left">{item.label}</span>
+              {showBadge && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white leading-none">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </button>
           )
         })}

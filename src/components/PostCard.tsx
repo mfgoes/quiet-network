@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom" // Removed useNavigate as it's not directly used for navigation here
-import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown, Archive, Pencil, Link2 } from "lucide-react"
+import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown, Lock, Pencil, Link2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { LinkPreview } from "@/components/LinkPreview"
@@ -161,6 +161,52 @@ function CircleBadge({ name, slug, description, avatarUrl }: { name: string; slu
   )
 }
 
+function ConfirmButton({ onConfirm, label, className, children, onOpenChange }: {
+  onConfirm: () => void
+  label: string
+  className: string
+  children: React.ReactNode
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next)
+    onOpenChange?.(next)
+  }
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <button className={`${className}${open ? ' !inline-flex' : ''}`} aria-label={label} title={label}>
+          {children}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="top"
+        className="w-auto px-3 py-2.5 sm:px-4 sm:py-3"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <p className="text-xs sm:text-sm text-quiet-muted mb-2">{label}?</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { handleOpenChange(false); onConfirm() }}
+            className="rounded px-3 py-1 text-xs sm:text-sm font-medium bg-quiet-accent text-white hover:bg-quiet-accent/90"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => handleOpenChange(false)}
+            className="rounded px-3 py-1 text-xs sm:text-sm font-medium text-quiet-muted hover:bg-quiet-border/50"
+          >
+            No
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDelete, onEdit, onMakePermanent }: PostCardProps) {
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
@@ -169,6 +215,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const [isExpanded, setIsExpanded] = useState(false)
   const [needsExpand, setNeedsExpand] = useState(false)
   const [upvoteAnimating, setUpvoteAnimating] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(post.content)
   const [editTags, setEditTags] = useState<string[]>(post.tags || [])
@@ -310,7 +357,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
           </div>
         </div>
       ) : (
-        <div className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
+        <div className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`} data-confirm-open={confirmOpen || undefined}>
           {/* Header - not clickable */}
           <div className="mb-2">
             {/* First row: Avatar + Name + Circle */}
@@ -355,23 +402,21 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               <div className="sm:hidden flex items-center gap-1.5 flex-shrink-0">
                 {isAdminOrMod && onMakePermanent && !post.is_welcome && (
                   post.is_permanent ? (
-                    <button
-                      onClick={() => onMakePermanent(post.id, false)}
+                    <ConfirmButton
+                      onConfirm={() => onMakePermanent(post.id, false)}
+                      label="Make ephemeral"
                       className="rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate"
-                      title="Make ephemeral"
-                      aria-label="Make ephemeral"
                     >
                       <Clock className="h-3.5 w-3.5" />
-                    </button>
+                    </ConfirmButton>
                   ) : (
-                    <button
-                      onClick={() => onMakePermanent(post.id, true)}
+                    <ConfirmButton
+                      onConfirm={() => onMakePermanent(post.id, true)}
+                      label="Make permanent"
                       className="rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate"
-                      title="Make permanent"
-                      aria-label="Make permanent"
                     >
-                      <Archive className="h-3.5 w-3.5" />
-                    </button>
+                      <Lock className="h-3.5 w-3.5" />
+                    </ConfirmButton>
                   )
                 )}
                 {post.circles?.slug && (
@@ -392,13 +437,13 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                   </button>
                 )}
                 {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
-                  <button
-                    onClick={() => onDelete(post.id)}
+                  <ConfirmButton
+                    onConfirm={() => onDelete(post.id)}
+                    label="Delete post"
                     className="rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-warm"
-                    aria-label="Delete post"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  </ConfirmButton>
                 )}
               </div>
 
@@ -412,7 +457,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               )}
               {post.is_permanent && !post.is_welcome && (
                 <Badge variant="permanent">
-                  <Archive className="mr-1 h-3 w-3" />
+                  <Lock className="mr-1 h-3 w-3" />
                   Permanent
                 </Badge>
               )}
@@ -424,23 +469,23 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               )}
               {isAdminOrMod && onMakePermanent && !post.is_welcome && (
                 post.is_permanent ? (
-                  <button
-                    onClick={() => onMakePermanent(post.id, false)}
-                    className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
-                    title="Make ephemeral"
-                    aria-label="Make ephemeral"
+                  <ConfirmButton
+                    onConfirm={() => onMakePermanent(post.id, false)}
+                    label="Make ephemeral"
+                    className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex group-data-[confirm-open]:inline-flex"
+                    onOpenChange={setConfirmOpen}
                   >
                     <Clock className="h-3.5 w-3.5" />
-                  </button>
+                  </ConfirmButton>
                 ) : (
-                  <button
-                    onClick={() => onMakePermanent(post.id, true)}
-                    className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
-                    title="Make permanent"
-                    aria-label="Make permanent"
+                  <ConfirmButton
+                    onConfirm={() => onMakePermanent(post.id, true)}
+                    label="Make permanent"
+                    className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex group-data-[confirm-open]:inline-flex"
+                    onOpenChange={setConfirmOpen}
                   >
-                    <Archive className="h-3.5 w-3.5" />
-                  </button>
+                    <Lock className="h-3.5 w-3.5" />
+                  </ConfirmButton>
                 )
               )}
               {post.circles?.slug && (
@@ -453,7 +498,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                       // Silently fail if clipboard not available
                     })
                   }}
-                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex"
+                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-slate group-hover:inline-flex group-data-[confirm-open]:inline-flex"
                   aria-label="Copy link"
                   title="Copy link"
                 >
@@ -463,20 +508,21 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               {isOwn && canEdit(post) && onEdit && !post.is_welcome && (
                 <button
                   onClick={handleEdit}
-                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-accent group-hover:inline-flex"
+                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-accent group-hover:inline-flex group-data-[confirm-open]:inline-flex"
                   aria-label="Edit post"
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
               )}
               {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
-                <button
-                  onClick={() => onDelete(post.id)}
-                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-warm group-hover:inline-flex"
-                  aria-label="Delete post"
+                <ConfirmButton
+                  onConfirm={() => onDelete(post.id)}
+                  label="Delete post"
+                  className="hidden rounded p-1 text-quiet-muted transition-colors hover:bg-quiet-border/50 hover:text-quiet-warm group-hover:inline-flex group-data-[confirm-open]:inline-flex"
+                  onOpenChange={setConfirmOpen}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                </ConfirmButton>
               )}
               </div>
             </div>
@@ -497,7 +543,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               )}
               {post.is_permanent && !post.is_welcome && (
                 <Badge variant="permanent" className="sm:hidden flex-shrink-0">
-                  <Archive className="mr-1 h-3 w-3" />
+                  <Lock className="mr-1 h-3 w-3" />
                   Permanent
                 </Badge>
               )}

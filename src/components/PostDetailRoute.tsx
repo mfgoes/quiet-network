@@ -123,16 +123,25 @@ export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}
     }
   }
 
-  const handleMakePermanent = async (postId: string) => {
-    const { data } = await supabase
-      .from("posts")
-      .update({ expires_at: null })
-      .eq("id", postId)
-      .select()
-      .single()
+  const handleMakePermanent = async (postId: string, permanent: boolean) => {
+    if (!post) return
 
-    if (data) {
-      setPost(data as Post)
+    const newExpiresAt = permanent
+      ? 'infinity'
+      : new Date(Date.now() + post.original_duration_seconds * 1000).toISOString()
+
+    // Optimistic update
+    setPost({ ...post, is_permanent: permanent, expires_at: newExpiresAt })
+
+    const { error } = await supabase
+      .from("posts")
+      .update({ is_permanent: permanent, expires_at: newExpiresAt })
+      .eq("id", postId)
+
+    if (error) {
+      console.error("Failed to update post permanence:", error)
+      // Revert on error
+      setPost(post)
     }
   }
 

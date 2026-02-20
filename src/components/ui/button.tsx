@@ -9,6 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-quiet-slate text-quiet-offwhite shadow hover:bg-quiet-accent",
+        primary: "bg-quiet-slate text-quiet-offwhite shadow-md hover:bg-[#374151] active:bg-[#1F2937] focus-visible:ring-2 focus-visible:ring-quiet-slate/50 focus-visible:ring-offset-2 font-semibold transition-all",
         outline: "border border-quiet-border bg-quiet-offwhite text-quiet-slate hover:bg-quiet-border",
         ghost: "text-quiet-slate hover:bg-quiet-border",
       },

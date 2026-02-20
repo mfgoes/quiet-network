@@ -5,9 +5,20 @@ import { CircleIcon } from "@/components/CircleIcon"
 import { BANNER_COLORS, getBannerBg } from "@/types"
 import type { Circle } from "@/types"
 
+const COUNTRIES = [
+  { code: "NL", label: "Netherlands" },
+  { code: "BE", label: "Belgium" },
+  { code: "DE", label: "Germany" },
+  { code: "FR", label: "France" },
+  { code: "GB", label: "United Kingdom" },
+  { code: "US", label: "United States" },
+  { code: "ID", label: "Indonesia" },
+  { code: "OTHER", label: "Other" },
+]
+
 interface SettingsTabProps {
   circle: Circle
-  onSave: (updates: { description?: string | null; about?: string | null; rules?: string | null; banner_color?: string | null; avatar_url?: string | null }) => Promise<{ error?: unknown }>
+  onSave: (updates: { description?: string | null; about?: string | null; rules?: string | null; country?: string | null; banner_color?: string | null; avatar_url?: string | null }) => Promise<{ error?: unknown }>
   onUploadAvatar: (file: File) => Promise<{ url: string | null; error: unknown }>
   onDelete: () => Promise<void>
 }
@@ -43,6 +54,7 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
   const [description, setDescription] = useState(circle.description ?? "")
   const [about, setAbout] = useState(circle.about ?? "")
   const [rules, setRules] = useState(circle.rules ?? "")
+  const [country, setCountry] = useState(circle.country ?? "")
   const [bannerColor, setBannerColor] = useState(circle.banner_color ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -53,8 +65,9 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
     setDescription(circle.description ?? "")
     setAbout(circle.about ?? "")
     setRules(circle.rules ?? "")
+    setCountry(circle.country ?? "")
     setBannerColor(circle.banner_color ?? "")
-  }, [circle.description, circle.about, circle.rules, circle.banner_color])
+  }, [circle.description, circle.about, circle.rules, circle.country, circle.banner_color])
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -71,6 +84,7 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
       description: description || null,
       about: about || null,
       rules: rules || null,
+      country: country || null,
       banner_color: bannerColor || null,
     })
     setSaving(false)
@@ -216,6 +230,24 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
           placeholder="A short tagline for this circle"
           className="w-full rounded-md border border-quiet-border bg-white px-3 py-2 text-sm text-quiet-slate placeholder:text-quiet-muted focus:outline-none focus:ring-1 focus:ring-quiet-slate"
         />
+      </div>
+
+      <div>
+        <label htmlFor="circleCountry" className="block text-sm font-medium text-quiet-slate mb-1.5">
+          Country
+        </label>
+        <select
+          id="circleCountry"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          className="w-full rounded-md border border-quiet-border bg-white px-3 py-2 text-sm text-quiet-slate focus:outline-none focus:ring-1 focus:ring-quiet-slate"
+        >
+          <option value="">— not set —</option>
+          {COUNTRIES.map((c) => (
+            <option key={c.code} value={c.code}>{c.label}</option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-quiet-muted">Used to show this circle to users in that country first.</p>
       </div>
 
       <div>
