@@ -1,6 +1,6 @@
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { ChevronDown, LogOut, Pencil, Shield, ExternalLink, Plus, Sparkles, Trash2, Camera, Star } from "lucide-react"
+import { ChevronDown, LogOut, MapPin, Pencil, Settings, Shield, ExternalLink, Plus, Sparkles, Trash2, Camera, Star } from "lucide-react"
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -12,6 +12,17 @@ import { avatarUrl, getBannerBg } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import type { Circle, CircleLink } from "@/types"
+
+const COUNTRY_LABELS: Record<string, string> = {
+  NL: "Netherlands",
+  BE: "Belgium",
+  DE: "Germany",
+  FR: "France",
+  GB: "United Kingdom",
+  US: "United States",
+  ID: "Indonesia",
+  OTHER: "Other",
+}
 
 interface CircleAboutProps {
   circle: Circle
@@ -212,6 +223,13 @@ function AboutContent({
 
   return (
     <>
+      {circle.country && (
+        <div className="flex items-center gap-1.5 mb-3 text-xs text-quiet-muted">
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
+          <span>{COUNTRY_LABELS[circle.country] ?? circle.country}</span>
+        </div>
+      )}
+
       {hasContent ? (
         <div className="space-y-3">
           {circle.about && (
@@ -348,13 +366,22 @@ function ManageCircleLink({ circleSlug }: { circleSlug: string }) {
   const navigate = useNavigate()
 
   return (
-    <button
-      onClick={() => navigate(`/admin/${circleSlug}`)}
-      className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-sm font-medium text-quiet-slate transition-colors hover:bg-quiet-aged"
-    >
-      <Shield className="h-4 w-4 text-quiet-muted" />
-      Manage circle
-    </button>
+    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2.5">
+      <div className="flex items-center gap-1.5">
+        <Shield className="h-3.5 w-3.5 text-blue-600" />
+        <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Admin</p>
+      </div>
+      <Button
+        onClick={() => navigate(`/admin/${circleSlug}`)}
+        className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+      >
+        <Settings className="h-4 w-4" />
+        Circle Settings
+      </Button>
+      <p className="text-xs text-blue-600/80">
+        Members, reports, banner, rules and more
+      </p>
+    </div>
   )
 }
 
@@ -467,9 +494,7 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
 
         {/* Manage circle (admin/mod only) */}
         {isAdminOrMod && (
-          <div className="rounded-lg border border-quiet-border bg-white px-2 py-1.5">
-            <ManageCircleLink circleSlug={circle.slug} />
-          </div>
+          <ManageCircleLink circleSlug={circle.slug} />
         )}
 
         {/* Leave circle */}
@@ -529,7 +554,7 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
             <MembersSection circleId={circle.id} />
           </div>
           {isAdminOrMod && (
-            <div className="px-2 py-1.5 border-t border-quiet-border">
+            <div className="p-3 border-t border-quiet-border">
               <ManageCircleLink circleSlug={circle.slug} />
             </div>
           )}

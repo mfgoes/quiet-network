@@ -43,19 +43,19 @@ export function CirclePicker({
   const [creating, setCreating] = useState(false)
   const [joiningId, setJoiningId] = useState<string | null>(null)
   const [showAllOwn, setShowAllOwn] = useState(false)
-  const [showAllOther, setShowAllOther] = useState(false)
 
   const INITIAL_SHOW = 10
 
+  // Local = every circle (joined OR discoverable) matching the user's country
+  const joinedIds = new Set(circles.map((c) => c.id))
   const localCircles = userCountry
-    ? discoverableCircles.filter((c) => c.country === userCountry)
+    ? [...circles, ...discoverableCircles].filter((c) => c.country === userCountry)
     : []
   const otherCircles = userCountry
     ? discoverableCircles.filter((c) => c.country !== userCountry)
     : discoverableCircles
 
   const visibleCircles = showAllOwn ? circles : circles.slice(0, INITIAL_SHOW)
-  const visibleOther = showAllOther ? otherCircles : otherCircles.slice(0, INITIAL_SHOW)
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -163,13 +163,14 @@ export function CirclePicker({
             </span>
           }
           circles={localCircles}
+          joinedIds={joinedIds}
           joiningId={joiningId}
           onSelect={onSelect}
           onJoin={handleJoin}
         />
       )}
 
-      {/* Nudge when no local circles */}
+      {/* Nudge when no local circles at all */}
       {userCountry && localCircles.length === 0 && (
         <div className="rounded-xl border border-quiet-border bg-white p-4 space-y-2">
           <p className="flex items-center gap-1.5 text-sm font-medium text-quiet-slate">
@@ -188,27 +189,15 @@ export function CirclePicker({
         </div>
       )}
 
-      {/* Other countries — collapsed toggle */}
+      {/* Other countries — always visible */}
       {userCountry && otherCircles.length > 0 && (
-        <div className="space-y-2">
-          <button
-            onClick={() => setShowAllOther(!showAllOther)}
-            className="text-xs text-quiet-muted hover:text-quiet-slate transition-colors"
-          >
-            {showAllOther
-              ? "Hide circles from other countries"
-              : `Show more from other countries (${otherCircles.length})`}
-          </button>
-          {showAllOther && (
-            <DiscoverSection
-              label="Everywhere else"
-              circles={visibleOther}
-              joiningId={joiningId}
-              onSelect={onSelect}
-              onJoin={handleJoin}
-            />
-          )}
-        </div>
+        <DiscoverSection
+          label="Everywhere else"
+          circles={otherCircles}
+          joiningId={joiningId}
+          onSelect={onSelect}
+          onJoin={handleJoin}
+        />
       )}
 
       {/* Create circle */}
@@ -286,12 +275,14 @@ export function CirclePicker({
 function DiscoverSection({
   label,
   circles,
+  joinedIds = new Set(),
   joiningId,
   onSelect,
   onJoin,
 }: {
   label: React.ReactNode
   circles: Circle[]
+  joinedIds?: Set<string>
   joiningId: string | null
   onSelect: (circle: Circle) => void
   onJoin: (circle: Circle) => Promise<void>
@@ -302,6 +293,7 @@ function DiscoverSection({
       <div className="grid gap-2 sm:grid-cols-2">
         {circles.map((circle) => {
           const hint = getBannerBg(circle.banner_color, circle.name)
+          const isMember = joinedIds.has(circle.id)
           return (
             <div
               key={circle.id}
@@ -324,15 +316,26 @@ function DiscoverSection({
                   )}
                 </div>
               </button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={joiningId === circle.id}
-                onClick={() => onJoin(circle)}
-                className="ml-2 shrink-0"
-              >
-                {joiningId === circle.id ? "Joining..." : "Join"}
-              </Button>
+              {isMember ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onSelect(circle)}
+                  className="ml-2 shrink-0 text-quiet-muted"
+                >
+                  View
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={joiningId === circle.id}
+                  onClick={() => onJoin(circle)}
+                  className="ml-2 shrink-0"
+                >
+                  {joiningId === circle.id ? "Joining..." : "Join"}
+                </Button>
+              )}
             </div>
           )
         })}

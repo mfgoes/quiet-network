@@ -322,7 +322,11 @@ function AppRoutes() {
             <AdminPanel
               userId={user.id}
               adminCircles={adminCircles}
-              updateCircle={updateCircle}
+              updateCircle={async (circleId, updates) => {
+                const result = await updateCircle(circleId, updates)
+                await refetchAllCircles()
+                return result
+              }}
               uploadCircleAvatar={uploadCircleAvatar}
               deleteCircle={deleteCircle}
             />
