@@ -13,6 +13,7 @@ export interface Profile {
   links: ProfileLink[] | null
   created_at: string
   is_bot?: boolean
+  posts_public?: boolean
 }
 
 export interface NotificationPreferences {
@@ -69,6 +70,7 @@ export interface Post {
   tags: string[]
   upvote_count: number
   user_upvoted: boolean
+  user_replied: boolean
   reply_count: number
 }
 

@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, usePa
 import { HelmetProvider } from "react-helmet-async"
 import { ArrowLeft } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-import { useAuth, useProfile, useCircles, useAllCircles, usePublicProfile, useAdminCircles, useNotifications } from "@/lib/hooks"
+import { useAuth, useProfile, useCircles, useAllCircles, usePublicProfile, useUserPosts, useAdminCircles, useNotifications } from "@/lib/hooks"
 import { AuthForm } from "@/components/AuthForm"
 import { ProfileSetup } from "@/components/ProfileSetup"
 import { ProfilePage } from "@/components/ProfilePage"
@@ -324,7 +324,7 @@ function AppRoutes() {
               adminCircles={adminCircles}
               updateCircle={async (circleId, updates) => {
                 const result = await updateCircle(circleId, updates)
-                await refetchAllCircles()
+                await Promise.all([refetchAllCircles(), refetchAdminCircles()])
                 return result
               }}
               uploadCircleAvatar={uploadCircleAvatar}
@@ -386,6 +386,9 @@ function AppLayout({
 function PublicProfileRoute() {
   const { username } = useParams<{ username: string }>()
   const { profile, loading } = usePublicProfile(username)
+  const { posts, loading: postsLoading } = useUserPosts(
+    profile?.posts_public !== false ? profile?.id : undefined
+  )
   const navigate = useNavigate()
 
   if (loading) {
@@ -403,7 +406,7 @@ function PublicProfileRoute() {
     )
   }
 
-  return <PublicProfilePage profile={profile} />
+  return <PublicProfilePage profile={profile} posts={posts} postsLoading={postsLoading} />
 }
 
 export default App

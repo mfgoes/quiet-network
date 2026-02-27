@@ -76,66 +76,84 @@ export function NotificationsPage({ userId }: NotificationsPageProps) {
         </div>
       )}
 
-      {!loading && notifications.length > 0 && (
-        <div className="space-y-1">
-          {notifications.map((n) => {
-            const Icon = TYPE_ICON[n.type]
-            const actor = n.actor
-            return (
-              <button
-                key={n.id}
-                onClick={() => handleClick(n)}
-                className={`w-full flex items-start gap-3 rounded-xl px-4 py-3 text-left transition-colors ${
-                  n.read
-                    ? "bg-white hover:bg-quiet-aged"
-                    : "bg-blue-50 hover:bg-blue-100"
-                }`}
-              >
-                {/* Actor avatar or icon */}
-                <div className="relative mt-0.5 shrink-0">
-                  {actor ? (
-                    <img
-                      src={avatarUrl(actor.avatar_emoji)}
-                      alt={actor.display_name}
-                      className="h-9 w-9 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-9 w-9 rounded-full bg-quiet-aged flex items-center justify-center">
-                      <Icon className="h-4 w-4 text-quiet-muted" />
-                    </div>
-                  )}
-                  <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white shadow-sm">
-                    <Icon className="h-2.5 w-2.5 text-quiet-accent" />
-                  </span>
-                </div>
+      {!loading && notifications.length > 0 && (() => {
+        const unread = notifications.filter((n) => !n.read)
+        const read = notifications.filter((n) => n.read)
 
-                {/* Text */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-quiet-slate">
-                    <span className="font-medium">
-                      {actor?.display_name ?? "Someone"}
-                    </span>{" "}
-                    {actionText(n)}
-                  </p>
-                  {n.post?.content && (
-                    <p className="text-xs text-quiet-muted mt-0.5 line-clamp-1">
-                      {n.post.content}
-                    </p>
-                  )}
-                  <p className="text-xs text-quiet-muted mt-0.5">
-                    {timeAgo(n.created_at)}
-                  </p>
-                </div>
-
-                {/* Unread dot */}
-                {!n.read && (
-                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+        const renderItem = (n: Notification) => {
+          const Icon = TYPE_ICON[n.type]
+          const actor = n.actor
+          return (
+            <button
+              key={n.id}
+              onClick={() => handleClick(n)}
+              className={`w-full flex items-start gap-3 rounded-xl px-4 py-3 text-left transition-colors ${
+                n.read
+                  ? "bg-white hover:bg-quiet-aged"
+                  : "bg-blue-50 hover:bg-blue-100"
+              }`}
+            >
+              {/* Actor avatar or icon */}
+              <div className="relative mt-0.5 shrink-0">
+                {actor ? (
+                  <img
+                    src={avatarUrl(actor.avatar_emoji)}
+                    alt={actor.display_name}
+                    className="h-9 w-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-9 w-9 rounded-full bg-quiet-aged flex items-center justify-center">
+                    <Icon className="h-4 w-4 text-quiet-muted" />
+                  </div>
                 )}
-              </button>
-            )
-          })}
-        </div>
-      )}
+                <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white shadow-sm">
+                  <Icon className="h-2.5 w-2.5 text-quiet-accent" />
+                </span>
+              </div>
+
+              {/* Text */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-quiet-slate">
+                  <span className="font-medium">
+                    {actor?.display_name ?? "Someone"}
+                  </span>{" "}
+                  {actionText(n)}
+                </p>
+                {n.post?.content && (
+                  <p className="text-xs text-quiet-muted mt-0.5 line-clamp-1">
+                    {n.post.content}
+                  </p>
+                )}
+                <p className="text-xs text-quiet-muted mt-0.5">
+                  {timeAgo(n.created_at)}
+                </p>
+              </div>
+
+              {/* Unread dot */}
+              {!n.read && (
+                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+              )}
+            </button>
+          )
+        }
+
+        return (
+          <div className="space-y-4">
+            {unread.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-quiet-muted uppercase tracking-wide px-1 mb-1">New</p>
+                <div className="space-y-1">{unread.map(renderItem)}</div>
+              </div>
+            )}
+            {read.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-quiet-muted uppercase tracking-wide px-1 mb-1">Earlier</p>
+                <div className="space-y-1">{read.map(renderItem)}</div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 }

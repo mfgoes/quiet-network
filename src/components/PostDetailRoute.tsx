@@ -51,6 +51,9 @@ export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}
         console.log("Post query result:", { data, error })
 
         if (!error && data) {
+          const truncated = data.content?.slice(0, 60)
+          const title = data.content && data.content.length > 60 ? `${truncated}…` : truncated
+          document.title = title ? `${title} — Quiet Network` : "Quiet Network"
           // Enrich with upvote data (skip for anonymous users to avoid permission issues)
           let upvoteCount = 0
           let userUpvoted = false
@@ -81,6 +84,7 @@ export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}
     }
 
     fetchPost()
+    return () => { document.title = "Quiet Network" }
   }, [postId, userId])
 
   const handleUpvote = async (postId: string) => {

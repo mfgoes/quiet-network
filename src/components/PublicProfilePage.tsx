@@ -1,17 +1,30 @@
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { ArrowLeft, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { avatarUrl } from "@/types"
-import type { Profile } from "@/types"
+import type { Profile, Post } from "@/types"
 import { linkifyText } from "@/lib/utils"
 import { SocialIcon } from "@/components/SocialIcon"
+import { CircleIcon } from "@/components/CircleIcon"
 
 interface PublicProfilePageProps {
   profile: Profile
+  posts?: Post[]
+  postsLoading?: boolean
 }
 
-export function PublicProfilePage({ profile }: PublicProfilePageProps) {
+function formatAge(createdAt: string): string {
+  const elapsed = Date.now() - new Date(createdAt).getTime()
+  const minutes = Math.floor(elapsed / (1000 * 60))
+  if (minutes < 60) return `${Math.max(1, minutes)}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+export function PublicProfilePage({ profile, posts = [], postsLoading = false }: PublicProfilePageProps) {
   const navigate = useNavigate()
   const memberSince = new Date(profile.created_at).toLocaleDateString("en-US", {
     month: "long",
@@ -20,6 +33,7 @@ export function PublicProfilePage({ profile }: PublicProfilePageProps) {
 
   const hasBio = !!profile.bio
   const hasLinks = profile.links && profile.links.length > 0
+  const showPosts = profile.posts_public !== false
 
   return (
     <div className="mx-auto max-w-sm space-y-6">
@@ -66,6 +80,40 @@ export function PublicProfilePage({ profile }: PublicProfilePageProps) {
       <p className="text-center text-xs text-quiet-muted">
         Member since {memberSince}
       </p>
+
+      {showPosts && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-quiet-slate">Recent posts</h3>
+          {postsLoading ? (
+            <p className="text-sm text-quiet-muted">Loading...</p>
+          ) : posts.length === 0 ? (
+            <p className="text-sm text-quiet-muted/60 italic">No posts yet</p>
+          ) : (
+            <div className="space-y-2">
+              {posts.map((post) => (
+                <Link
+                  key={post.id}
+                  to={post.circles ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`}
+                  className="block rounded-lg border border-quiet-border bg-white p-3 hover:border-quiet-accent/40 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    {post.circles && (
+                      <div className="flex items-center gap-1.5">
+                        <CircleIcon name={post.circles.name} avatarUrl={post.circles.avatar_url} size="xs" />
+                        <span className="text-xs text-quiet-muted">{post.circles.name}</span>
+                      </div>
+                    )}
+                    <span className="text-xs text-quiet-muted ml-auto">{formatAge(post.created_at)}</span>
+                  </div>
+                  <p className="text-sm text-quiet-slate line-clamp-3 leading-snug">
+                    {post.content.replace(/<[^>]+>/g, " ").trim()}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <Button
         variant="outline"

@@ -163,6 +163,7 @@ export function useProfile(userId: string | undefined) {
     username?: string
     country?: string | null
     links?: { label: string; url: string }[] | null
+    posts_public?: boolean
   }) => {
     if (!userId) return { error: new Error("No user") }
 
@@ -279,7 +280,7 @@ export function useCircles(userId: string | undefined) {
 
   const updateCircle = async (
     circleId: string,
-    updates: { description?: string | null; about?: string | null; rules?: string | null; country?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null }
+    updates: { name?: string; slug?: string; description?: string | null; about?: string | null; rules?: string | null; country?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null }
   ) => {
     const { data, error } = await supabase
       .from("circles")
@@ -449,6 +450,36 @@ export function usePublicProfile(username: string | undefined) {
   return { profile, loading }
 }
 
+// ─── User posts (for public profile) ─────────────────
+
+export function useUserPosts(userId: string | undefined) {
+  const [posts, setPosts] = useState<Post[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+
+    supabase
+      .from("posts")
+      .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot), circles(name, slug, description, avatar_url)")
+      .eq("author_id", userId)
+      .eq("is_welcome", false)
+      .or(`is_permanent.eq.true,expires_at.gt.${new Date().toISOString()}`)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        if (data) setPosts(data as Post[])
+        setLoading(false)
+      })
+  }, [userId])
+
+  return { posts, loading }
+}
+
 // ─── All-circles posts (for home feed) ──────────────
 
 export function useAllMemberPosts(circleIds: string[], userId?: string) {
@@ -464,6 +495,7 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
         tags: (p.tags as string[]) || [],
         upvote_count: 0,
         user_upvoted: false,
+        user_replied: false,
         reply_count: 0,
       })) as Post[]
 
@@ -472,7 +504,7 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
       try {
         const postIds = rawPosts.map((p) => p.id as string)
 
-        const [countsRes, userRes, replyCountsRes] = await Promise.all([
+        const [countsRes, userRes, replyCountsRes, userReplyRes] = await Promise.all([
           supabase
             .from("post_upvotes")
             .select("post_id")
@@ -488,6 +520,13 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
             .from("replies")
             .select("post_id")
             .in("post_id", postIds),
+          userId
+            ? supabase
+                .from("replies")
+                .select("post_id")
+                .in("post_id", postIds)
+                .eq("author_id", userId)
+            : null,
         ])
 
         if (countsRes.error) return fallback
@@ -507,10 +546,16 @@ export function useAllMemberPosts(circleIds: string[], userId?: string) {
           replyCountMap[row.post_id] = (replyCountMap[row.post_id] || 0) + 1
         }
 
+        const userRepliedSet = new Set<string>()
+        for (const row of userReplyRes?.data ?? []) {
+          userRepliedSet.add(row.post_id)
+        }
+
         return rawPosts.map((p) => ({
           ...p,
           upvote_count: countMap[p.id as string] || 0,
           user_upvoted: userSet.has(p.id as string),
+          user_replied: userRepliedSet.has(p.id as string),
           reply_count: replyCountMap[p.id as string] || 0,
         })) as Post[]
       } catch {
@@ -694,6 +739,7 @@ export function usePosts(circleId: string | undefined, userId?: string) {
         tags: (p.tags as string[]) || [],
         upvote_count: 0,
         user_upvoted: false,
+        user_replied: false,
         reply_count: 0,
       })) as Post[]
 
@@ -741,6 +787,7 @@ export function usePosts(circleId: string | undefined, userId?: string) {
           ...p,
           upvote_count: countMap[p.id as string] || 0,
           user_upvoted: userSet.has(p.id as string),
+          user_replied: false,
           reply_count: replyCountMap[p.id as string] || 0,
         })) as Post[]
       } catch {

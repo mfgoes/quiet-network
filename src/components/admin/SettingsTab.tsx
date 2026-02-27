@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { Sparkles, Trash2, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CircleIcon } from "@/components/CircleIcon"
-import { BANNER_COLORS, getBannerBg } from "@/types"
+import { BANNER_COLORS, getBannerBg, slugify } from "@/types"
 import type { Circle } from "@/types"
 
 const COUNTRIES = [
@@ -18,7 +18,7 @@ const COUNTRIES = [
 
 interface SettingsTabProps {
   circle: Circle
-  onSave: (updates: { description?: string | null; about?: string | null; rules?: string | null; country?: string | null; banner_color?: string | null; avatar_url?: string | null }) => Promise<{ error?: unknown }>
+  onSave: (updates: { name?: string; slug?: string; description?: string | null; about?: string | null; rules?: string | null; country?: string | null; banner_color?: string | null; avatar_url?: string | null }) => Promise<{ error?: unknown }>
   onUploadAvatar: (file: File) => Promise<{ url: string | null; error: unknown }>
   onDelete: () => Promise<void>
 }
@@ -51,6 +51,8 @@ function compressImage(file: File): Promise<File> {
 }
 
 export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: SettingsTabProps) {
+  const [name, setName] = useState(circle.name)
+  const [nameSlug, setNameSlug] = useState(circle.slug)
   const [description, setDescription] = useState(circle.description ?? "")
   const [about, setAbout] = useState(circle.about ?? "")
   const [rules, setRules] = useState(circle.rules ?? "")
@@ -60,14 +62,21 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
+  const handleNameChange = (value: string) => {
+    setName(value)
+    setNameSlug(slugify(value))
+  }
+
   // Sync local state when circle data changes (e.g. after refetch)
   useEffect(() => {
+    setName(circle.name)
+    setNameSlug(circle.slug)
     setDescription(circle.description ?? "")
     setAbout(circle.about ?? "")
     setRules(circle.rules ?? "")
     setCountry(circle.country ?? "")
     setBannerColor(circle.banner_color ?? "")
-  }, [circle.description, circle.about, circle.rules, circle.country, circle.banner_color])
+  }, [circle.name, circle.slug, circle.description, circle.about, circle.rules, circle.country, circle.banner_color])
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -80,7 +89,9 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
     setSaving(true)
     setSaved(false)
     setSaveError(null)
+    const trimmedName = name.trim()
     const result = await onSave({
+      ...(trimmedName && trimmedName !== circle.name ? { name: trimmedName, slug: nameSlug } : {}),
       description: description || null,
       about: about || null,
       rules: rules || null,
@@ -137,6 +148,23 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
 
   return (
     <div className="space-y-5 max-w-lg">
+      {/* Circle name */}
+      <div>
+        <label className="block text-sm font-medium text-quiet-slate mb-1.5">
+          Circle name
+        </label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => handleNameChange(e.target.value)}
+          placeholder="Circle name"
+          className="w-full rounded-md border border-quiet-border bg-white px-3 py-2 text-sm text-quiet-slate placeholder:text-quiet-muted focus:outline-none focus:ring-1 focus:ring-quiet-slate"
+        />
+        <p className="mt-1 text-xs text-quiet-muted">
+          URL: <span className="font-mono">{nameSlug || "—"}</span>
+        </p>
+      </div>
+
       {/* Avatar & Banner preview */}
       <div>
         <label className="block text-sm font-medium text-quiet-slate mb-1.5">

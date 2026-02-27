@@ -41,7 +41,16 @@
       "WebFetch(domain:img.youtube.com)",
       "WebFetch(domain:www.youtube.com)",
       "WebFetch(domain:gtlhwapaeytlialzfrao.supabase.co)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(source:*)",
+      "Bash(echo PATH: $PATH:*)",
+      "Bash(/opt/homebrew/bin/brew list:*)",
+      "Bash(/opt/homebrew/bin/brew install:*)",
+      "Bash(/opt/homebrew/bin/npm install:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm install:*)",
+      "Bash(node:*)",
+      "Bash(./node_modules/.bin/tsc:*)",
+      "Bash(export:*)"
     ]
   }
 }

@@ -436,7 +436,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                     <Link2 className="h-3.5 w-3.5" />
                   </button>
                 )}
-                {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
+                {(isOwn || isAdminOrMod) && onDelete && (!post.is_welcome || isAdminOrMod) && (
                   <ConfirmButton
                     onConfirm={() => onDelete(post.id)}
                     label="Delete post"
@@ -514,7 +514,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
               )}
-              {(isOwn || isAdminOrMod) && onDelete && !post.is_welcome && (
+              {(isOwn || isAdminOrMod) && onDelete && (!post.is_welcome || isAdminOrMod) && (
                 <ConfirmButton
                   onConfirm={() => onDelete(post.id)}
                   label="Delete post"

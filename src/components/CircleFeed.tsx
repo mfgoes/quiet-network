@@ -136,7 +136,7 @@ export function CircleFeed({
         </div>
 
         {/* Desktop: sidebar */}
-        <div className="hidden lg:block">
+        <div className="hidden lg:block lg:sticky lg:top-8 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:self-start">
           <CircleAbout sidebar circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} isFavorited={isFavorited} onToggleFavorite={onToggleFavorite} />
         </div>
       </div>

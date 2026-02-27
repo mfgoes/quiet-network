@@ -35,6 +35,7 @@ interface ProfilePageProps {
     username: string
     country?: string | null
     links: ProfileLink[] | null
+    posts_public: boolean
   }) => Promise<void>
   onSignOut: () => void
   onAbout: () => void
@@ -58,6 +59,7 @@ export function ProfilePage({ defaultEditing = false, profile, onSave, onSignOut
   const [bio, setBio] = useState(profile.bio)
   const [country, setCountry] = useState(profile.country ?? "")
   const [links, setLinks] = useState<ProfileLink[]>(profile.links ?? [])
+  const [postsPublic, setPostsPublic] = useState(profile.posts_public !== false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -78,6 +80,7 @@ export function ProfilePage({ defaultEditing = false, profile, onSave, onSignOut
         username: username.trim().toLowerCase(),
         country: country || null,
         links: cleanLinks.length > 0 ? cleanLinks : null,
+        posts_public: postsPublic,
       })
       setEditing(false)
     } catch (err) {
@@ -130,6 +133,45 @@ export function ProfilePage({ defaultEditing = false, profile, onSave, onSignOut
         <p className="text-center text-xs text-quiet-muted">
           Member since {memberSince}
         </p>
+
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-quiet-border bg-white px-4 py-3">
+          <div>
+            <p className="text-sm text-quiet-slate">Public posts</p>
+            <p className="text-xs text-quiet-muted">Show your posts on your public profile</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={postsPublic}
+            onClick={async () => {
+              const next = !postsPublic
+              setPostsPublic(next)
+              try {
+                await onSave({
+                  display_name: profile.display_name,
+                  avatar_emoji: profile.avatar_emoji,
+                  bio: profile.bio,
+                  username: profile.username,
+                  country: profile.country ?? null,
+                  links: profile.links,
+                  posts_public: next,
+                })
+              } catch {
+                setPostsPublic(!next)
+                toast.error("Couldn't save setting.")
+              }
+            }}
+            className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+              postsPublic ? "bg-quiet-accent" : "bg-quiet-border"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                postsPublic ? "translate-x-4" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
 
         <div className="space-y-2">
           <Button
@@ -340,6 +382,28 @@ export function ProfilePage({ defaultEditing = false, profile, onSave, onSignOut
           )}
         </div>
 
+        <label className="flex items-center justify-between gap-3 cursor-pointer">
+          <div>
+            <span className="text-sm text-quiet-muted">Show posts on public profile</span>
+            <p className="text-xs text-quiet-muted/60">Visitors to your profile can see your recent posts</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={postsPublic}
+            onClick={() => setPostsPublic((v) => !v)}
+            className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+              postsPublic ? "bg-quiet-accent" : "bg-quiet-border"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                postsPublic ? "translate-x-4" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </label>
+
         {error && <p className="text-sm text-quiet-warm">{error}</p>}
 
         <div className="flex gap-2">
@@ -354,6 +418,7 @@ export function ProfilePage({ defaultEditing = false, profile, onSave, onSignOut
               setBio(profile.bio)
               setCountry(profile.country ?? "")
               setLinks(profile.links ?? [])
+              setPostsPublic(profile.posts_public !== false)
               setEditing(false)
             }}
           >

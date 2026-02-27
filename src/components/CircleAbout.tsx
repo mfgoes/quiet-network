@@ -308,11 +308,12 @@ function AboutContent({
 
 function MembersSection({ circleId }: { circleId: string }) {
   const { members, count, loading } = useCircleMembers(circleId)
+  const [showAll, setShowAll] = useState(false)
 
   if (loading) return null
 
-  const displayMembers = members.slice(0, 8)
-  const remaining = count - displayMembers.length
+  const displayMembers = showAll ? members : members.slice(0, 8)
+  const remaining = count - 8
 
   return (
     <div className="px-4 py-3">
@@ -333,10 +334,13 @@ function MembersSection({ circleId }: { circleId: string }) {
             <TooltipContent>{m.display_name}</TooltipContent>
           </Tooltip>
         ))}
-        {remaining > 0 && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-quiet-border text-[10px] font-medium text-quiet-muted">
+        {!showAll && remaining > 0 && (
+          <button
+            onClick={() => setShowAll(true)}
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-quiet-border text-[10px] font-medium text-quiet-muted hover:bg-quiet-border/70 transition-colors"
+          >
             +{remaining}
-          </div>
+          </button>
         )}
       </div>
     </div>

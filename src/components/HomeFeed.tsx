@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { PenLine, X } from "lucide-react"
 import { getTagDef } from "@/types"
 import { useAllMemberPosts, usePosts } from "@/lib/hooks"
+import { sortPostsWithFreshness } from "@/lib/feedScoring"
 import { PostComposer } from "@/components/PostComposer"
 import { PostCard } from "@/components/PostCard.tsx" // Added .tsx extension
 import { CircleIcon } from "@/components/CircleIcon"
@@ -61,6 +62,7 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
   const circleIds = useMemo(() => circles.map((c) => c.id), [circles])
   const [favoritedCircleIds, setFavoritedCircleIds] = useState<string[]>([])
   const isFirstRender = useRef(true)
+  const sessionSeed = useRef<number>(Math.random())
 
   // Load favorites from localStorage on mount
   useEffect(() => {
@@ -109,8 +111,9 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
   }, [posts])
 
   const filteredPosts = useMemo(() => {
-    if (!activeTag) return posts
-    return posts.filter((p) => p.tags?.includes(activeTag))
+    const sorted = sortPostsWithFreshness(posts, sessionSeed.current)
+    if (!activeTag) return sorted
+    return sorted.filter((p) => p.tags?.includes(activeTag))
   }, [posts, activeTag])
 
   // Close picker on outside click
