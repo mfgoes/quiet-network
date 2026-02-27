@@ -109,6 +109,7 @@ export interface Circle {
   longitude: number | null
   radius_km: number
   country?: string | null
+  default_permanent_posts?: boolean
   created_by: string
   created_at: string
 }
@@ -212,6 +213,7 @@ export const DURATION_OPTIONS = [
   { label: "48 hours", seconds: 48 * 60 * 60 },
   { label: "7 days", seconds: 7 * 24 * 60 * 60 },
   { label: "30 days", seconds: 30 * 24 * 60 * 60 },
+  { label: "Permanent", seconds: 0 },
 ] as const
 
 export const AVATAR_OPTIONS = [

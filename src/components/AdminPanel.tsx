@@ -24,7 +24,7 @@ interface AdminPanelProps {
   adminCircles: (Circle & { role: CircleRole })[]
   updateCircle: (
     circleId: string,
-    updates: { name?: string; slug?: string; description?: string | null; about?: string | null; rules?: string | null; country?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null }
+    updates: { name?: string; slug?: string; description?: string | null; about?: string | null; rules?: string | null; country?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null; default_permanent_posts?: boolean }
   ) => Promise<{ data: Circle | null; error: unknown }>
   uploadCircleAvatar: (circleId: string, file: File) => Promise<{ url: string | null; error: unknown }>
   deleteCircle: (circleId: string) => Promise<unknown>

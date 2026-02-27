@@ -105,20 +105,16 @@ export function parseMarkdown(text: string): string {
 }
 
 /**
- * Extract URLs from markdown text, including both bare URLs and [text](url) links.
+ * Extract bare URLs from markdown text for embed generation.
+ * Deliberately excludes [text](url) links — those render as hyperlinks,
+ * not embeds, preserving the author's explicit formatting choice.
  */
 export function extractMarkdownUrls(content: string): string[] {
   const urls: string[] = []
 
-  // [text](url)
-  const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g
-  let match
-  while ((match = linkRegex.exec(content)) !== null) {
-    if (!urls.includes(match[2])) urls.push(match[2])
-  }
-
-  // Bare URLs (not inside markdown link syntax)
+  // Bare URLs only (not inside markdown link syntax)
   const bareRegex = /(?<!\]\()https?:\/\/[^\s)<]+/g
+  let match
   while ((match = bareRegex.exec(content)) !== null) {
     if (!urls.includes(match[0])) urls.push(match[0])
   }

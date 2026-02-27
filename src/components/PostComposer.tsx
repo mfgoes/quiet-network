@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import { Lightbulb, Send, Tag, Bold, Italic, Underline, List, Smile, Link2, Heading2, Image, X } from "lucide-react"
 import { toast } from "sonner"
 import data from "@emoji-mart/data"
@@ -9,8 +9,46 @@ import { Slider } from "@/components/ui/slider"
 import { DURATION_OPTIONS, POST_SPARKS, TAGS } from "@/types"
 import { supabase } from "@/lib/supabase"
 
+/** Returns true for URLs that will render as rich embeds. */
+function isEmbedableUrl(url: string): boolean {
+  try {
+    const u = new URL(url)
+    const host = u.hostname.replace(/^www\./, "")
+    if (host === "youtube.com" && u.pathname.startsWith("/watch")) return true
+    if (host === "youtu.be") return true
+    if ((host === "x.com" || host === "twitter.com") && /\/[^/]+\/status\/\d+/.test(u.pathname)) return true
+    if (host === "bsky.app" && /\/profile\/[^/]+\/post\//.test(u.pathname)) return true
+    if ((host === "reddit.com" || host === "old.reddit.com") && /\/r\/[^/]+\/comments\//.test(u.pathname)) return true
+    if (host === "instagram.com" && /\/(p|reel|tv)\//.test(u.pathname)) return true
+  } catch { /* ignore */ }
+  return false
+}
+
+/** Finds the first bare (non-markdown-link) embedable URL in text. */
+function detectFirstEmbedUrl(text: string): string | null {
+  const bareRegex = /(?<!\]\()https?:\/\/[^\s)<]+/g
+  let match
+  while ((match = bareRegex.exec(text)) !== null) {
+    if (isEmbedableUrl(match[0])) return match[0]
+  }
+  return null
+}
+
+function platformLabel(url: string): string {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "")
+    if (host === "youtube.com" || host === "youtu.be") return "YouTube"
+    if (host === "x.com" || host === "twitter.com") return "X / Twitter"
+    if (host === "bsky.app") return "Bluesky"
+    if (host === "reddit.com" || host === "old.reddit.com") return "Reddit"
+    if (host === "instagram.com") return "Instagram"
+    return host
+  } catch { return "link" }
+}
+
 interface PostComposerProps {
   onSubmit: (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null) => Promise<unknown>
+  defaultPermanent?: boolean
 }
 
 /**
@@ -46,10 +84,10 @@ function wrapSelection(
   })
 }
 
-export function PostComposer({ onSubmit }: PostComposerProps) {
+export function PostComposer({ onSubmit, defaultPermanent }: PostComposerProps) {
   const [text, setText] = useState("")
   const [isActive, setIsActive] = useState(false)
-  const [durationIndex, setDurationIndex] = useState(0)
+  const [durationIndex, setDurationIndex] = useState(() => defaultPermanent ? DURATION_OPTIONS.length - 1 : 0)
   const [sparkIndex, setSparkIndex] = useState(0)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [showTags, setShowTags] = useState(false)
@@ -61,7 +99,26 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [embedEnabled, setEmbedEnabled] = useState(true)
+  const containerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const detectedEmbedUrl = useMemo(() => detectFirstEmbedUrl(text), [text])
+  const prevEmbedUrlRef = useRef<string | null>(null)
+
+  // Reset embed toggle when a new embedable URL is detected
+  useEffect(() => {
+    if (detectedEmbedUrl !== prevEmbedUrlRef.current) {
+      prevEmbedUrlRef.current = detectedEmbedUrl
+      if (detectedEmbedUrl) setEmbedEnabled(true)
+    }
+  }, [detectedEmbedUrl])
+
+  const handleEmbedToggle = useCallback(() => {
+    if (!detectedEmbedUrl) return
+    const domain = (() => { try { return new URL(detectedEmbedUrl).hostname.replace(/^www\./, "") } catch { return detectedEmbedUrl } })()
+    setText((prev) => prev.replace(detectedEmbedUrl, `[${domain}](${detectedEmbedUrl})`))
+  }, [detectedEmbedUrl])
   const emojiRef = useRef<HTMLDivElement>(null)
   const linkRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -289,14 +346,22 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
   const showFull = isActive || !!text || !!selectedImage
 
   return (
-    <div className="rounded-lg border border-quiet-border bg-white p-4 shadow-sm">
+    <div
+      ref={containerRef}
+      className="rounded-lg border border-quiet-border bg-white p-4 shadow-sm"
+      onBlur={(e) => {
+        if (!text && !selectedImage && !containerRef.current?.contains(e.relatedTarget as Node)) {
+          setIsActive(false)
+        }
+      }}
+    >
       <div className="relative">
         <textarea
           ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onFocus={() => setIsActive(true)}
-          onBlur={() => { if (!text && !selectedImage) setIsActive(false) }}
+          onBlur={undefined}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
               e.preventDefault()
@@ -500,6 +565,24 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
         </div>
       </div>}
 
+      {/* Embed toggle — shown when a social/media URL is detected */}
+      {showFull && detectedEmbedUrl && (
+        <div className="mt-2 flex items-center gap-2">
+          <label className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-quiet-muted">
+            <input
+              type="checkbox"
+              checked={embedEnabled}
+              onChange={(e) => {
+                setEmbedEnabled(e.target.checked)
+                if (!e.target.checked) handleEmbedToggle()
+              }}
+              className="h-3 w-3 accent-quiet-accent"
+            />
+            <span>Embed {platformLabel(detectedEmbedUrl)}</span>
+          </label>
+        </div>
+      )}
+
       {/* Image preview */}
       {imagePreview && (
         <div className="mt-3 relative inline-block">
@@ -587,11 +670,11 @@ export function PostComposer({ onSubmit }: PostComposerProps) {
             <Slider
               value={[durationIndex]}
               onValueChange={(v) => setDurationIndex(v[0])}
-              max={2}
+              max={DURATION_OPTIONS.length - 1}
               step={1}
               className="flex-1"
             />
-            <span className="text-xs text-quiet-muted">30d</span>
+            <span className="text-xs text-quiet-muted">∞</span>
           </div>
         </div>
 

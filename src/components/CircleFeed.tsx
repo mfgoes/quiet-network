@@ -69,8 +69,8 @@ export function CircleFeed({
 
       <div className="lg:grid lg:grid-cols-[1fr_280px] lg:gap-6">
         {/* Main feed column */}
-        <div>
-          {isMember && <PostComposer onSubmit={handleNewPost} />}
+        <div className="min-w-0">
+          {isMember && <PostComposer onSubmit={handleNewPost} defaultPermanent={circle.default_permanent_posts} />}
 
           {/* Tag filter bar */}
           {availableTags.length > 0 && (

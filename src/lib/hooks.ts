@@ -280,7 +280,7 @@ export function useCircles(userId: string | undefined) {
 
   const updateCircle = async (
     circleId: string,
-    updates: { name?: string; slug?: string; description?: string | null; about?: string | null; rules?: string | null; country?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null }
+    updates: { name?: string; slug?: string; description?: string | null; about?: string | null; rules?: string | null; country?: string | null; links?: { label: string; url: string }[] | null; banner_color?: string | null; avatar_url?: string | null; default_permanent_posts?: boolean }
   ) => {
     const { data, error } = await supabase
       .from("circles")
@@ -923,15 +923,17 @@ export function usePosts(circleId: string | undefined, userId?: string) {
     tags: string[] = [],
     imageUrl?: string | null
   ) => {
+    const isPermanent = durationSeconds === 0
     const now = new Date()
-    const expiresAt = new Date(now.getTime() + durationSeconds * 1000)
+    const expiresAt = isPermanent ? 'infinity' : new Date(now.getTime() + durationSeconds * 1000).toISOString()
 
     const { error } = await supabase.from("posts").insert({
       circle_id: circleId,
       author_id: authorId,
       content,
-      expires_at: expiresAt.toISOString(),
+      expires_at: expiresAt,
       original_duration_seconds: durationSeconds,
+      is_permanent: isPermanent,
       tags,
       image_url: imageUrl,
     })

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { ChevronDown, LogOut, MapPin, Pencil, Settings, Shield, ExternalLink, Plus, Sparkles, Trash2, Camera, Star } from "lucide-react"
+import { ChevronDown, LogOut, MapPin, Pencil, Settings, Shield, ExternalLink, Plus, Sparkles, Trash2, Camera, Star, Infinity } from "lucide-react"
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -495,6 +495,14 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
         <div className="rounded-lg border border-quiet-border bg-white">
           <MembersSection circleId={circle.id} />
         </div>
+
+        {/* Default permanent posts label */}
+        {circle.default_permanent_posts && (
+          <div className="rounded-lg border border-quiet-border bg-white px-4 py-3 flex items-center gap-2">
+            <Infinity className="h-3.5 w-3.5 shrink-0 text-quiet-muted" />
+            <p className="text-xs text-quiet-muted">Posts in this circle are permanent by default</p>
+          </div>
+        )}
 
         {/* Manage circle (admin/mod only) */}
         {isAdminOrMod && (

@@ -18,7 +18,7 @@ const COUNTRIES = [
 
 interface SettingsTabProps {
   circle: Circle
-  onSave: (updates: { name?: string; slug?: string; description?: string | null; about?: string | null; rules?: string | null; country?: string | null; banner_color?: string | null; avatar_url?: string | null }) => Promise<{ error?: unknown }>
+  onSave: (updates: { name?: string; slug?: string; description?: string | null; about?: string | null; rules?: string | null; country?: string | null; banner_color?: string | null; avatar_url?: string | null; default_permanent_posts?: boolean }) => Promise<{ error?: unknown }>
   onUploadAvatar: (file: File) => Promise<{ url: string | null; error: unknown }>
   onDelete: () => Promise<void>
 }
@@ -58,6 +58,7 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
   const [rules, setRules] = useState(circle.rules ?? "")
   const [country, setCountry] = useState(circle.country ?? "")
   const [bannerColor, setBannerColor] = useState(circle.banner_color ?? "")
+  const [defaultPermanentPosts, setDefaultPermanentPosts] = useState(circle.default_permanent_posts ?? false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -76,7 +77,8 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
     setRules(circle.rules ?? "")
     setCountry(circle.country ?? "")
     setBannerColor(circle.banner_color ?? "")
-  }, [circle.name, circle.slug, circle.description, circle.about, circle.rules, circle.country, circle.banner_color])
+    setDefaultPermanentPosts(circle.default_permanent_posts ?? false)
+  }, [circle.name, circle.slug, circle.description, circle.about, circle.rules, circle.country, circle.banner_color, circle.default_permanent_posts])
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -97,6 +99,7 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
       rules: rules || null,
       country: country || null,
       banner_color: bannerColor || null,
+      default_permanent_posts: defaultPermanentPosts,
     })
     setSaving(false)
     if (result?.error) {
@@ -276,6 +279,38 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
           ))}
         </select>
         <p className="mt-1 text-xs text-quiet-muted">Used to show this circle to users in that country first.</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-quiet-slate mb-1.5">
+          Default post duration
+        </label>
+        <label className="flex items-center gap-3 cursor-pointer group">
+          <div className="relative">
+            <input
+              type="checkbox"
+              checked={defaultPermanentPosts}
+              onChange={(e) => setDefaultPermanentPosts(e.target.checked)}
+              className="sr-only"
+            />
+            <div
+              className={`w-9 h-5 rounded-full transition-colors ${
+                defaultPermanentPosts ? "bg-quiet-slate" : "bg-quiet-border"
+              }`}
+            />
+            <div
+              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                defaultPermanentPosts ? "translate-x-4" : "translate-x-0"
+              }`}
+            />
+          </div>
+          <span className="text-sm text-quiet-slate">
+            Permanent posts by default
+          </span>
+        </label>
+        <p className="mt-1.5 text-xs text-quiet-muted">
+          When enabled, the duration slider in the post composer will default to Permanent. Members can still change it per post.
+        </p>
       </div>
 
       <div>

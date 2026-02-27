@@ -6,6 +6,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { LinkPreview } from "@/components/LinkPreview"
 import { extractYouTubeId } from "@/components/YouTubeEmbed"
 import { extractMapCoords, isGoogleMapsUrl } from "@/components/GoogleMapsEmbed"
+import { isXTweetUrl, isBlueskyUrl, isRedditPostUrl } from "@/components/XEmbed"
 import { parseMarkdown, extractMarkdownUrls } from "@/lib/markdown"
 import { CircleIcon } from "@/components/CircleIcon"
 import { ReplySection } from "@/components/ReplySection"
@@ -93,11 +94,28 @@ function extractPlainTextUrls(content: string): string[] {
   return extractMarkdownUrls(content)
 }
 
-/** Check if a URL will be rendered as a rich embed (maps, youtube). */
+/** Returns true for Instagram post/reel/tv URLs. */
+function isInstagramPostUrl(url: string): boolean {
+  try {
+    const u = new URL(url)
+    return (
+      u.hostname.replace(/^www\./, "") === "instagram.com" &&
+      /^\/(p|reel|reels|tv)\/[A-Za-z0-9_-]+/.test(u.pathname)
+    )
+  } catch {
+    return false
+  }
+}
+
+/** Check if a URL will be rendered as a rich embed (maps, youtube, x/twitter, instagram, bluesky, reddit). */
 function isRichEmbed(url: string): boolean {
   if (extractYouTubeId(url)) return true
   if (extractMapCoords(url)) return true
   if (isGoogleMapsUrl(url)) return true
+  if (isXTweetUrl(url)) return true
+  if (isBlueskyUrl(url)) return true
+  if (isInstagramPostUrl(url)) return true
+  if (isRedditPostUrl(url)) return true
   return false
 }
 
@@ -591,7 +609,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
 
                 {/* Link previews */}
                 {filteredLinkUrls.length > 0 && (
-                  <div className="mt-1">
+                  <div className="mt-1 overflow-hidden">
                     {filteredLinkUrls.map((url) => (
                       <LinkPreview key={url} url={url} />
                     ))}
@@ -655,7 +673,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
 
               {/* Link previews - outside Link to avoid nested anchors */}
               {filteredLinkUrls.length > 0 && (
-                <div className="mt-1">
+                <div className="mt-1 overflow-hidden">
                   {filteredLinkUrls.map((url) => (
                     <LinkPreview key={url} url={url} />
                   ))}
