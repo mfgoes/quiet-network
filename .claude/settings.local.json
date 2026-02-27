@@ -50,7 +50,8 @@
       "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm install:*)",
       "Bash(node:*)",
       "Bash(./node_modules/.bin/tsc:*)",
-      "Bash(export:*)"
+      "Bash(export:*)",
+      "Bash(git push:*)"
     ]
   }
 }
