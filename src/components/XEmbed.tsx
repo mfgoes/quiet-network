@@ -42,13 +42,50 @@ export function isBlueskyUrl(url: string): boolean {
   return false
 }
 
-function parseBlueskyUrl(url: string): { username: string; canonicalUrl: string } | null {
+function parseBlueskyUrl(url: string): { username: string; rkey: string; canonicalUrl: string } | null {
   try {
     const u = new URL(url)
-    const match = u.pathname.match(/^\/profile\/([^/]+)\/post\//)
-    if (match) return { username: match[1], canonicalUrl: url }
+    const match = u.pathname.match(/^\/profile\/([^/]+)\/post\/([^/]+)/)
+    if (match) return { username: match[1], rkey: match[2], canonicalUrl: url }
   } catch { /* invalid URL */ }
   return null
+}
+
+function useBlueskyMeta(handle: string | null, rkey: string | null): PostMeta | null {
+  const [meta, setMeta] = useState<PostMeta | null>(null)
+  useEffect(() => {
+    if (!handle || !rkey) return
+    const atUri = `at://${handle}/app.bsky.feed.post/${rkey}`
+    fetch(`https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?uri=${encodeURIComponent(atUri)}&depth=0`)
+      .then(r => r.json())
+      .then(data => {
+        const post = data.thread?.post
+        if (!post) return
+        let image: string | null = null
+        const embed = post.embed
+        if (embed) {
+          if (embed.$type === "app.bsky.embed.images#view") {
+            image = embed.images?.[0]?.thumb ?? null
+          } else if (embed.$type === "app.bsky.embed.video#view") {
+            image = embed.thumbnail ?? null
+          } else if (embed.$type === "app.bsky.embed.recordWithMedia#view") {
+            const media = embed.media
+            if (media?.$type === "app.bsky.embed.images#view") {
+              image = media.images?.[0]?.thumb ?? null
+            } else if (media?.$type === "app.bsky.embed.video#view") {
+              image = media.thumbnail ?? null
+            }
+          }
+        }
+        setMeta({
+          title: post.author.displayName ?? `@${post.author.handle}`,
+          image,
+          description: post.record?.text ?? null,
+        })
+      })
+      .catch(() => {})
+  }, [handle, rkey])
+  return meta
 }
 
 // Bluesky butterfly logo
@@ -143,7 +180,7 @@ export function XEmbed({ url }: { url: string }) {
 
 export function BlueskyEmbed({ url }: { url: string }) {
   const parsed = parseBlueskyUrl(url)
-  const meta = useSocialPostMeta(parsed?.canonicalUrl ?? null)
+  const meta = useBlueskyMeta(parsed?.username ?? null, parsed?.rkey ?? null)
   if (!parsed) return null
   return (
     <SocialPostCard

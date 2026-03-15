@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser, Reply, NotificationPreferences, Notification } from "@/types"
+import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser, Reply, NotificationPreferences, Notification, CircleTag } from "@/types"
 import { slugify } from "@/types"
 
 // ─── Auth ────────────────────────────────────────────
@@ -1712,4 +1712,44 @@ export function useNotifications(userId: string | undefined) {
   }
 
   return { notifications, unreadCount, loading, markAsRead, markAllAsRead }
+}
+
+// ─── Circle Tags ─────────────────────────────────────
+
+export function useCircleTags(circleId: string | undefined) {
+  const [tags, setTags] = useState<CircleTag[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!circleId) { setTags([]); return }
+    setLoading(true)
+    supabase
+      .from("circle_tags")
+      .select("*")
+      .eq("circle_id", circleId)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        setTags(data ?? [])
+        setLoading(false)
+      })
+  }, [circleId])
+
+  const createTag = useCallback(async (name: string, color: string) => {
+    if (!circleId) return { error: "No circle" }
+    const { data, error } = await supabase
+      .from("circle_tags")
+      .insert({ circle_id: circleId, name: name.trim(), color })
+      .select()
+      .single()
+    if (!error && data) setTags((prev) => [...prev, data as CircleTag])
+    return { error }
+  }, [circleId])
+
+  const deleteTag = useCallback(async (tagId: string) => {
+    const { error } = await supabase.from("circle_tags").delete().eq("id", tagId)
+    if (!error) setTags((prev) => prev.filter((t) => t.id !== tagId))
+    return { error }
+  }, [])
+
+  return { tags, loading, createTag, deleteTag }
 }

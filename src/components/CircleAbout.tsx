@@ -11,7 +11,16 @@ import { useCircleMembers } from "@/lib/hooks"
 import { avatarUrl, getBannerBg } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import type { Circle, CircleLink } from "@/types"
+import type { Circle, CircleLink, CircleTag } from "@/types"
+
+const TAG_COLORS = [
+  { label: "Blue",   value: "var(--color-tag-blue)" },
+  { label: "Green",  value: "var(--color-tag-green)" },
+  { label: "Amber",  value: "var(--color-tag-amber)" },
+  { label: "Pink",   value: "var(--color-tag-pink)" },
+  { label: "Purple", value: "var(--color-tag-purple)" },
+  { label: "Cyan",   value: "var(--color-tag-cyan)" },
+]
 
 const COUNTRY_LABELS: Record<string, string> = {
   NL: "Netherlands",
@@ -36,6 +45,9 @@ interface CircleAboutProps {
   sidebar?: boolean
   isFavorited?: boolean
   onToggleFavorite?: () => void
+  circleTags?: CircleTag[]
+  onCreateTag?: (name: string, color: string) => Promise<{ error: unknown }>
+  onDeleteTag?: (tagId: string) => Promise<{ error: unknown }>
 }
 
 const MAX_AVATAR_SIZE = 100 * 1024 // 100 KB
@@ -389,6 +401,130 @@ function ManageCircleLink({ circleSlug }: { circleSlug: string }) {
   )
 }
 
+function TagsManager({
+  tags,
+  onCreate,
+  onDelete,
+}: {
+  tags: CircleTag[]
+  onCreate: (name: string, color: string) => Promise<{ error: unknown }>
+  onDelete: (tagId: string) => Promise<{ error: unknown }>
+}) {
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState("")
+  const [color, setColor] = useState(TAG_COLORS[0].value)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleCreate = async () => {
+    const trimmed = name.trim().replace(/^#+\s*/, "")
+    if (!trimmed) return
+    setSaving(true)
+    setError(null)
+    const { error: err } = await onCreate(trimmed, color)
+    if (err) {
+      setError("Already exists or could not save.")
+    } else {
+      setName("")
+      setAdding(false)
+    }
+    setSaving(false)
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-medium text-quiet-muted">Tags</p>
+        {!adding && (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-0.5 text-xs text-quiet-muted hover:text-quiet-slate transition-colors"
+          >
+            <Plus className="h-3 w-3" />
+            Add
+          </button>
+        )}
+      </div>
+
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {tags.map((tag) => (
+            <span
+              key={tag.id}
+              className="group inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-quiet-slate"
+              style={{ backgroundColor: tag.color }}
+            >
+              #{tag.name}
+              <button
+                onClick={() => onDelete(tag.id)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-quiet-muted hover:text-quiet-slate leading-none"
+                aria-label="Remove tag"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {tags.length === 0 && !adding && (
+        <p className="text-xs text-quiet-muted italic">No tags yet.</p>
+      )}
+
+      {adding && (
+        <div className="space-y-2 rounded-md border border-quiet-border bg-quiet-offwhite p-2.5">
+          <input
+            autoFocus
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+            placeholder="tag-name"
+            maxLength={32}
+            className="w-full rounded border border-quiet-border bg-white px-2 py-1 text-xs text-quiet-slate placeholder:text-quiet-muted focus:outline-none focus:ring-1 focus:ring-quiet-accent"
+          />
+          <div className="flex items-center gap-1.5">
+            {TAG_COLORS.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                title={c.label}
+                onClick={() => setColor(c.value)}
+                className={`h-4 w-4 rounded-full border-2 transition-all ${color === c.value ? "border-quiet-accent scale-110" : "border-transparent"}`}
+                style={{ backgroundColor: c.value }}
+              />
+            ))}
+            {name.trim() && (
+              <span
+                className="ml-1 rounded-full px-2 py-0.5 text-[10px] text-quiet-slate"
+                style={{ backgroundColor: color }}
+              >
+                #{name.trim().replace(/^#+\s*/, "")}
+              </span>
+            )}
+          </div>
+          {error && <p className="text-[10px] text-red-500">{error}</p>}
+          <div className="flex gap-1.5">
+            <button
+              onClick={handleCreate}
+              disabled={!name.trim() || saving}
+              className="rounded px-2 py-1 text-xs bg-quiet-accent text-white hover:bg-quiet-accent/90 disabled:opacity-50"
+            >
+              {saving ? "Saving…" : "Add"}
+            </button>
+            <button
+              onClick={() => { setAdding(false); setName(""); setError(null) }}
+              className="rounded px-2 py-1 text-xs text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-slate"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function CircleBanner({ circle, isAdminOrMod, onUploadAvatar }: { circle: Circle; isAdminOrMod?: boolean; onUploadAvatar?: (file: File) => Promise<{ url: string | null; error: unknown }> }) {
   const bannerBg = getBannerBg(circle.banner_color, circle.name)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -449,7 +585,8 @@ function CircleBanner({ circle, isAdminOrMod, onUploadAvatar }: { circle: Circle
   )
 }
 
-export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAvatar, onLeave, onJoin, joining, sidebar, isFavorited, onToggleFavorite }: CircleAboutProps) {
+export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAvatar, onLeave, onJoin, joining, sidebar, isFavorited, onToggleFavorite, circleTags, onCreateTag, onDeleteTag }: CircleAboutProps) {
+  const showTagsManager = isAdminOrMod && onCreateTag && onDeleteTag
   const [open, setOpen] = useState(false)
 
   // Desktop sidebar: separate cards
@@ -495,6 +632,17 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
         <div className="rounded-lg border border-quiet-border bg-white">
           <MembersSection circleId={circle.id} />
         </div>
+
+        {/* Tags management (admin/mod only) */}
+        {showTagsManager && (
+          <div className="rounded-lg border border-quiet-border bg-white px-4 py-3">
+            <TagsManager
+              tags={circleTags ?? []}
+              onCreate={onCreateTag}
+              onDelete={onDeleteTag}
+            />
+          </div>
+        )}
 
         {/* Default permanent posts label */}
         {circle.default_permanent_posts && (
@@ -565,6 +713,15 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
           <div className="border-t border-quiet-border">
             <MembersSection circleId={circle.id} />
           </div>
+          {showTagsManager && (
+            <div className="px-4 py-3 border-t border-quiet-border">
+              <TagsManager
+                tags={circleTags ?? []}
+                onCreate={onCreateTag}
+                onDelete={onDeleteTag}
+              />
+            </div>
+          )}
           {isAdminOrMod && (
             <div className="p-3 border-t border-quiet-border">
               <ManageCircleLink circleSlug={circle.slug} />

@@ -7,11 +7,12 @@ import { LinkPreview } from "@/components/LinkPreview"
 import { extractYouTubeId } from "@/components/YouTubeEmbed"
 import { extractMapCoords, isGoogleMapsUrl } from "@/components/GoogleMapsEmbed"
 import { isXTweetUrl, isBlueskyUrl, isRedditPostUrl } from "@/components/XEmbed"
-import { parseMarkdown, extractMarkdownUrls } from "@/lib/markdown"
+import { parseMarkdown, extractMarkdownUrls, extractLeadingHeader } from "@/lib/markdown"
 import { CircleIcon } from "@/components/CircleIcon"
 import { ReplySection } from "@/components/ReplySection"
 import type { Post } from "@/types"
 import { avatarUrl, getTagDef, TAGS } from "@/types"
+import type { CircleTag } from "@/types"
 
 interface PostCardProps {
   post: Post
@@ -22,6 +23,7 @@ interface PostCardProps {
   onDelete?: (postId: string) => void
   onEdit?: (postId: string, content: string, tags: string[]) => void
   onMakePermanent?: (postId: string, permanent: boolean) => void
+  circleTags?: CircleTag[]
 }
 
 function formatRelativeAge(createdAt: string): string {
@@ -225,7 +227,16 @@ function ConfirmButton({ onConfirm, label, className, children, onOpenChange }: 
   )
 }
 
-export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDelete, onEdit, onMakePermanent }: PostCardProps) {
+export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDelete, onEdit, onMakePermanent, circleTags }: PostCardProps) {
+  // Resolve a tag by ID: prefer circle-specific tags, fall back to universal
+  const resolveTag = (tagId: string) => {
+    const ct = circleTags?.find(t => t.id === tagId)
+    if (ct) return { id: ct.id, label: `#${ct.name}`, color: ct.color }
+    return getTagDef(tagId)
+  }
+  const availableTagList = circleTags && circleTags.length > 0
+    ? circleTags.map(t => ({ id: t.id, label: `#${t.name}`, color: t.color }))
+    : TAGS
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
   const bgClass = useMemo(() => getAgeTint(post), [post])
@@ -286,6 +297,10 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   }, [])
 
   const isHtml = useMemo(() => isHtmlContent(post.content), [post.content])
+  const { header: leadingHeader, rest: contentWithoutHeader } = useMemo(
+    () => (!isHtml ? extractLeadingHeader(post.content) : { header: null, rest: post.content }),
+    [post.content, isHtml]
+  )
   const linkUrls = useMemo(
     () => (isHtml ? extractUrls(post.content) : extractPlainTextUrls(post.content)),
     [post.content, isHtml]
@@ -333,7 +348,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
 
             {/* Tag selector in edit mode */}
             <div className="flex flex-wrap gap-1.5">
-              {TAGS.map((tag) => {
+              {availableTagList.map((tag) => {
                 const isSelected = editTags.includes(tag.id)
                 const isDisabled = !isSelected && editTags.length >= 3
                 return (
@@ -577,12 +592,12 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
           {/* Content with height limiting - clickable only when not on detail page */}
           {isDedicatedPostPage ? (
             <div className="block relative">
-              <div
-                ref={contentRef}
-                className={`transition-all ${
-                  needsExpand && !isExpanded ? "max-h-[400px] overflow-hidden" : ""
-                }`}
-              >
+              <div ref={contentRef}>
+                {/* Leading header above image */}
+                {leadingHeader && (
+                  <h2 className="text-base font-semibold text-quiet-slate mb-2">{leadingHeader}</h2>
+                )}
+
                 {/* Image */}
                 {post.image_url && (
                   <div className="mb-3">
@@ -603,7 +618,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                 ) : (
                   <div
                     className="post-content text-sm leading-relaxed text-quiet-slate"
-                    dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
+                    dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(contentWithoutHeader), linkUrls) }}
                   />
                 )}
 
@@ -617,17 +632,16 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                 )}
               </div>
 
-              {/* Gradient fade when collapsed */}
-              {needsExpand && !isExpanded && (
-                <div
-                  className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
-                    bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
-                  } to-transparent pointer-events-none`}
-                />
-              )}
             </div>
           ) : (
             <div className="block relative">
+              {/* Leading header above image - clickable to post detail */}
+              {leadingHeader && (
+                <Link to={postDetailUrl} className="block">
+                  <h2 className="text-base font-semibold text-quiet-slate mb-2 hover:text-quiet-accent transition-colors">{leadingHeader}</h2>
+                </Link>
+              )}
+
               {/* Image - clickable to post detail */}
               {post.image_url && (
                 <Link to={postDetailUrl} className="block mb-3">
@@ -656,7 +670,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                   ) : (
                     <div
                       className="post-content text-sm leading-relaxed text-quiet-slate group-hover/content:text-quiet-accent transition-colors"
-                      dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(post.content), linkUrls) }}
+                      dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(contentWithoutHeader), linkUrls) }}
                     />
                   )}
                 </div>
@@ -682,8 +696,8 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
             </div>
           )}
 
-          {/* Expand/Collapse button - outside clickable area */}
-          {needsExpand && (
+          {/* Expand/Collapse button - outside clickable area, feed only */}
+          {needsExpand && !isDedicatedPostPage && (
             <button
               onClick={() => setIsExpanded((prev) => !prev)}
               className="mt-1 flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
@@ -706,7 +720,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
           {post.tags && post.tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {post.tags.map((tagId) => {
-                const tag = getTagDef(tagId)
+                const tag = resolveTag(tagId)
                 if (!tag) return null
                 return (
                   <span

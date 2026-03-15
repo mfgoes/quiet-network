@@ -47,9 +47,6 @@ function detectSocial(hostname: string): SocialPlatform | null {
   return socialMap[hostname.replace(/^www\./, "")] ?? null
 }
 
-function isSocialUrl(hostname: string): boolean {
-  return detectSocial(hostname) !== null
-}
 
 interface LinkMeta {
   title: string | null

@@ -7,6 +7,7 @@ import imageCompression from "browser-image-compression"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { DURATION_OPTIONS, POST_SPARKS, TAGS } from "@/types"
+import type { CircleTag } from "@/types"
 import { supabase } from "@/lib/supabase"
 
 /** Returns true for URLs that will render as rich embeds. */
@@ -49,6 +50,7 @@ function platformLabel(url: string): string {
 interface PostComposerProps {
   onSubmit: (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null) => Promise<unknown>
   defaultPermanent?: boolean
+  circleTags?: CircleTag[]
 }
 
 /**
@@ -84,7 +86,11 @@ function wrapSelection(
   })
 }
 
-export function PostComposer({ onSubmit, defaultPermanent }: PostComposerProps) {
+export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostComposerProps) {
+  // Use circle-specific tags when available, otherwise fall back to universal tags
+  const activeTags = circleTags && circleTags.length > 0
+    ? circleTags.map(t => ({ id: t.id, label: `#${t.name}`, color: t.color }))
+    : TAGS
   const [text, setText] = useState("")
   const [isActive, setIsActive] = useState(false)
   const [durationIndex, setDurationIndex] = useState(() => defaultPermanent ? DURATION_OPTIONS.length - 1 : 0)
@@ -607,7 +613,7 @@ export function PostComposer({ onSubmit, defaultPermanent }: PostComposerProps) 
         {selectedTags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {selectedTags.map((tagId) => {
-              const tag = TAGS.find((t) => t.id === tagId)
+              const tag = activeTags.find((t) => t.id === tagId)
               if (!tag) return null
               return (
                 <button
@@ -631,7 +637,7 @@ export function PostComposer({ onSubmit, defaultPermanent }: PostComposerProps) 
               Add tags (max 3)
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {TAGS.map((tag) => {
+              {activeTags.map((tag) => {
                 const isSelected = selectedTags.includes(tag.id)
                 const isDisabled = !isSelected && selectedTags.length >= 3
                 return (

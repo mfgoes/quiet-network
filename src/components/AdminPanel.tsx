@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Shield, Users, FileWarning, Ban, Settings, ArrowLeft, ChevronDown } from "lucide-react"
+import { Shield, Users, FileWarning, Ban, Settings, ArrowLeft, ChevronDown, Tag } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -9,6 +9,7 @@ import { MembersTab } from "@/components/admin/MembersTab"
 import { ReportsTab } from "@/components/admin/ReportsTab"
 import { BanListTab } from "@/components/admin/BanListTab"
 import { SettingsTab } from "@/components/admin/SettingsTab"
+import { TagsTab } from "@/components/admin/TagsTab"
 import {
   useCircleBySlug,
   useAdminMembers,
@@ -16,6 +17,7 @@ import {
   useBannedUsers,
   useAdminStats,
   useAdminCircleMemberCounts,
+  useCircleTags,
 } from "@/lib/hooks"
 import type { Circle, CircleRole } from "@/types"
 
@@ -47,6 +49,7 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
   const { reports, loading: reportsLoading, updateReport } = useAdminReports(circleId)
   const { bannedUsers, loading: bannedLoading, banUser, unbanUser } = useBannedUsers(circleId)
   const { stats } = useAdminStats(circleId)
+  const { tags: circleTags, createTag, deleteTag } = useCircleTags(circleId)
 
   // Member counts for the circle selector dropdown
   const adminCircleIds = useMemo(() => adminCircles.map((c) => c.id), [adminCircles])
@@ -181,6 +184,10 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
             <Ban className="mr-1.5 h-3.5 w-3.5" />
             Ban List
           </TabsTrigger>
+          <TabsTrigger value="tags">
+            <Tag className="mr-1.5 h-3.5 w-3.5" />
+            Tags
+          </TabsTrigger>
           {userRole === "admin" && (
             <TabsTrigger value="settings">
               <Settings className="mr-1.5 h-3.5 w-3.5" />
@@ -222,6 +229,14 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
           ) : (
             <BanListTab bannedUsers={bannedUsers} onUnban={unbanUser} />
           )}
+        </TabsContent>
+
+        <TabsContent value="tags">
+          <TagsTab
+            tags={circleTags}
+            onCreate={createTag}
+            onDelete={deleteTag}
+          />
         </TabsContent>
 
         {userRole === "admin" && (

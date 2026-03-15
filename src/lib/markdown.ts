@@ -105,6 +105,21 @@ export function parseMarkdown(text: string): string {
 }
 
 /**
+ * If the first line of content is a # or ## heading, extract it and return
+ * { header, rest } so callers can render the header above images/media.
+ * Returns { header: null, rest: content } if no leading heading is found.
+ */
+export function extractLeadingHeader(content: string): { header: string | null; rest: string } {
+  const newline = content.indexOf("\n")
+  const firstLine = newline === -1 ? content : content.slice(0, newline)
+  const match = firstLine.match(/^(#{1,2})\s+(.+)$/)
+  if (!match) return { header: null, rest: content }
+  const header = match[2].trim()
+  const rest = newline === -1 ? "" : content.slice(newline + 1)
+  return { header, rest }
+}
+
+/**
  * Extract bare URLs from markdown text for embed generation.
  * Deliberately excludes [text](url) links — those render as hyperlinks,
  * not embeds, preserving the author's explicit formatting choice.

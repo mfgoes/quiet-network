@@ -231,6 +231,15 @@ export interface TagDef {
   color: string
 }
 
+export interface CircleTag {
+  id: string
+  circle_id: string
+  name: string
+  color: string
+  created_by: string | null
+  created_at: string
+}
+
 export const TAGS: TagDef[] = [
   // Everyday
   { id: "quick-question", label: "#quick-question", color: "var(--color-tag-blue)" },

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react"
 import { getTagDef } from "@/types"
-import { usePosts } from "@/lib/hooks"
+import { usePosts, useCircleTags } from "@/lib/hooks"
 import { PostComposer } from "@/components/PostComposer"
 import { PostCard } from "@/components/PostCard"
 import { CircleAbout } from "@/components/CircleAbout"
@@ -35,6 +35,7 @@ export function CircleFeed({
 }: CircleFeedProps) {
   const circleId = circle.id
   const { posts, loading, createPost, updatePost, deletePost, toggleUpvote, makePermanent } = usePosts(circleId, userId)
+  const { tags: circleTags, createTag, deleteTag } = useCircleTags(circleId)
   const [activeTag, setActiveTag] = useState<string | null>(null)
 
   const handleNewPost = async (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null) => {
@@ -45,7 +46,9 @@ export function CircleFeed({
     await updatePost(postId, content, tags)
   }
 
+  // If circle has defined tags, show all of them; otherwise fall back to tags used in posts
   const availableTags = useMemo(() => {
+    if (circleTags.length > 0) return circleTags.map(t => t.id)
     const tagSet = new Set<string>()
     for (const post of posts) {
       for (const tag of post.tags || []) {
@@ -53,7 +56,7 @@ export function CircleFeed({
       }
     }
     return Array.from(tagSet)
-  }, [posts])
+  }, [circleTags, posts])
 
   const filteredPosts = useMemo(() => {
     if (!activeTag) return posts
@@ -64,13 +67,13 @@ export function CircleFeed({
     <>
       {/* Mobile: collapsible above feed */}
       <div className="lg:hidden">
-        <CircleAbout circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} isFavorited={isFavorited} onToggleFavorite={onToggleFavorite} />
+        <CircleAbout circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} isFavorited={isFavorited} onToggleFavorite={onToggleFavorite} circleTags={circleTags} onCreateTag={isAdminOrMod ? createTag : undefined} onDeleteTag={isAdminOrMod ? deleteTag : undefined} />
       </div>
 
       <div className="lg:grid lg:grid-cols-[1fr_280px] lg:gap-6">
         {/* Main feed column */}
         <div className="min-w-0">
-          {isMember && <PostComposer onSubmit={handleNewPost} defaultPermanent={circle.default_permanent_posts} />}
+          {isMember && <PostComposer onSubmit={handleNewPost} defaultPermanent={circle.default_permanent_posts} circleTags={circleTags.length > 0 ? circleTags : undefined} />}
 
           {/* Tag filter bar */}
           {availableTags.length > 0 && (
@@ -86,7 +89,8 @@ export function CircleFeed({
                 All
               </button>
               {availableTags.map((tagId) => {
-                const tag = getTagDef(tagId)
+                const ct = circleTags.find(t => t.id === tagId)
+                const tag = ct ? { id: ct.id, label: `#${ct.name}`, color: ct.color } : getTagDef(tagId)
                 if (!tag) return null
                 const isActive = activeTag === tagId
                 return (
@@ -124,6 +128,7 @@ export function CircleFeed({
                   onDelete={isMember ? deletePost : undefined}
                   onEdit={isMember ? handleUpdatePost : undefined}
                   onMakePermanent={isMember ? makePermanent : undefined}
+                  circleTags={circleTags.length > 0 ? circleTags : undefined}
                 />
               ))}
               {filteredPosts.length === 0 && activeTag && (
@@ -137,7 +142,7 @@ export function CircleFeed({
 
         {/* Desktop: sidebar */}
         <div className="hidden lg:block lg:sticky lg:top-8 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:self-start">
-          <CircleAbout sidebar circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} isFavorited={isFavorited} onToggleFavorite={onToggleFavorite} />
+          <CircleAbout sidebar circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} isFavorited={isFavorited} onToggleFavorite={onToggleFavorite} circleTags={circleTags} onCreateTag={isAdminOrMod ? createTag : undefined} onDeleteTag={isAdminOrMod ? deleteTag : undefined} />
         </div>
       </div>
     </>
