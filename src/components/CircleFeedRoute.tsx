@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
-import { useCircleBySlug } from "@/lib/hooks"
+import { useCircleBySlug, useFavorites } from "@/lib/hooks"
 import { CircleDropdown } from "@/components/CircleDropdown"
 import { CircleFeed } from "@/components/CircleFeed"
 import { Button } from "@/components/ui/button"
@@ -32,40 +32,12 @@ export function CircleFeedRoute({
   const { circle, loading, refetch: refetchCircle } = useCircleBySlug(circleSlug)
   const navigate = useNavigate()
   const [joining, setJoining] = useState(false)
-  const [favoritedCircleIds, setFavoritedCircleIds] = useState<string[]>([])
-  const isFirstRender = useRef(true)
-
-  // Load favorites from localStorage on mount
-  useEffect(() => {
-    if (userId) {
-      const storedFavorites = localStorage.getItem(`favorites_${userId}`)
-      if (storedFavorites) {
-        setFavoritedCircleIds(JSON.parse(storedFavorites))
-      }
-    }
-  }, [userId])
-
-  // Save favorites to localStorage whenever they change (skip first render to avoid overwriting loaded data)
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      return
-    }
-    if (userId) {
-      localStorage.setItem(`favorites_${userId}`, JSON.stringify(favoritedCircleIds))
-    }
-  }, [favoritedCircleIds, userId])
+  const { favoritedCircleIds, toggleFavorite: toggleFavoriteById } = useFavorites(userId)
 
   const toggleFavorite = useCallback(() => {
     if (!circle) return
-    setFavoritedCircleIds(prev => {
-      if (prev.includes(circle.id)) {
-        return prev.filter(id => id !== circle.id)
-      } else {
-        return [...prev, circle.id]
-      }
-    })
-  }, [circle])
+    toggleFavoriteById(circle.id)
+  }, [circle, toggleFavoriteById])
 
   const isMember = circle ? memberCircleIds.includes(circle.id) : false
   const isAdminOrMod = circle ? ["admin", "moderator"].includes(circleRoles[circle.id] ?? "") || circle.created_by === userId : false
@@ -96,13 +68,7 @@ export function CircleFeedRoute({
         onToggleFavorite={(circleId, e) => {
           e.stopPropagation()
           e.preventDefault()
-          setFavoritedCircleIds(prev => {
-            if (prev.includes(circleId)) {
-              return prev.filter(id => id !== circleId)
-            } else {
-              return [...prev, circleId]
-            }
-          })
+          toggleFavoriteById(circleId)
         }}
       />
       <div className="mt-4">

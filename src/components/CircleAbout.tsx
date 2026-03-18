@@ -1,6 +1,6 @@
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { ChevronDown, LogOut, MapPin, Pencil, Settings, Shield, ExternalLink, Plus, Sparkles, Trash2, Camera, Star, Infinity } from "lucide-react"
+import { ChevronDown, Crown, LogOut, MapPin, Pencil, Settings, Shield, ExternalLink, Plus, Sparkles, Trash2, Camera, Star, Infinity } from "lucide-react"
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -318,13 +318,18 @@ function AboutContent({
   )
 }
 
-function MembersSection({ circleId }: { circleId: string }) {
+function MembersSection({ circleId, creatorId }: { circleId: string; creatorId: string }) {
   const { members, count, loading } = useCircleMembers(circleId)
+  const navigate = useNavigate()
   const [showAll, setShowAll] = useState(false)
 
   if (loading) return null
 
-  const displayMembers = showAll ? members : members.slice(0, 8)
+  // Creator always first
+  const sorted = [...members].sort((a, b) =>
+    a.user_id === creatorId ? -1 : b.user_id === creatorId ? 1 : 0
+  )
+  const displayMembers = showAll ? sorted : sorted.slice(0, 8)
   const remaining = count - 8
 
   return (
@@ -334,18 +339,33 @@ function MembersSection({ circleId }: { circleId: string }) {
         <span className="text-xs font-medium text-quiet-slate">{count}</span>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {displayMembers.map((m) => (
-          <Tooltip key={m.username}>
-            <TooltipTrigger asChild>
-              <img
-                src={avatarUrl(m.avatar_emoji)}
-                alt={m.display_name}
-                className="h-7 w-7 rounded-full object-cover ring-1 ring-quiet-border"
-              />
-            </TooltipTrigger>
-            <TooltipContent>{m.display_name}</TooltipContent>
-          </Tooltip>
-        ))}
+        {displayMembers.map((m) => {
+          const isCreator = m.user_id === creatorId
+          return (
+            <Tooltip key={m.username}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => navigate(`/user/${m.username}`)}
+                  className="relative shrink-0"
+                >
+                  <img
+                    src={avatarUrl(m.avatar_emoji)}
+                    alt={m.display_name}
+                    className={`h-7 w-7 rounded-full object-cover ring-1 ${isCreator ? "ring-amber-400" : "ring-quiet-border"}`}
+                  />
+                  {isCreator && (
+                    <span className="absolute -top-1.5 -right-1 flex items-center justify-center">
+                      <Crown className="h-3 w-3 text-amber-500 fill-amber-400" />
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {m.display_name}{isCreator ? " · creator" : ""}
+              </TooltipContent>
+            </Tooltip>
+          )
+        })}
         {!showAll && remaining > 0 && (
           <button
             onClick={() => setShowAll(true)}
@@ -630,7 +650,7 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
 
         {/* Members card */}
         <div className="rounded-lg border border-quiet-border bg-white">
-          <MembersSection circleId={circle.id} />
+          <MembersSection circleId={circle.id} creatorId={circle.created_by} />
         </div>
 
         {/* Tags management (admin/mod only) */}
@@ -711,7 +731,7 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
             <AboutContent circle={circle} userId={userId} onUpdate={onUpdate} />
           </div>
           <div className="border-t border-quiet-border">
-            <MembersSection circleId={circle.id} />
+            <MembersSection circleId={circle.id} creatorId={circle.created_by} />
           </div>
           {showTagsManager && (
             <div className="px-4 py-3 border-t border-quiet-border">

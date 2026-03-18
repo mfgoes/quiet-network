@@ -1,15 +1,111 @@
-import { useState, useMemo, useRef, useEffect } from "react"
+import { useMemo, useRef, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { PenLine, X } from "lucide-react"
-import { getTagDef } from "@/types"
-import { useAllMemberPosts, usePosts } from "@/lib/hooks"
+import { ArrowUp, ChevronRight, Clock, MessageSquare, PenLine, X } from "lucide-react"
+import { useAllMemberPosts, usePosts, useFavorites } from "@/lib/hooks"
 import { sortPostsWithFreshness } from "@/lib/feedScoring"
 import { PostComposer } from "@/components/PostComposer"
 import { PostCard } from "@/components/PostCard.tsx" // Added .tsx extension
 import { CircleIcon } from "@/components/CircleIcon"
 import { Shell } from "@/components/Shell"
 import { Button } from "@/components/ui/button"
-import type { Circle } from "@/types"
+import { extractLeadingHeader } from "@/lib/markdown"
+import type { Circle, Post } from "@/types"
+
+// ─── Spotlight row ────────────────────────────────────────────────────────────
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 60) return `${m}m`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h`
+  return `${Math.floor(h / 24)}d`
+}
+
+function SpotlightCard({ post }: { post: Post }) {
+  const navigate = useNavigate()
+  const circle = post.circles
+  const slug = circle?.slug
+  const { header } = useMemo(() => extractLeadingHeader(post.content ?? ""), [post.content])
+  const title = header || post.content?.split("\n")[0]?.slice(0, 80) || ""
+
+  return (
+    <article
+      onClick={() => navigate(slug ? `/${slug}/p/${post.id}` : `/p/${post.id}`)}
+      className="relative cursor-pointer flex-shrink-0 w-52 rounded-xl overflow-hidden border border-quiet-border bg-white transition-shadow hover:shadow-md"
+    >
+      {post.image_url ? (
+        <div className="h-32 overflow-hidden bg-quiet-border/10">
+          <img src={post.image_url} alt="" className="h-full w-full object-cover" />
+        </div>
+      ) : (
+        <div className="h-32 flex items-center justify-center px-3 bg-gradient-to-br from-quiet-aged to-quiet-border/40">
+          <p className="text-xs font-medium text-quiet-slate text-center line-clamp-4 leading-relaxed">
+            {title}
+          </p>
+        </div>
+      )}
+      <div className="p-3">
+        {circle && (
+          <div className="mb-1 flex items-center gap-1.5">
+            <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
+            <span className="text-xs font-medium text-quiet-slate truncate">{circle.name}</span>
+          </div>
+        )}
+        {post.image_url && title && (
+          <p className="text-xs text-quiet-muted line-clamp-2 leading-snug">{title}</p>
+        )}
+        <div className="mt-2 flex items-center gap-3 text-[10px] text-quiet-muted">
+          <span className="flex items-center gap-0.5">
+            <ArrowUp className="h-3 w-3" />
+            {post.upvote_count ?? 0}
+          </span>
+          <span className="flex items-center gap-0.5">
+            <MessageSquare className="h-3 w-3" />
+            {post.reply_count ?? 0}
+          </span>
+          <span className="ml-auto flex items-center gap-0.5">
+            <Clock className="h-3 w-3" />
+            {timeAgo(post.created_at)}
+          </span>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function SpotlightRow({ posts }: { posts: Post[] }) {
+  const navigate = useNavigate()
+  const cards = useMemo(() => {
+    const SLOTS = 6
+    const withImage = posts.filter(p => !!p.image_url)
+    const byUpvotes = [...posts].sort((a, b) => (b.upvote_count ?? 0) - (a.upvote_count ?? 0))
+    const usedIds = new Set(withImage.slice(0, SLOTS).map(p => p.id))
+    const fillers = byUpvotes.filter(p => !usedIds.has(p.id)).slice(0, Math.max(0, SLOTS - withImage.length))
+    return [...withImage.slice(0, SLOTS), ...fillers].slice(0, SLOTS)
+  }, [posts])
+
+  if (cards.length === 0) return null
+
+  return (
+    <div className="mb-6">
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-quiet-slate uppercase tracking-wide">Trending</h2>
+        <button
+          onClick={() => navigate("/explore")}
+          className="flex items-center gap-0.5 text-xs text-quiet-accent hover:underline"
+        >
+          Explore circles <ChevronRight className="h-3 w-3" />
+        </button>
+      </div>
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        {cards.map(post => (
+          <SpotlightCard key={post.id} post={post} />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 interface HomeFeedProps {
   circles: Circle[]
@@ -60,33 +156,10 @@ function HomeComposer({
 export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
   const navigate = useNavigate()
   const circleIds = useMemo(() => circles.map((c) => c.id), [circles])
-  const [favoritedCircleIds, setFavoritedCircleIds] = useState<string[]>([])
-  const isFirstRender = useRef(true)
+  const { favoritedCircleIds } = useFavorites(userId)
   const sessionSeed = useRef<number>(Math.random())
 
-  // Load favorites from localStorage on mount
-  useEffect(() => {
-    if (userId) {
-      const storedFavorites = localStorage.getItem(`favorites_${userId}`)
-      if (storedFavorites) {
-        setFavoritedCircleIds(JSON.parse(storedFavorites))
-      }
-    }
-  }, [userId])
-
-  // Save favorites to localStorage whenever they change (skip first render to avoid overwriting loaded data)
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      return
-    }
-    if (userId) {
-      localStorage.setItem(`favorites_${userId}`, JSON.stringify(favoritedCircleIds))
-    }
-  }, [favoritedCircleIds, userId])
-
   const { posts, loading, toggleUpvote, updatePost, deletePost, makePermanent } = useAllMemberPosts(circleIds, userId)
-  const [activeTag, setActiveTag] = useState<string | null>(null)
   const [composerState, setComposerState] = useState<"closed" | "picking" | Circle>("closed")
   const pickerRef = useRef<HTMLDivElement>(null)
 
@@ -100,21 +173,9 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
     await updatePost(postId, content, tags)
   }
 
-  const availableTags = useMemo(() => {
-    const tagSet = new Set<string>()
-    for (const post of posts) {
-      for (const tag of post.tags || []) {
-        tagSet.add(tag)
-      }
-    }
-    return Array.from(tagSet)
-  }, [posts])
-
   const filteredPosts = useMemo(() => {
-    const sorted = sortPostsWithFreshness(posts, sessionSeed.current)
-    if (!activeTag) return sorted
-    return sorted.filter((p) => p.tags?.includes(activeTag))
-  }, [posts, activeTag])
+    return sortPostsWithFreshness(posts, sessionSeed.current, favoritedCircleIds)
+  }, [posts, favoritedCircleIds])
 
   // Close picker on outside click
   useEffect(() => {
@@ -141,60 +202,10 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
         </div>
       )}
 
-      {/* Favorite Circles */}
-      {favoritedCircleIds.length > 0 && (
-        <div className="mb-4">
-          <h3 className="text-xs font-medium text-quiet-muted mb-2">FAVORITES</h3>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {circles
-              .filter(c => favoritedCircleIds.includes(c.id))
-              .map(circle => (
-                <button
-                  key={circle.id}
-                  onClick={() => navigate(`/${circle.slug}`)}
-                  className="flex items-center gap-2 shrink-0 rounded-lg border border-quiet-border bg-white px-3 py-2 text-sm text-quiet-slate hover:bg-quiet-aged transition-colors"
-                >
-                  <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
-                  <span className="truncate">{circle.name}</span>
-                </button>
-              ))}
-          </div>
-        </div>
-      )}
 
-      {/* Tag filter bar */}
-      {availableTags.length > 0 && (
-        <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1">
-          <button
-            onClick={() => setActiveTag(null)}
-            className={`shrink-0 rounded-full px-3 py-1 text-xs transition-colors ${
-              activeTag === null
-                ? "bg-quiet-slate text-quiet-offwhite"
-                : "bg-quiet-border/60 text-quiet-muted hover:text-quiet-slate"
-            }`}
-          >
-            All
-          </button>
-          {availableTags.map((tagId) => {
-            const tag = getTagDef(tagId)
-            if (!tag) return null
-            const isActive = activeTag === tagId
-            return (
-              <button
-                key={tagId}
-                onClick={() => setActiveTag(isActive ? null : tagId)}
-                className={`shrink-0 rounded-full px-3 py-1 text-xs transition-colors ${
-                  isActive
-                    ? "ring-1 ring-quiet-accent text-quiet-slate"
-                    : "text-quiet-slate hover:ring-1 hover:ring-quiet-border"
-                }`}
-                style={{ backgroundColor: tag.color }}
-              >
-                {tag.label}
-              </button>
-            )
-          })}
-        </div>
+
+      {!loading && filteredPosts.length > 0 && (
+        <SpotlightRow posts={filteredPosts} />
       )}
 
       {loading ? (
@@ -233,14 +244,9 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
               />
             )
           })}
-          {filteredPosts.length === 0 && !activeTag && (
+          {filteredPosts.length === 0 && (
             <p className="text-center text-sm text-quiet-muted">
               No posts yet. Check back later!
-            </p>
-          )}
-          {filteredPosts.length === 0 && activeTag && (
-            <p className="text-center text-sm text-quiet-muted">
-              No posts with this tag yet.
             </p>
           )}
         </div>

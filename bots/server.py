@@ -187,6 +187,109 @@ def circle_json(slug):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/bot-users")
+def list_bot_users():
+    """Fetch bot profiles from Supabase."""
+    try:
+        if not ENV_FILE.exists():
+            return jsonify({"error": ".env file not found"}), 500
+
+        from dotenv import dotenv_values
+        config = dotenv_values(ENV_FILE)
+
+        supabase_url = config.get("SUPABASE_URL")
+        service_key = config.get("SUPABASE_SERVICE_ROLE_KEY") or config.get("SUPABASE_KEY")
+
+        if not supabase_url or not service_key:
+            return jsonify({"error": "Missing Supabase credentials in .env"}), 500
+
+        import urllib.request, urllib.error
+        api_url = f"{supabase_url}/rest/v1/profiles?select=id,display_name&is_bot=eq.true&order=display_name.asc"
+        headers = {
+            "apikey": service_key,
+            "Authorization": f"Bearer {service_key}",
+        }
+        req = urllib.request.Request(api_url, headers=headers)
+        with urllib.request.urlopen(req) as resp:
+            return jsonify(json.loads(resp.read().decode()))
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/quick-post", methods=["POST"])
+def quick_post():
+    """Post a single message to a circle as a bot user."""
+    from datetime import datetime, timedelta, timezone
+    import uuid
+
+    data = request.get_json(silent=True) or {}
+
+    circle_id = data.get("circle_id")
+    bot_id = data.get("bot_id")
+    content = data.get("content", "").strip()
+    is_permanent = bool(data.get("is_permanent", False))
+    duration_seconds = int(data.get("duration_seconds", 7 * 24 * 3600))  # default 7 days
+
+    if not circle_id:
+        return jsonify({"ok": False, "error": "circle_id is required"}), 400
+    if not bot_id:
+        return jsonify({"ok": False, "error": "bot_id is required"}), 400
+    if not content:
+        return jsonify({"ok": False, "error": "content is required"}), 400
+
+    try:
+        if not ENV_FILE.exists():
+            return jsonify({"ok": False, "error": ".env file not found"}), 500
+
+        from dotenv import dotenv_values
+        config = dotenv_values(ENV_FILE)
+
+        supabase_url = config.get("SUPABASE_URL")
+        service_key = config.get("SUPABASE_SERVICE_ROLE_KEY") or config.get("SUPABASE_KEY")
+
+        if not supabase_url or not service_key:
+            return jsonify({"ok": False, "error": "Missing Supabase credentials"}), 500
+
+        import urllib.request, urllib.error
+
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(seconds=duration_seconds)
+
+        post_payload = {
+            "circle_id": circle_id,
+            "author_id": bot_id,
+            "content": content,
+            "created_at": now.isoformat(),
+            "expires_at": expires_at.isoformat(),
+            "original_duration_seconds": duration_seconds,
+        }
+        if is_permanent:
+            post_payload["is_permanent"] = True
+
+        headers = {
+            "apikey": service_key,
+            "Authorization": f"Bearer {service_key}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        }
+        body = json.dumps(post_payload).encode()
+        req = urllib.request.Request(
+            f"{supabase_url}/rest/v1/posts",
+            data=body, headers=headers, method="POST"
+        )
+        with urllib.request.urlopen(req) as resp:
+            result = json.loads(resp.read().decode())
+            post_id = result[0]["id"] if result else None
+            return jsonify({"ok": True, "post_id": post_id})
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode()
+        return jsonify({"ok": False, "error": f"Supabase error: {error_body}"}), e.code
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/circles")
 def list_circles():
     """Fetch available circles from Supabase."""

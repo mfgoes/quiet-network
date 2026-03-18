@@ -9,8 +9,16 @@ interface LinkPreviewProps {
 }
 
 const IMAGE_RE = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)(\?.*)?$/i
+const VIDEO_RE = /\.(mp4|webm|mov|ogg)(\?.*)?$/i
 // Hosts that always serve images even without a file extension
 const IMAGE_HOSTS = ["i.imgur.com", "i.redd.it", "pbs.twimg.com"]
+
+/** Returns the video src to use, or null if not a video URL. Handles imgur .gifv → .mp4. */
+function detectVideoUrl(url: string): string | null {
+  if (/imgur\.com/.test(url) && url.endsWith(".gifv")) return url.replace(".gifv", ".mp4")
+  if (VIDEO_RE.test(url)) return url
+  return null
+}
 
 /** Hard-cap a string and strip newlines so it can never blow out a single-line layout. */
 function clip(s: string | null | undefined, max: number): string | null {
@@ -80,6 +88,7 @@ export function LinkPreview({ url }: LinkPreviewProps) {
   const [imgError, setImgError] = useState(false)
   const [ogImgError, setOgImgError] = useState(false)
 
+  const videoSrc = useMemo(() => detectVideoUrl(url), [url])
   const youtubeId = useMemo(() => extractYouTubeId(url), [url])
   const mapCoords = useMemo(() => extractMapCoords(url), [url])
   const isTweet = useMemo(() => isXTweetUrl(url), [url])
@@ -97,6 +106,19 @@ export function LinkPreview({ url }: LinkPreviewProps) {
 
   const socialPlatform = useMemo(() => detectSocial(domain), [domain])
   const meta = useLinkMeta(url)
+
+  if (videoSrc) {
+    return (
+      <div className="mt-3 overflow-hidden rounded-lg border border-quiet-border bg-black">
+        <video
+          src={videoSrc}
+          controls
+          className="w-full max-h-96"
+          preload="metadata"
+        />
+      </div>
+    )
+  }
 
   if (youtubeId) {
     return <YouTubeEmbed videoId={youtubeId} />
@@ -126,7 +148,7 @@ export function LinkPreview({ url }: LinkPreviewProps) {
     return <GoogleMapsLinkCard url={url} />
   }
 
-  const isImage = (IMAGE_RE.test(url) || IMAGE_HOSTS.includes(domain)) && !imgError
+  const isImage = !videoSrc && (IMAGE_RE.test(url) || IMAGE_HOSTS.includes(domain)) && !imgError
   const displayDomain = domain.replace(/^www\./, "")
   const truncatedUrl =
     url.length > 60 ? url.slice(0, 57) + "..." : url

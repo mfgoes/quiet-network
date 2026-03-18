@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react"
-import { getTagDef } from "@/types"
 import { usePosts, useCircleTags } from "@/lib/hooks"
 import { PostComposer } from "@/components/PostComposer"
 import { PostCard } from "@/components/PostCard"
@@ -46,17 +45,7 @@ export function CircleFeed({
     await updatePost(postId, content, tags)
   }
 
-  // If circle has defined tags, show all of them; otherwise fall back to tags used in posts
-  const availableTags = useMemo(() => {
-    if (circleTags.length > 0) return circleTags.map(t => t.id)
-    const tagSet = new Set<string>()
-    for (const post of posts) {
-      for (const tag of post.tags || []) {
-        tagSet.add(tag)
-      }
-    }
-    return Array.from(tagSet)
-  }, [circleTags, posts])
+  const availableTags = useMemo(() => circleTags.map(t => t.id), [circleTags])
 
   const filteredPosts = useMemo(() => {
     if (!activeTag) return posts
@@ -90,8 +79,8 @@ export function CircleFeed({
               </button>
               {availableTags.map((tagId) => {
                 const ct = circleTags.find(t => t.id === tagId)
-                const tag = ct ? { id: ct.id, label: `#${ct.name}`, color: ct.color } : getTagDef(tagId)
-                if (!tag) return null
+                if (!ct) return null
+                const tag = { id: ct.id, label: `#${ct.name}`, color: ct.color }
                 const isActive = activeTag === tagId
                 return (
                   <button

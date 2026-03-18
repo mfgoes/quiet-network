@@ -51,7 +51,8 @@
       "Bash(node:*)",
       "Bash(./node_modules/.bin/tsc:*)",
       "Bash(export:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(chmod:*)"
     ]
   }
 }

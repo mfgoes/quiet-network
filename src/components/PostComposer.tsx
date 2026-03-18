@@ -6,12 +6,16 @@ import Picker from "@emoji-mart/react"
 import imageCompression from "browser-image-compression"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
-import { DURATION_OPTIONS, POST_SPARKS, TAGS } from "@/types"
+import { DURATION_OPTIONS, POST_SPARKS } from "@/types"
 import type { CircleTag } from "@/types"
 import { supabase } from "@/lib/supabase"
 
+const VIDEO_RE = /\.(mp4|webm|mov|ogg)(\?.*)?$/i
+
 /** Returns true for URLs that will render as rich embeds. */
 function isEmbedableUrl(url: string): boolean {
+  if (VIDEO_RE.test(url)) return true
+  if (/imgur\.com/.test(url) && url.endsWith(".gifv")) return true
   try {
     const u = new URL(url)
     const host = u.hostname.replace(/^www\./, "")
@@ -87,10 +91,7 @@ function wrapSelection(
 }
 
 export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostComposerProps) {
-  // Use circle-specific tags when available, otherwise fall back to universal tags
-  const activeTags = circleTags && circleTags.length > 0
-    ? circleTags.map(t => ({ id: t.id, label: `#${t.name}`, color: t.color }))
-    : TAGS
+  const activeTags = (circleTags ?? []).map(t => ({ id: t.id, label: `#${t.name}`, color: t.color }))
   const [text, setText] = useState("")
   const [isActive, setIsActive] = useState(false)
   const [durationIndex, setDurationIndex] = useState(() => defaultPermanent ? DURATION_OPTIONS.length - 1 : 0)
@@ -685,18 +686,20 @@ export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostCom
         </div>
 
         <div className="mt-4 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setShowTags(!showTags)}
-            className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${
-              showTags || selectedTags.length > 0
-                ? "text-quiet-slate bg-quiet-border/50"
-                : "text-quiet-muted hover:text-quiet-slate hover:bg-quiet-border/50"
-            }`}
-          >
-            <Tag className="h-3.5 w-3.5" />
-            Tags
-          </button>
+          {activeTags.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowTags(!showTags)}
+              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${
+                showTags || selectedTags.length > 0
+                  ? "text-quiet-slate bg-quiet-border/50"
+                  : "text-quiet-muted hover:text-quiet-slate hover:bg-quiet-border/50"
+              }`}
+            >
+              <Tag className="h-3.5 w-3.5" />
+              Tags
+            </button>
+          )}
           <Button
             onClick={handleSubmit}
             disabled={(!text.trim() && !selectedImage) || submitting}

@@ -3,7 +3,7 @@ import { circleColor, circleInitial } from "@/types"
 interface CircleIconProps {
   name: string
   avatarUrl?: string | null
-  size?: "xs" | "sm" | "md" | "lg"
+  size?: "xs" | "sm" | "md" | "lg" | "xl"
   className?: string
 }
 
@@ -12,6 +12,7 @@ const sizeClasses = {
   sm: "h-6 w-6 text-xs",
   md: "h-8 w-8 text-sm",
   lg: "h-10 w-10 text-base",
+  xl: "h-12 w-12 text-xl",
 }
 
 export function CircleIcon({ name, avatarUrl, size = "md", className = "" }: CircleIconProps) {

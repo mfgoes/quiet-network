@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, usePa
 import { HelmetProvider } from "react-helmet-async"
 import { ArrowLeft } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-import { useAuth, useProfile, useCircles, useAllCircles, usePublicProfile, useUserPosts, useAdminCircles, useNotifications } from "@/lib/hooks"
+import { useAuth, useProfile, useCircles, useAllCircles, usePublicProfile, useUserPosts, useAdminCircles, useNotifications, usePublicUserCircles, useUnreadDMCount } from "@/lib/hooks"
 import { AuthForm } from "@/components/AuthForm"
 import { ProfileSetup } from "@/components/ProfileSetup"
 import { ProfilePage } from "@/components/ProfilePage"
@@ -23,6 +23,8 @@ import { ExplorePage } from "@/components/ExplorePage"
 import { JoinBanner } from "@/components/JoinBanner"
 import { PublicSidebar } from "@/components/PublicSidebar"
 import { PublicHomeFeed, PublicExplorePage } from "@/components/PublicHomeFeed"
+import { DMProvider } from "@/components/DMContext"
+import { DMPanel } from "@/components/DMPanel"
 import { Button } from "@/components/ui/button"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { Circle, CircleRole, Profile as ProfileType } from "@/types"
@@ -61,6 +63,7 @@ function AppRoutes() {
   const { allCircles, loading: allCirclesLoading, refetch: refetchAllCircles } = useAllCircles()
   const { adminCircles, refetch: refetchAdminCircles } = useAdminCircles(user?.id)
   const { unreadCount } = useNotifications(user?.id)
+  const unreadDmCount = useUnreadDMCount(user?.id)
   const navigate = useNavigate()
   const location = useLocation()
   const [loadingStuck, setLoadingStuck] = useState(false)
@@ -201,7 +204,8 @@ function AppRoutes() {
   }
 
   return (
-    <AppLayout profile={profile} circles={circles} adminCircles={adminCircles} unreadCount={unreadCount}>
+    <DMProvider userId={user.id}>
+    <AppLayout profile={profile} userId={user.id} circles={circles} adminCircles={adminCircles} unreadCount={unreadCount} unreadDmCount={unreadDmCount}>
       <Routes>
         <Route
           path="/"
@@ -246,6 +250,8 @@ function AppRoutes() {
           element={
             <ProfilePage
               profile={profile}
+              userId={user.id}
+              circles={circles}
               defaultEditing={location.search.includes("edit=1")}
               onSave={async (updates) => {
                 const { error } = await updateProfile(updates)
@@ -273,7 +279,7 @@ function AppRoutes() {
             />
           }
         />
-        <Route path="/user/:username" element={<PublicProfileRoute />} />
+        <Route path="/user/:username" element={<PublicProfileRoute currentUserId={user.id} />} />
         <Route
           path="/p/:postId"
           element={
@@ -328,8 +334,10 @@ function AppRoutes() {
           }
         />
       </Routes>
-      <BottomNav avatar={profile.avatar_emoji} unreadCount={unreadCount} />
+      <BottomNav avatar={profile.avatar_emoji} unreadCount={unreadCount} unreadDmCount={unreadDmCount} />
     </AppLayout>
+    <DMPanel />
+    </DMProvider>
   )
 }
 
@@ -349,7 +357,7 @@ function PublicLayout({
       <PublicSidebar circles={circles} onSignIn={onSignIn} />
       <div className="md:ml-60 lg:ml-64">
         <JoinBanner onJoin={onSignIn} />
-        <main className="mx-auto max-w-3xl px-4 pb-20 pt-6 md:pb-8">
+        <main className="mx-auto max-w-5xl px-4 pb-20 pt-6 md:pb-8">
           {children}
         </main>
       </div>
@@ -361,21 +369,25 @@ function PublicLayout({
 
 function AppLayout({
   profile,
+  userId,
   circles,
   adminCircles = [],
   unreadCount = 0,
+  unreadDmCount = 0,
   children,
 }: {
   profile: ProfileType
+  userId: string
   circles: Circle[]
   adminCircles?: (Circle & { role: CircleRole })[]
   unreadCount?: number
+  unreadDmCount?: number
   children: React.ReactNode
 }) {
   return (
     <div className="min-h-screen bg-quiet-offwhite">
       <MobileMenu profile={profile} circles={circles} adminCircles={adminCircles} />
-      <Sidebar profile={profile} circles={circles} adminCircles={adminCircles} unreadCount={unreadCount} />
+      <Sidebar profile={profile} userId={userId} circles={circles} adminCircles={adminCircles} unreadCount={unreadCount} unreadDmCount={unreadDmCount} />
       <div className="md:ml-60 lg:ml-64">
         <main className="mx-auto max-w-3xl px-4 pb-20 pt-14 md:pb-8 md:pt-8">
           {children}
@@ -387,12 +399,13 @@ function AppLayout({
 
 // ─── Public profile route ────────────────────────────
 
-function PublicProfileRoute() {
+function PublicProfileRoute({ currentUserId }: { currentUserId?: string }) {
   const { username } = useParams<{ username: string }>()
   const { profile, loading } = usePublicProfile(username)
   const { posts, loading: postsLoading } = useUserPosts(
     profile?.posts_public !== false ? profile?.id : undefined
   )
+  const { circles } = usePublicUserCircles(profile?.id)
   const navigate = useNavigate()
 
   if (loading) {
@@ -410,7 +423,7 @@ function PublicProfileRoute() {
     )
   }
 
-  return <PublicProfilePage profile={profile} posts={posts} postsLoading={postsLoading} />
+  return <PublicProfilePage profile={profile} currentUserId={currentUserId} circles={circles} posts={posts} postsLoading={postsLoading} />
 }
 
 export default App

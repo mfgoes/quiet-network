@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { Sparkles, Trash2, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CircleIcon } from "@/components/CircleIcon"
-import { BANNER_COLORS, getBannerBg, slugify } from "@/types"
+import { BANNER_COLORS, getBannerBg, getBannerGradient, isBannerDark, slugify } from "@/types"
 import type { Circle } from "@/types"
 
 const COUNTRIES = [
@@ -225,10 +225,10 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
             <button
               key={c.id}
               onClick={() => setBannerColor(bannerColor === c.id ? "" : c.id)}
-              className={`h-8 w-8 rounded-full transition-all ${
+              className={`h-7 w-7 rounded-full transition-all ${
                 bannerColor === c.id
-                  ? "ring-2 ring-quiet-slate ring-offset-2"
-                  : "ring-1 ring-quiet-border hover:ring-quiet-accent"
+                  ? "ring-2 ring-quiet-slate ring-offset-2 scale-110"
+                  : "ring-1 ring-quiet-border hover:ring-quiet-accent hover:scale-105"
               }`}
               style={{ backgroundColor: c.bg }}
               title={c.id}
@@ -243,11 +243,39 @@ export function SettingsTab({ circle, onSave, onUploadAvatar, onDelete }: Settin
             </button>
           )}
         </div>
-        {/* Preview */}
+        {/* Card preview */}
         <div
-          className="mt-2 h-12 rounded-md transition-colors"
-          style={{ backgroundColor: getBannerBg(bannerColor || null, circle.name) }}
-        />
+          className="mt-3 rounded-xl border overflow-hidden transition-all"
+          style={{ borderColor: `${getBannerBg(bannerColor || null, circle.name)}88` }}
+        >
+          <div
+            className="p-3.5 pb-3"
+            style={{ background: getBannerGradient(bannerColor || null, circle.name) }}
+          >
+            <div className="flex items-start gap-3">
+              <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="xl" />
+              <div>
+                <div
+                  className="font-semibold text-[0.82rem] text-quiet-slate"
+                  style={isBannerDark(bannerColor || null) ? { color: "#f8fafc" } : undefined}
+                >
+                  {circle.name}
+                </div>
+                {(circle.description || circle.about) && (
+                  <div
+                    className="text-[0.72rem] mt-0.5 text-quiet-muted"
+                    style={isBannerDark(bannerColor || null) ? { color: "#cbd5e1" } : undefined}
+                  >
+                    {(circle.description || circle.about || "").substring(0, 60)}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="bg-white px-3.5 py-2 border-t border-quiet-border/60">
+            <span className="text-[0.7rem] font-semibold tracking-wide text-quiet-accent">View →</span>
+          </div>
+        </div>
       </div>
 
       <div>

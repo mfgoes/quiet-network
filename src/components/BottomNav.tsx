@@ -1,25 +1,30 @@
-import { Home, Compass, Bell } from "lucide-react"
+import { Home, Compass, Bell, MessageSquare } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { avatarUrl } from "@/types"
+import { useDM } from "@/components/DMContext"
 
 interface BottomNavProps {
   avatar: string
   unreadCount?: number
+  unreadDmCount?: number
 }
 
-export function BottomNav({ avatar, unreadCount = 0 }: BottomNavProps) {
+export function BottomNav({ avatar, unreadCount = 0, unreadDmCount = 0 }: BottomNavProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const path = location.pathname
+  const { openPanel } = useDM()
 
   const isHome = path === "/" || (
     path !== "/explore" &&
     path !== "/notifications" &&
     path !== "/profile" &&
     path !== "/about" &&
-    !path.startsWith("/user/")
+    !path.startsWith("/user/") &&
+    !path.startsWith("/messages")
   )
   const isExplore       = path === "/explore"
+  const isMessages      = path.startsWith("/messages")
   const isNotifications = path === "/notifications"
   const isProfile       = path === "/profile"
 
@@ -42,6 +47,22 @@ export function BottomNav({ avatar, unreadCount = 0 }: BottomNavProps) {
         >
           <Compass className="h-5 w-5" />
           <span>Explore</span>
+        </button>
+
+        {/* Messages */}
+        <button
+          onClick={() => openPanel()}
+          className={`relative flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${isMessages ? "text-quiet-slate" : "text-quiet-muted"}`}
+        >
+          <span className="relative">
+            <MessageSquare className="h-5 w-5" />
+            {unreadDmCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-quiet-accent text-white text-[9px] font-bold leading-none">
+                {unreadDmCount > 9 ? "·" : unreadDmCount}
+              </span>
+            )}
+          </span>
+          <span>Messages</span>
         </button>
 
         {/* Notifications */}

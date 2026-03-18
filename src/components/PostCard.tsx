@@ -11,7 +11,7 @@ import { parseMarkdown, extractMarkdownUrls, extractLeadingHeader } from "@/lib/
 import { CircleIcon } from "@/components/CircleIcon"
 import { ReplySection } from "@/components/ReplySection"
 import type { Post } from "@/types"
-import { avatarUrl, getTagDef, TAGS } from "@/types"
+import { avatarUrl } from "@/types"
 import type { CircleTag } from "@/types"
 
 interface PostCardProps {
@@ -228,15 +228,12 @@ function ConfirmButton({ onConfirm, label, className, children, onOpenChange }: 
 }
 
 export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDelete, onEdit, onMakePermanent, circleTags }: PostCardProps) {
-  // Resolve a tag by ID: prefer circle-specific tags, fall back to universal
   const resolveTag = (tagId: string) => {
     const ct = circleTags?.find(t => t.id === tagId)
     if (ct) return { id: ct.id, label: `#${ct.name}`, color: ct.color }
-    return getTagDef(tagId)
+    return undefined
   }
-  const availableTagList = circleTags && circleTags.length > 0
-    ? circleTags.map(t => ({ id: t.id, label: `#${t.name}`, color: t.color }))
-    : TAGS
+  const availableTagList = (circleTags ?? []).map(t => ({ id: t.id, label: `#${t.name}`, color: t.color }))
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
   const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
   const bgClass = useMemo(() => getAgeTint(post), [post])

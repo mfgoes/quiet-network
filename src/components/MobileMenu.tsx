@@ -1,8 +1,9 @@
 import { useState } from "react"
-import { Menu, X, Home, Compass, User, Info, Shield, ChevronDown } from "lucide-react"
+import { Menu, X, Home, Compass, User, Info, Shield, ChevronDown, MessageSquare } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { avatarUrl } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
+import { useDM } from "@/components/DMContext"
 import type { Circle, CircleRole, Profile } from "@/types"
 
 const INITIAL_SHOW = 6
@@ -22,6 +23,7 @@ export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuPr
   const navigate = useNavigate()
   const location = useLocation()
   const path = location.pathname
+  const { openPanel } = useDM()
 
   const go = (to: string) => {
     navigate(to)
@@ -56,11 +58,12 @@ export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuPr
     }
   }
 
-  const isHome = path === "/" || (path !== "/explore" && path !== "/profile" && path !== "/about" && !path.startsWith("/user/") && !path.startsWith("/admin/"))
+  const isHome = path === "/" || (path !== "/explore" && path !== "/profile" && path !== "/about" && !path.startsWith("/user/") && !path.startsWith("/admin/") && !path.startsWith("/messages"))
 
   const navItems = [
     { label: "Home", path: "/", icon: Home, active: isHome },
     { label: "Explore", path: "/explore", icon: Compass, active: path === "/explore" },
+    { label: "Messages", path: "", icon: MessageSquare, active: false },
     { label: "Profile", path: "/profile", icon: User, active: path === "/profile" },
     { label: "About", path: "/about", icon: Info, active: path === "/about" },
   ]
@@ -120,7 +123,7 @@ export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuPr
             {navItems.map((item) => (
               <button
                 key={item.path}
-                onClick={() => go(item.path)}
+                onClick={() => item.label === "Messages" ? (openPanel(), setOpen(false)) : go(item.path)}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                   item.active
                     ? "bg-quiet-aged text-quiet-slate font-medium"

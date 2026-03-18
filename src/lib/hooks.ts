@@ -309,6 +309,7 @@ export function useCircles(userId: string | undefined) {
 // ─── Circle members ─────────────────────────────────
 
 export interface CircleMember {
+  user_id: string
   display_name: string
   avatar_emoji: string
   username: string
@@ -328,13 +329,17 @@ export function useCircleMembers(circleId: string | undefined) {
 
     supabase
       .from("circle_members")
-      .select("profiles(display_name, avatar_emoji, username, is_bot)")
+      .select("user_id, profiles(display_name, avatar_emoji, username, is_bot)")
       .eq("circle_id", circleId)
       .then(({ data, error }) => {
         if (!error && data) {
-          const mapped = data
-            .map((row) => (row as Record<string, unknown>).profiles as CircleMember)
-            .filter(Boolean)
+          const mapped = (data as Array<{ user_id: string; profiles: unknown }>)
+            .map((row) => {
+              const p = row.profiles as Omit<CircleMember, "user_id"> | null
+              if (!p) return null
+              return { user_id: row.user_id, ...p } as CircleMember
+            })
+            .filter(Boolean) as CircleMember[]
           setMembers(mapped)
           setCount(mapped.length)
         }
@@ -1752,4 +1757,408 @@ export function useCircleTags(circleId: string | undefined) {
   }, [])
 
   return { tags, loading, createTag, deleteTag }
+}
+
+// ─── Favorites ───────────────────────────────────────
+
+const FAVORITES_EVENT = "qn:favorites-changed"
+
+/**
+ * Reads/writes favorited circle IDs from localStorage.
+ * Dispatches a custom event so all mounted instances stay in sync within the same tab.
+ */
+export function useFavorites(userId: string | undefined) {
+  const key = userId ? `favorites_${userId}` : null
+
+  const [favoritedCircleIds, setFavoritedCircleIds] = useState<string[]>(() => {
+    if (!key) return []
+    try { return JSON.parse(localStorage.getItem(key) ?? "[]") } catch { return [] }
+  })
+
+  // Keep in sync when another component toggles
+  useEffect(() => {
+    const handler = () => {
+      if (!key) return
+      try { setFavoritedCircleIds(JSON.parse(localStorage.getItem(key) ?? "[]")) } catch {}
+    }
+    window.addEventListener(FAVORITES_EVENT, handler)
+    return () => window.removeEventListener(FAVORITES_EVENT, handler)
+  }, [key])
+
+  const toggleFavorite = useCallback((circleId: string) => {
+    if (!key) return
+    setFavoritedCircleIds(prev => {
+      const next = prev.includes(circleId) ? prev.filter(id => id !== circleId) : [...prev, circleId]
+      localStorage.setItem(key, JSON.stringify(next))
+      window.dispatchEvent(new CustomEvent(FAVORITES_EVENT))
+      return next
+    })
+  }, [key])
+
+  return { favoritedCircleIds, toggleFavorite }
+}
+
+// ─── Circle member counts (batch) ────────────────────
+
+/** Returns a map of circleId → member count for the given circle IDs. */
+export function useCircleMemberCounts(circleIds: string[]) {
+  const [counts, setCounts] = useState<Record<string, number>>({})
+  const key = circleIds.slice().sort().join(",")
+
+  useEffect(() => {
+    if (circleIds.length === 0) return
+    supabase
+      .from("circle_members")
+      .select("circle_id")
+      .in("circle_id", circleIds)
+      .then(({ data }) => {
+        const map: Record<string, number> = {}
+        for (const row of data ?? []) {
+          map[row.circle_id] = (map[row.circle_id] ?? 0) + 1
+        }
+        setCounts(map)
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+
+  return counts
+}
+
+// ─── Latest post per circle (for explore tooltips) ───
+
+/** Returns a map of circleId → latest post content snippet */
+export function useCircleLatestPosts(circleIds: string[]) {
+  const [posts, setPosts] = useState<Record<string, string>>({})
+  const key = circleIds.slice().sort().join(",")
+
+  useEffect(() => {
+    if (circleIds.length === 0) return
+    supabase
+      .from("posts")
+      .select("circle_id, content")
+      .in("circle_id", circleIds)
+      .eq("is_welcome", false)
+      .or(`is_permanent.eq.true,expires_at.gt.${new Date().toISOString()}`)
+      .order("created_at", { ascending: false })
+      .limit(circleIds.length * 3) // fetch a few per circle, keep first match
+      .then(({ data }) => {
+        const map: Record<string, string> = {}
+        for (const row of data ?? []) {
+          if (!map[row.circle_id]) map[row.circle_id] = row.content
+        }
+        setPosts(map)
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+
+  return posts
+}
+
+// ─── Public user circles ─────────────────────────────
+
+/** Fetches the circles a user belongs to (for public profile pages). */
+export function usePublicUserCircles(userId: string | undefined) {
+  const [circles, setCircles] = useState<import("@/types").Circle[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!userId) return
+    setLoading(true)
+    supabase
+      .from("circle_members")
+      .select("circles(*)")
+      .eq("user_id", userId)
+      .then(({ data }) => {
+        setCircles((data ?? []).map((r: { circles: unknown }) => r.circles as import("@/types").Circle).filter(Boolean))
+        setLoading(false)
+      })
+  }, [userId])
+
+  return { circles, loading }
+}
+
+// ─── Follow hooks ─────────────────────────────────────
+
+export function useFollow(currentUserId: string | undefined, targetUserId: string | undefined) {
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!currentUserId || !targetUserId) { setLoading(false); return }
+    supabase
+      .from("follows")
+      .select("follower_id", { count: "exact", head: true })
+      .eq("follower_id", currentUserId)
+      .eq("following_id", targetUserId)
+      .then(({ count }) => {
+        setIsFollowing((count ?? 0) > 0)
+        setLoading(false)
+      })
+  }, [currentUserId, targetUserId])
+
+  const follow = useCallback(async () => {
+    if (!currentUserId || !targetUserId) return
+    setIsFollowing(true)
+    await supabase.from("follows").insert({ follower_id: currentUserId, following_id: targetUserId })
+  }, [currentUserId, targetUserId])
+
+  const unfollow = useCallback(async () => {
+    if (!currentUserId || !targetUserId) return
+    setIsFollowing(false)
+    await supabase.from("follows").delete().eq("follower_id", currentUserId).eq("following_id", targetUserId)
+  }, [currentUserId, targetUserId])
+
+  return { isFollowing, loading, follow, unfollow }
+}
+
+export function useFollowCounts(userId: string | undefined) {
+  const [followerCount, setFollowerCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
+
+  useEffect(() => {
+    if (!userId) return
+    Promise.all([
+      supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", userId),
+      supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", userId),
+    ]).then(([followers, following]) => {
+      setFollowerCount(followers.count ?? 0)
+      setFollowingCount(following.count ?? 0)
+    })
+  }, [userId])
+
+  return { followerCount, followingCount }
+}
+
+// ─── DM hooks ─────────────────────────────────────────
+
+export interface DMConversation {
+  id: string
+  otherUser: {
+    id: string
+    display_name: string
+    avatar_emoji: string
+    username: string
+  }
+  lastMessage?: {
+    content: string
+    created_at: string
+    sender_id: string
+    read_at: string | null
+  }
+}
+
+export interface DMMessage {
+  id: string
+  conversation_id: string
+  sender_id: string
+  content: string
+  created_at: string
+  read_at: string | null
+}
+
+export function useConversations(userId: string | undefined) {
+  const [conversations, setConversations] = useState<DMConversation[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchConversations = useCallback(async () => {
+    if (!userId) { setLoading(false); return }
+
+    const { data: convs } = await supabase
+      .from("conversations")
+      .select("id, participant_a, participant_b")
+      .or(`participant_a.eq.${userId},participant_b.eq.${userId}`)
+
+    if (!convs?.length) { setConversations([]); setLoading(false); return }
+
+    const otherUserIds = convs.map(c => c.participant_a === userId ? c.participant_b : c.participant_a)
+
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, display_name, avatar_emoji, username")
+      .in("id", otherUserIds)
+
+    const profileMap = Object.fromEntries((profiles ?? []).map((p: { id: string; display_name: string; avatar_emoji: string; username: string }) => [p.id, p]))
+
+    const lastMsgs = await Promise.all(
+      convs.map(c =>
+        supabase
+          .from("messages")
+          .select("content, created_at, sender_id, read_at")
+          .eq("conversation_id", c.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      )
+    )
+
+    const result: DMConversation[] = convs.map((c, i) => {
+      const otherId = c.participant_a === userId ? c.participant_b : c.participant_a
+      return {
+        id: c.id,
+        otherUser: profileMap[otherId] ?? { id: otherId, display_name: "Unknown", avatar_emoji: "bee", username: "" },
+        lastMessage: lastMsgs[i].data ?? undefined,
+      }
+    }).sort((a, b) => {
+      const at = a.lastMessage?.created_at ?? ""
+      const bt = b.lastMessage?.created_at ?? ""
+      return bt.localeCompare(at)
+    })
+
+    setConversations(result)
+    setLoading(false)
+  }, [userId])
+
+  useEffect(() => {
+    fetchConversations()
+    const interval = setInterval(fetchConversations, 30_000)
+    return () => clearInterval(interval)
+  }, [fetchConversations])
+
+  const unreadCount = conversations.filter(c =>
+    c.lastMessage &&
+    c.lastMessage.sender_id !== userId &&
+    c.lastMessage.read_at === null
+  ).length
+
+  return { conversations, loading, unreadCount, refetch: fetchConversations }
+}
+
+export function useMessages(conversationId: string | undefined, userId: string | undefined) {
+  const [messages, setMessages] = useState<DMMessage[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!conversationId) return
+    setLoading(true)
+
+    supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => { setMessages(data ?? []); setLoading(false) })
+
+    const channel = supabase
+      .channel(`messages:${conversationId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
+        (payload) => { setMessages(prev => [...prev, payload.new as DMMessage]) }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [conversationId])
+
+  const sendMessage = useCallback(async (content: string) => {
+    if (!conversationId || !userId || !content.trim()) return
+    const { data } = await supabase
+      .from("messages")
+      .insert({ conversation_id: conversationId, sender_id: userId, content: content.trim() })
+      .select()
+      .single()
+    // Optimistically add the message; realtime will also fire but we deduplicate by id
+    if (data) {
+      setMessages(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data as DMMessage])
+    }
+  }, [conversationId, userId])
+
+  const markRead = useCallback(async () => {
+    if (!conversationId || !userId) return
+    await supabase
+      .from("messages")
+      .update({ read_at: new Date().toISOString() })
+      .eq("conversation_id", conversationId)
+      .neq("sender_id", userId)
+      .is("read_at", null)
+  }, [conversationId, userId])
+
+  return { messages, loading, sendMessage, markRead }
+}
+
+export function useUnreadDMCount(userId: string | undefined) {
+  const [count, setCount] = useState(0)
+
+  const fetch = useCallback(async () => {
+    if (!userId) return
+    const { data: convs } = await supabase
+      .from("conversations")
+      .select("id")
+      .or(`participant_a.eq.${userId},participant_b.eq.${userId}`)
+
+    if (!convs?.length) { setCount(0); return }
+
+    const { count: unread } = await supabase
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .in("conversation_id", convs.map(c => c.id))
+      .neq("sender_id", userId)
+      .is("read_at", null)
+
+    setCount(unread ?? 0)
+  }, [userId])
+
+  useEffect(() => {
+    fetch()
+    const interval = setInterval(fetch, 30_000)
+    return () => clearInterval(interval)
+  }, [fetch])
+
+  return count
+}
+
+// ─── Circle peers for DM suggestions ─────────────────
+
+export interface CirclePeer {
+  id: string
+  display_name: string
+  avatar_emoji: string
+  username: string
+}
+
+export function useCirclePeers(userId: string | undefined) {
+  const [peers, setPeers] = useState<CirclePeer[]>([])
+
+  useEffect(() => {
+    if (!userId) return
+
+    supabase
+      .from("circle_members")
+      .select("circle_id")
+      .eq("user_id", userId)
+      .then(async ({ data: memberships }) => {
+        if (!memberships?.length) return
+
+        const circleIds = memberships.map((m: { circle_id: string }) => m.circle_id)
+
+        // Step 1: get peer user IDs from circle_members (avoids FK join ambiguity)
+        const { data: memberRows } = await supabase
+          .from("circle_members")
+          .select("user_id")
+          .in("circle_id", circleIds)
+          .neq("user_id", userId)
+          .limit(200)
+
+        if (!memberRows?.length) return
+
+        // Deduplicate
+        const peerIds = [...new Set(memberRows.map((m: { user_id: string }) => m.user_id))]
+
+        // Step 2: fetch profiles directly
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, display_name, avatar_emoji, username, is_bot")
+          .in("id", peerIds)
+
+        if (!profiles) return
+
+        const filtered = (profiles as Array<CirclePeer & { is_bot?: boolean }>)
+          .filter(p => !p.is_bot)
+          .slice(0, 12)
+
+        setPeers(filtered)
+      })
+  }, [userId])
+
+  return peers
 }

@@ -62,6 +62,7 @@ export interface Post {
     is_bot?: boolean
   }
   circles?: {
+    id: string
     name: string
     slug: string
     description: string | null
@@ -120,16 +121,26 @@ export interface BannerColorDef {
 }
 
 export const BANNER_COLORS: BannerColorDef[] = [
-  { id: "sky", bg: "#BAE6FD" },
-  { id: "mint", bg: "#A7F3D0" },
+  // Pastels
+  { id: "sky",      bg: "#BAE6FD" },
+  { id: "mint",     bg: "#A7F3D0" },
   { id: "lavender", bg: "#DDD6FE" },
-  { id: "peach", bg: "#FED7AA" },
-  { id: "blush", bg: "#FECDD3" },
-  { id: "lemon", bg: "#FEF08A" },
-  { id: "slate", bg: "#CBD5E1" },
-  { id: "lilac", bg: "#E9D5FF" },
-  { id: "sage", bg: "#BBF7D0" },
-  { id: "coral", bg: "#FECACA" },
+  { id: "peach",    bg: "#FED7AA" },
+  { id: "blush",    bg: "#FECDD3" },
+  { id: "lemon",    bg: "#FEF08A" },
+  { id: "slate",    bg: "#CBD5E1" },
+  { id: "lilac",    bg: "#E9D5FF" },
+  { id: "sage",     bg: "#BBF7D0" },
+  { id: "coral",    bg: "#FECACA" },
+  // Richer tones
+  { id: "ocean",    bg: "#38BDF8" },
+  { id: "emerald",  bg: "#34D399" },
+  { id: "violet",   bg: "#A78BFA" },
+  { id: "amber",    bg: "#FBBF24" },
+  { id: "rose",     bg: "#FB7185" },
+  { id: "night",    bg: "#334155" },
+  { id: "forest",   bg: "#166534" },
+  { id: "indigo",   bg: "#4F46E5" },
 ]
 
 export function getBannerBg(bannerColor: string | null, circleName: string): string {
@@ -138,6 +149,17 @@ export function getBannerBg(bannerColor: string | null, circleName: string): str
     if (preset) return preset.bg
   }
   return circleColor(circleName).bg
+}
+
+/** Returns a CSS gradient string for card backgrounds */
+export function getBannerGradient(bannerColor: string | null, circleName: string): string {
+  const base = getBannerBg(bannerColor, circleName)
+  return `linear-gradient(135deg, ${base}55 0%, ${base}18 100%)`
+}
+
+/** True for dark banner presets that need light text */
+export function isBannerDark(bannerColor: string | null): boolean {
+  return bannerColor === "night" || bannerColor === "forest" || bannerColor === "indigo"
 }
 
 // ─── Admin panel types ──────────────────────────────

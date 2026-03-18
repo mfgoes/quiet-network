@@ -29,6 +29,10 @@ h1, h2 {
   font-family: 'Urbanist', system-ui, sans-serif;
 }
 
+/* Hide scrollbar (for spotlight strip) */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* Fade-in on scroll */
 .fade-in-section {
   opacity: 0;
