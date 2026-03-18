@@ -2,13 +2,15 @@ import { useState, useMemo, useEffect } from "react"
 import { ExternalLink } from "lucide-react"
 import { YouTubeEmbed, extractYouTubeId } from "@/components/YouTubeEmbed"
 import { GoogleMapsEmbed, GoogleMapsLinkCard, extractMapCoords, isGoogleMapsUrl } from "@/components/GoogleMapsEmbed"
-import { XEmbed, isXTweetUrl, BlueskyEmbed, isBlueskyUrl, isRedditPostUrl, RedditEmbed } from "@/components/XEmbed"
+import { XEmbed, isXTweetUrl, BlueskyEmbed, isBlueskyUrl, isBlueskyProfileUrl, BlueskyProfileEmbed, isRedditPostUrl, RedditEmbed } from "@/components/XEmbed"
 
 interface LinkPreviewProps {
   url: string
 }
 
 const IMAGE_RE = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)(\?.*)?$/i
+// Hosts that always serve images even without a file extension
+const IMAGE_HOSTS = ["i.imgur.com", "i.redd.it", "pbs.twimg.com"]
 
 /** Hard-cap a string and strip newlines so it can never blow out a single-line layout. */
 function clip(s: string | null | undefined, max: number): string | null {
@@ -51,12 +53,12 @@ function detectSocial(hostname: string): SocialPlatform | null {
 interface LinkMeta {
   title: string | null
   description: string | null
+  image: string | null
 }
 
-function useLinkMeta(url: string, enabled: boolean): LinkMeta | null {
+function useLinkMeta(url: string): LinkMeta | null {
   const [meta, setMeta] = useState<LinkMeta | null>(null)
   useEffect(() => {
-    if (!enabled) return
     fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`)
       .then((r) => r.json())
       .then((data) => {
@@ -64,22 +66,25 @@ function useLinkMeta(url: string, enabled: boolean): LinkMeta | null {
           setMeta({
             title: data.data.title ?? null,
             description: data.data.description ?? null,
+            image: data.data.image?.url ?? null,
           })
         }
       })
       .catch(() => {})
-  }, [url, enabled])
+  }, [url])
   return meta
 }
 
 export function LinkPreview({ url }: LinkPreviewProps) {
   const [faviconError, setFaviconError] = useState(false)
   const [imgError, setImgError] = useState(false)
+  const [ogImgError, setOgImgError] = useState(false)
 
   const youtubeId = useMemo(() => extractYouTubeId(url), [url])
   const mapCoords = useMemo(() => extractMapCoords(url), [url])
   const isTweet = useMemo(() => isXTweetUrl(url), [url])
   const isBluesky = useMemo(() => isBlueskyUrl(url), [url])
+  const isBlueskyProfile = useMemo(() => isBlueskyProfileUrl(url), [url])
   const isReddit = useMemo(() => isRedditPostUrl(url), [url])
   const isMapsLink = useMemo(() => isGoogleMapsUrl(url), [url])
 
@@ -91,8 +96,7 @@ export function LinkPreview({ url }: LinkPreviewProps) {
   }
 
   const socialPlatform = useMemo(() => detectSocial(domain), [domain])
-  const social = socialPlatform !== null
-  const meta = useLinkMeta(url, social)
+  const meta = useLinkMeta(url)
 
   if (youtubeId) {
     return <YouTubeEmbed videoId={youtubeId} />
@@ -104,6 +108,10 @@ export function LinkPreview({ url }: LinkPreviewProps) {
 
   if (isBluesky) {
     return <BlueskyEmbed url={url} />
+  }
+
+  if (isBlueskyProfile) {
+    return <BlueskyProfileEmbed url={url} />
   }
 
   if (isReddit) {
@@ -118,7 +126,7 @@ export function LinkPreview({ url }: LinkPreviewProps) {
     return <GoogleMapsLinkCard url={url} />
   }
 
-  const isImage = IMAGE_RE.test(url) && !imgError
+  const isImage = (IMAGE_RE.test(url) || IMAGE_HOSTS.includes(domain)) && !imgError
   const displayDomain = domain.replace(/^www\./, "")
   const truncatedUrl =
     url.length > 60 ? url.slice(0, 57) + "..." : url
@@ -148,7 +156,9 @@ export function LinkPreview({ url }: LinkPreviewProps) {
     )
   }
 
-  // Same card for everything — social URLs just get a richer title/description from Microlink
+  const showOgImage = !socialPlatform && meta?.image && !ogImgError
+
+  // Same card for everything — URLs get richer title/description/thumbnail from Microlink
   return (
     <a
       href={url}
@@ -156,7 +166,7 @@ export function LinkPreview({ url }: LinkPreviewProps) {
       rel="noopener noreferrer"
       className="mt-3 flex items-center gap-3 rounded-lg border border-quiet-border bg-quiet-offwhite p-3 transition-colors hover:bg-quiet-border/30"
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-quiet-border/50">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-quiet-border/50 overflow-hidden">
         {socialPlatform ? (
           <span
             className="flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold text-white"
@@ -164,6 +174,13 @@ export function LinkPreview({ url }: LinkPreviewProps) {
           >
             {socialInitials[socialPlatform]}
           </span>
+        ) : showOgImage ? (
+          <img
+            src={meta!.image!}
+            alt=""
+            className="h-10 w-10 object-cover"
+            onError={() => setOgImgError(true)}
+          />
         ) : faviconError ? (
           <ExternalLink className="h-5 w-5 text-quiet-muted" />
         ) : (

@@ -17,9 +17,12 @@ import { MobileMenu } from "@/components/MobileMenu"
 import { Shell } from "@/components/Shell"
 import { AdminPanel } from "@/components/AdminPanel"
 import { HomeFeed } from "@/components/HomeFeed"
-import { CircleFeedRoute } from "@/components/CircleFeedRoute"
+import { CircleFeedRoute, PublicCircleFeedRoute } from "@/components/CircleFeedRoute"
 import { PostDetailRoute } from "@/components/PostDetailRoute"
 import { ExplorePage } from "@/components/ExplorePage"
+import { JoinBanner } from "@/components/JoinBanner"
+import { PublicSidebar } from "@/components/PublicSidebar"
+import { PublicHomeFeed, PublicExplorePage } from "@/components/PublicHomeFeed"
 import { Button } from "@/components/ui/button"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { Circle, CircleRole, Profile as ProfileType } from "@/types"
@@ -94,32 +97,9 @@ function AppRoutes() {
 
   // Not signed in
   if (!user) {
-    // Allow viewing posts without authentication
-    if (location.pathname.match(/^\/p\//) || location.pathname.match(/^\/[^/]+\/p\//)) {
-      return (
-        <Shell>
-          <Routes>
-            <Route
-              path="/p/:postId"
-              element={
-                <PostDetailRoute
-                  onJoinClick={() => navigate("/")}
-                />
-              }
-            />
-            <Route
-              path="/:circleSlug/p/:postId"
-              element={
-                <PostDetailRoute
-                  onJoinClick={() => navigate("/")}
-                />
-              }
-            />
-          </Routes>
-        </Shell>
-      )
-    }
+    const goToLogin = () => navigate("/login")
 
+    // About page — keep its own Shell layout
     if (showAbout || location.pathname === "/about") {
       return (
         <Shell
@@ -128,65 +108,65 @@ function AppRoutes() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => {
-                setShowAbout(false)
-                navigate("/")
-              }}
+              onClick={() => { setShowAbout(false); navigate("/") }}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
           }
         >
-          <AboutPage onJoin={() => {
-            setShowAbout(false)
-            navigate("/")
-          }} />
+          <AboutPage onJoin={() => { setShowAbout(false); navigate("/login") }} />
         </Shell>
       )
     }
 
-    return (
-      <div className="min-h-screen bg-quiet-offwhite">
-        {/* Mobile: stacked */}
-        <div className="md:hidden">
-          <img
-            src="/images/landscape_with_boats.jpg"
-            alt="Quiet neighborhood"
-            className="h-48 w-full object-cover"
-          />
-          <div className="px-6 py-8">
-            <AuthForm onSignIn={signIn} onSignUp={signUp} onMagicLink={signInWithMagicLink} onForgotPassword={resetPassword} />
-            <button
-              onClick={() => setShowAbout(true)}
-              className="mt-8 w-full text-center text-xs text-quiet-muted hover:text-quiet-accent transition-colors"
-            >
-              Learn more about Quiet Network
-            </button>
-          </div>
-        </div>
+    // Login page (and any unrecognised path) — show auth form
+    const isPublicBrowsingPath =
+      location.pathname === "/" ||
+      location.pathname === "/explore" ||
+      location.pathname.match(/^\/p\//) ||
+      location.pathname.match(/^\/[^/]+\/p\//) ||
+      (location.pathname.match(/^\/[^/]+$/) && !location.pathname.startsWith("/login"))
 
-        {/* Desktop: side-by-side */}
-        <div className="hidden md:flex md:min-h-screen">
-          <div className="relative w-1/2">
-            <img
-              src="/images/landscape_with_boats.jpg"
-              alt="Quiet neighborhood"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          </div>
-          <div className="flex w-1/2 items-center justify-center px-12">
-            <div className="w-full max-w-sm">
+    if (!isPublicBrowsingPath) {
+      return (
+        <div className="min-h-screen bg-quiet-offwhite">
+          <div className="md:hidden">
+            <img src="/images/landscape_with_boats.jpg" alt="Quiet neighborhood" className="h-48 w-full object-cover" />
+            <div className="px-6 py-8">
               <AuthForm onSignIn={signIn} onSignUp={signUp} onMagicLink={signInWithMagicLink} onForgotPassword={resetPassword} />
-              <button
-                onClick={() => setShowAbout(true)}
-                className="mt-8 w-full text-center text-xs text-quiet-muted hover:text-quiet-accent transition-colors"
-              >
+              <button onClick={() => setShowAbout(true)} className="mt-8 w-full text-center text-xs text-quiet-muted hover:text-quiet-accent transition-colors">
                 Learn more about Quiet Network
               </button>
             </div>
           </div>
+          <div className="hidden md:flex md:min-h-screen">
+            <div className="relative w-1/2">
+              <img src="/images/landscape_with_boats.jpg" alt="Quiet neighborhood" className="absolute inset-0 h-full w-full object-cover" />
+            </div>
+            <div className="flex w-1/2 items-center justify-center px-12">
+              <div className="w-full max-w-sm">
+                <AuthForm onSignIn={signIn} onSignUp={signUp} onMagicLink={signInWithMagicLink} onForgotPassword={resetPassword} />
+                <button onClick={() => setShowAbout(true)} className="mt-8 w-full text-center text-xs text-quiet-muted hover:text-quiet-accent transition-colors">
+                  Learn more about Quiet Network
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )
+    }
+
+    // Public browsing — sidebar layout with join banner
+    return (
+      <PublicLayout circles={allCircles} onSignIn={goToLogin}>
+        <Routes>
+          <Route path="/" element={<PublicHomeFeed circles={allCircles} />} />
+          <Route path="/explore" element={<PublicExplorePage circles={allCircles} loading={allCirclesLoading} />} />
+          <Route path="/p/:postId" element={<PostDetailRoute />} />
+          <Route path="/:circleSlug/p/:postId" element={<PostDetailRoute />} />
+          <Route path="/:circleSlug" element={<PublicCircleFeedRoute onSignIn={goToLogin} />} />
+        </Routes>
+      </PublicLayout>
     )
   }
 
@@ -350,6 +330,30 @@ function AppRoutes() {
       </Routes>
       <BottomNav avatar={profile.avatar_emoji} unreadCount={unreadCount} />
     </AppLayout>
+  )
+}
+
+// ─── Public layout (unauthenticated, with sidebar) ───
+
+function PublicLayout({
+  circles,
+  onSignIn,
+  children,
+}: {
+  circles: Circle[]
+  onSignIn: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="min-h-screen bg-quiet-offwhite">
+      <PublicSidebar circles={circles} onSignIn={onSignIn} />
+      <div className="md:ml-60 lg:ml-64">
+        <JoinBanner onJoin={onSignIn} />
+        <main className="mx-auto max-w-3xl px-4 pb-20 pt-6 md:pb-8">
+          {children}
+        </main>
+      </div>
+    </div>
   )
 }
 

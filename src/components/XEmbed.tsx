@@ -42,6 +42,14 @@ export function isBlueskyUrl(url: string): boolean {
   return false
 }
 
+export function isBlueskyProfileUrl(url: string): boolean {
+  try {
+    const u = new URL(url)
+    return u.hostname === "bsky.app" && /^\/profile\/[^/]+\/?$/.test(u.pathname)
+  } catch { /* invalid URL */ }
+  return false
+}
+
 function parseBlueskyUrl(url: string): { username: string; rkey: string; canonicalUrl: string } | null {
   try {
     const u = new URL(url)
@@ -68,12 +76,16 @@ function useBlueskyMeta(handle: string | null, rkey: string | null): PostMeta | 
             image = embed.images?.[0]?.thumb ?? null
           } else if (embed.$type === "app.bsky.embed.video#view") {
             image = embed.thumbnail ?? null
+          } else if (embed.$type === "app.bsky.embed.external#view") {
+            image = embed.external?.thumb ?? null
           } else if (embed.$type === "app.bsky.embed.recordWithMedia#view") {
             const media = embed.media
             if (media?.$type === "app.bsky.embed.images#view") {
               image = media.images?.[0]?.thumb ?? null
             } else if (media?.$type === "app.bsky.embed.video#view") {
               image = media.thumbnail ?? null
+            } else if (media?.$type === "app.bsky.embed.external#view") {
+              image = media.external?.thumb ?? null
             }
           }
         }
@@ -168,12 +180,15 @@ export function XEmbed({ url }: { url: string }) {
   const parsed = parseXUrl(url)
   const meta = useSocialPostMeta(parsed?.canonicalUrl ?? null)
   if (!parsed) return null
+  // X/Twitter's API is restricted — Microlink often returns X's promo images
+  // or error-state images instead of actual tweet media, so we strip the image.
+  const safeMeta = meta ? { ...meta, image: null } : null
   return (
     <SocialPostCard
       href={parsed.canonicalUrl}
-      fallbackAuthor={`@${parsed.username}`}
+      fallbackAuthor={`@${parsed.username} on X`}
       logo={<XLogo />}
-      meta={meta}
+      meta={safeMeta}
     />
   )
 }
@@ -189,6 +204,69 @@ export function BlueskyEmbed({ url }: { url: string }) {
       logo={<BlueskyLogo />}
       meta={meta}
     />
+  )
+}
+
+interface BlueskyProfile {
+  avatar: string | null
+  displayName: string | null
+  description: string | null
+}
+
+function useBlueskyProfile(handle: string | null): BlueskyProfile | null {
+  const [profile, setProfile] = useState<BlueskyProfile | null>(null)
+  useEffect(() => {
+    if (!handle) return
+    fetch(`https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(handle)}`)
+      .then(r => r.json())
+      .then(data => {
+        setProfile({
+          avatar: data.avatar ?? null,
+          displayName: data.displayName ?? null,
+          description: data.description ?? null,
+        })
+      })
+      .catch(() => {})
+  }, [handle])
+  return profile
+}
+
+export function BlueskyProfileEmbed({ url }: { url: string }) {
+  let handle: string | null = null
+  try {
+    const u = new URL(url)
+    const match = u.pathname.match(/^\/profile\/([^/]+)/)
+    if (match) handle = match[1]
+  } catch { /* invalid URL */ }
+
+  const profile = useBlueskyProfile(handle)
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-3 flex items-center gap-3 rounded-xl border border-quiet-border bg-quiet-offwhite p-3 transition-colors hover:bg-quiet-border/30"
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full overflow-hidden bg-quiet-border/50">
+        {profile?.avatar
+          ? <img src={profile.avatar} alt="" className="h-10 w-10 object-cover" />
+          : <BlueskyLogo />
+        }
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <BlueskyLogo />
+          <p className="truncate text-sm font-medium text-quiet-slate">
+            {profile?.displayName ?? (handle ? `@${handle}` : url)}
+          </p>
+        </div>
+        {profile?.description && (
+          <p className="truncate text-xs text-quiet-muted">{profile.description}</p>
+        )}
+      </div>
+      <ExternalLink className="h-4 w-4 shrink-0 text-quiet-muted" />
+    </a>
   )
 }
 

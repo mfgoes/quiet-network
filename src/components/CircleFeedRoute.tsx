@@ -137,3 +137,41 @@ export function CircleFeedRoute({
     </>
   )
 }
+
+// ─── Public (unauthenticated) view ───────────────────
+
+export function PublicCircleFeedRoute({ onSignIn }: { onSignIn: () => void }) {
+  const { circleSlug } = useParams<{ circleSlug: string }>()
+  const { circle, loading } = useCircleBySlug(circleSlug)
+  const navigate = useNavigate()
+
+  if (loading) {
+    return <p className="text-center text-sm text-quiet-muted">Loading...</p>
+  }
+
+  if (!circle) {
+    return (
+      <div>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <p className="mt-4 text-center text-sm text-quiet-muted">Circle not found.</p>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <CircleFeed
+        circle={circle}
+        userId=""
+        isMember={false}
+        isAdminOrMod={false}
+        onJoin={async () => { onSignIn() }}
+        onLeave={async () => {}}
+        joining={false}
+        onUpdateCircle={async () => {}}
+      />
+    </>
+  )
+}
