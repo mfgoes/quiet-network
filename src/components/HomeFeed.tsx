@@ -8,7 +8,17 @@ import { PostCard } from "@/components/PostCard.tsx"
 import { CircleIcon } from "@/components/CircleIcon"
 import { Button } from "@/components/ui/button"
 import { extractLeadingHeader } from "@/lib/markdown"
+import { extractYouTubeId } from "@/components/YouTubeEmbed"
 import type { Circle, Post } from "@/types"
+
+function extractYouTubeIdFromContent(content: string): string | null {
+  const urls = content.match(/https?:\/\/[^\s)"'<>]+/g) ?? []
+  for (const url of urls) {
+    const id = extractYouTubeId(url)
+    if (id) return id
+  }
+  return null
+}
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -29,6 +39,10 @@ function SpotlightCard({ post }: { post: Post }) {
   const slug = circle?.slug
   const { header } = useMemo(() => extractLeadingHeader(post.content ?? ""), [post.content])
   const title = header || post.content?.split("\n")[0]?.slice(0, 80) || ""
+  const youtubeId = useMemo(
+    () => !post.image_url ? extractYouTubeIdFromContent(post.content ?? "") : null,
+    [post.image_url, post.content]
+  )
 
   return (
     <article
@@ -38,6 +52,21 @@ function SpotlightCard({ post }: { post: Post }) {
       {post.image_url ? (
         <div className="h-36 overflow-hidden bg-quiet-border/10">
           <img src={post.image_url} alt="" className="h-full w-full object-cover" />
+        </div>
+      ) : youtubeId ? (
+        <div className="h-36 overflow-hidden bg-black relative">
+          <img
+            src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
+            alt="YouTube thumbnail"
+            className="h-full w-full object-cover opacity-90"
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current ml-0.5" aria-hidden="true">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="h-36 flex items-center justify-center px-4 bg-gradient-to-br from-quiet-aged to-quiet-border/40">
@@ -79,11 +108,11 @@ function SpotlightRow({ posts }: { posts: Post[] }) {
   const navigate = useNavigate()
   const cards = useMemo(() => {
     const SLOTS = 8
-    const withImage = posts.filter(p => !!p.image_url)
+    const withVisual = posts.filter(p => !!p.image_url || !!extractYouTubeIdFromContent(p.content ?? ""))
     const byUpvotes = [...posts].sort((a, b) => (b.upvote_count ?? 0) - (a.upvote_count ?? 0))
-    const usedIds = new Set(withImage.slice(0, SLOTS).map(p => p.id))
-    const fillers = byUpvotes.filter(p => !usedIds.has(p.id)).slice(0, Math.max(0, SLOTS - withImage.length))
-    return [...withImage.slice(0, SLOTS), ...fillers].slice(0, SLOTS)
+    const usedIds = new Set(withVisual.slice(0, SLOTS).map(p => p.id))
+    const fillers = byUpvotes.filter(p => !usedIds.has(p.id)).slice(0, Math.max(0, SLOTS - withVisual.length))
+    return [...withVisual.slice(0, SLOTS), ...fillers].slice(0, SLOTS)
   }, [posts])
 
   if (cards.length === 0) return null
