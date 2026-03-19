@@ -932,18 +932,32 @@ export function usePosts(circleId: string | undefined, userId?: string) {
     const now = new Date()
     const expiresAt = isPermanent ? 'infinity' : new Date(now.getTime() + durationSeconds * 1000).toISOString()
 
-    const { error } = await supabase.from("posts").insert({
-      circle_id: circleId,
-      author_id: authorId,
-      content,
-      expires_at: expiresAt,
-      original_duration_seconds: durationSeconds,
-      is_permanent: isPermanent,
-      tags,
-      image_url: imageUrl,
-    })
+    const { data: inserted, error } = await supabase
+      .from("posts")
+      .insert({
+        circle_id: circleId,
+        author_id: authorId,
+        content,
+        expires_at: expiresAt,
+        original_duration_seconds: durationSeconds,
+        is_permanent: isPermanent,
+        tags,
+        image_url: imageUrl,
+      })
+      .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot)")
+      .single()
 
-    console.log("[createPost]", { circleId, authorId, error })
+    if (!error && inserted) {
+      let post: Post
+      try {
+        const [enriched] = await enrichWithUpvotes([inserted])
+        post = enriched
+      } catch {
+        post = inserted as Post
+      }
+      setPosts((prev) => prev.some((p) => p.id === post.id) ? prev : [post, ...prev])
+    }
+
     return error
   }
 

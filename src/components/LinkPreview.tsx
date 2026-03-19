@@ -28,7 +28,7 @@ function clip(s: string | null | undefined, max: number): string | null {
 }
 
 // Social platform detection + branded icons
-type SocialPlatform = "instagram" | "facebook" | "tiktok" | "linkedin"
+type SocialPlatform = "instagram" | "facebook" | "tiktok" | "linkedin" | "itch" | "soundcloud" | "bandcamp" | "github" | "spotify"
 
 const socialMap: Record<string, SocialPlatform> = {
   "instagram.com": "instagram",
@@ -37,6 +37,12 @@ const socialMap: Record<string, SocialPlatform> = {
   "fb.watch": "facebook",
   "tiktok.com": "tiktok",
   "linkedin.com": "linkedin",
+  "itch.io": "itch",
+  "soundcloud.com": "soundcloud",
+  "bandcamp.com": "bandcamp",
+  "github.com": "github",
+  "open.spotify.com": "spotify",
+  "spotify.com": "spotify",
 }
 
 const socialColors: Record<SocialPlatform, string> = {
@@ -44,6 +50,11 @@ const socialColors: Record<SocialPlatform, string> = {
   facebook: "#1877F2",
   tiktok: "#010101",
   linkedin: "#0A66C2",
+  itch: "#FA5C5C",
+  soundcloud: "#FF5500",
+  bandcamp: "#1DA0C3",
+  github: "#24292e",
+  spotify: "#1DB954",
 }
 
 const socialInitials: Record<SocialPlatform, string> = {
@@ -51,10 +62,19 @@ const socialInitials: Record<SocialPlatform, string> = {
   facebook: "fb",
   tiktok: "TT",
   linkedin: "in",
+  itch: "i",
+  soundcloud: "SC",
+  bandcamp: "BC",
+  github: "gh",
+  spotify: "S",
 }
 
 function detectSocial(hostname: string): SocialPlatform | null {
-  return socialMap[hostname.replace(/^www\./, "")] ?? null
+  const host = hostname.replace(/^www\./, "")
+  if (socialMap[host]) return socialMap[host]
+  // Match subdomains: mischa.itch.io → itch.io, artist.bandcamp.com → bandcamp.com
+  const apex = host.split(".").slice(-2).join(".")
+  return socialMap[apex] ?? null
 }
 
 

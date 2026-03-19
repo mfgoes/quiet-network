@@ -1,17 +1,16 @@
 import { useMemo, useRef, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowUp, ChevronRight, Clock, MessageSquare, PenLine, X } from "lucide-react"
-import { useAllMemberPosts, usePosts, useFavorites } from "@/lib/hooks"
+import { useAllMemberPosts, usePosts, useFavorites, useAllCircles } from "@/lib/hooks"
 import { sortPostsWithFreshness } from "@/lib/feedScoring"
 import { PostComposer } from "@/components/PostComposer"
-import { PostCard } from "@/components/PostCard.tsx" // Added .tsx extension
+import { PostCard } from "@/components/PostCard.tsx"
 import { CircleIcon } from "@/components/CircleIcon"
-import { Shell } from "@/components/Shell"
 import { Button } from "@/components/ui/button"
 import { extractLeadingHeader } from "@/lib/markdown"
 import type { Circle, Post } from "@/types"
 
-// ─── Spotlight row ────────────────────────────────────────────────────────────
+// ─── Shared helpers ────────────────────────────────────────────────────────────
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -21,6 +20,8 @@ function timeAgo(dateStr: string): string {
   if (h < 24) return `${h}h`
   return `${Math.floor(h / 24)}d`
 }
+
+// ─── Spotlight / Trending row ──────────────────────────────────────────────────
 
 function SpotlightCard({ post }: { post: Post }) {
   const navigate = useNavigate()
@@ -32,14 +33,14 @@ function SpotlightCard({ post }: { post: Post }) {
   return (
     <article
       onClick={() => navigate(slug ? `/${slug}/p/${post.id}` : `/p/${post.id}`)}
-      className="relative cursor-pointer flex-shrink-0 w-52 rounded-xl overflow-hidden border border-quiet-border bg-white transition-shadow hover:shadow-md"
+      className="relative cursor-pointer flex-shrink-0 w-64 rounded-xl overflow-hidden border border-quiet-border bg-white transition-shadow hover:shadow-md"
     >
       {post.image_url ? (
-        <div className="h-32 overflow-hidden bg-quiet-border/10">
+        <div className="h-36 overflow-hidden bg-quiet-border/10">
           <img src={post.image_url} alt="" className="h-full w-full object-cover" />
         </div>
       ) : (
-        <div className="h-32 flex items-center justify-center px-3 bg-gradient-to-br from-quiet-aged to-quiet-border/40">
+        <div className="h-36 flex items-center justify-center px-4 bg-gradient-to-br from-quiet-aged to-quiet-border/40">
           <p className="text-xs font-medium text-quiet-slate text-center line-clamp-4 leading-relaxed">
             {title}
           </p>
@@ -77,7 +78,7 @@ function SpotlightCard({ post }: { post: Post }) {
 function SpotlightRow({ posts }: { posts: Post[] }) {
   const navigate = useNavigate()
   const cards = useMemo(() => {
-    const SLOTS = 6
+    const SLOTS = 8
     const withImage = posts.filter(p => !!p.image_url)
     const byUpvotes = [...posts].sort((a, b) => (b.upvote_count ?? 0) - (a.upvote_count ?? 0))
     const usedIds = new Set(withImage.slice(0, SLOTS).map(p => p.id))
@@ -88,8 +89,8 @@ function SpotlightRow({ posts }: { posts: Post[] }) {
   if (cards.length === 0) return null
 
   return (
-    <div className="mb-6">
-      <div className="mb-2 flex items-center justify-between">
+    <div className="mb-8">
+      <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-quiet-slate uppercase tracking-wide">Trending</h2>
         <button
           onClick={() => navigate("/explore")}
@@ -98,7 +99,7 @@ function SpotlightRow({ posts }: { posts: Post[] }) {
           Explore circles <ChevronRight className="h-3 w-3" />
         </button>
       </div>
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
         {cards.map(post => (
           <SpotlightCard key={post.id} post={post} />
         ))}
@@ -107,13 +108,59 @@ function SpotlightRow({ posts }: { posts: Post[] }) {
   )
 }
 
-interface HomeFeedProps {
-  circles: Circle[]
-  userId: string
-  circleRoles?: Record<string, string>
+// ─── Popular Communities panel ─────────────────────────────────────────────────
+
+function PopularCommunitiesPanel({ allCircles, joinedIds }: { allCircles: Circle[]; joinedIds: Set<string> }) {
+  const navigate = useNavigate()
+
+  // Show circles the user hasn't joined first, then joined ones as fallback, up to 6
+  const displayed = useMemo(() => {
+    const unjoined = allCircles.filter(c => !joinedIds.has(c.id))
+    const joined = allCircles.filter(c => joinedIds.has(c.id))
+    return [...unjoined, ...joined].slice(0, 6)
+  }, [allCircles, joinedIds])
+
+  if (displayed.length === 0) return null
+
+  return (
+    <div className="rounded-xl border border-quiet-border bg-white overflow-hidden">
+      <div className="px-4 pt-4 pb-2">
+        <h3 className="text-xs font-semibold text-quiet-muted uppercase tracking-wide">Popular Communities</h3>
+      </div>
+      <ul>
+        {displayed.map(circle => (
+          <li key={circle.id}>
+            <button
+              onClick={() => navigate(`/${circle.slug}`)}
+              className="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-quiet-aged/50 transition-colors text-left"
+            >
+              <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="md" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-quiet-slate truncate">{circle.name}</p>
+                {(circle.about || circle.description) && (
+                  <p className="text-xs text-quiet-muted truncate">
+                    {circle.about || circle.description}
+                  </p>
+                )}
+              </div>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="px-4 pb-4 pt-2">
+        <button
+          onClick={() => navigate("/explore")}
+          className="w-full rounded-lg border border-quiet-border py-2 text-xs font-medium text-quiet-muted hover:bg-quiet-aged/50 transition-colors"
+        >
+          See all communities
+        </button>
+      </div>
+    </div>
+  )
 }
 
-/* ─── Inline composer with circle binding ──────────── */
+// ─── Inline composer ───────────────────────────────────────────────────────────
+
 function HomeComposer({
   circle,
   userId,
@@ -153,17 +200,27 @@ function HomeComposer({
   )
 }
 
+// ─── Main HomeFeed ─────────────────────────────────────────────────────────────
+
+interface HomeFeedProps {
+  circles: Circle[]
+  userId: string
+  circleRoles?: Record<string, string>
+}
+
 export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
   const navigate = useNavigate()
   const circleIds = useMemo(() => circles.map((c) => c.id), [circles])
   const { favoritedCircleIds } = useFavorites(userId)
   const sessionSeed = useRef<number>(Math.random())
+  const { allCircles } = useAllCircles()
 
   const { posts, loading, toggleUpvote, updatePost, deletePost, makePermanent } = useAllMemberPosts(circleIds, userId)
   const [composerState, setComposerState] = useState<"closed" | "picking" | Circle>("closed")
   const pickerRef = useRef<HTMLDivElement>(null)
 
-  // Helper to check if user is admin/mod for a given circle
+  const joinedIds = useMemo(() => new Set(circles.map(c => c.id)), [circles])
+
   const isAdminOrModForCircle = (circleId: string) => {
     const circle = circles.find((c) => c.id === circleId)
     return circle ? ["admin", "moderator"].includes(circleRoles[circleId] ?? "") || circle.created_by === userId : false
@@ -177,7 +234,6 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
     return sortPostsWithFreshness(posts, sessionSeed.current, favoritedCircleIds)
   }, [posts, favoritedCircleIds])
 
-  // Close picker on outside click
   useEffect(() => {
     if (composerState !== "picking") return
     const handler = (e: MouseEvent) => {
@@ -190,10 +246,10 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
   }, [composerState])
 
   return (
-    <Shell>
+    <div className="pt-2 md:pt-0">
       {/* Composer overlay */}
       {composerState !== "closed" && composerState !== "picking" && (
-        <div className="mb-4">
+        <div className="mb-6">
           <HomeComposer
             circle={composerState}
             userId={userId}
@@ -202,57 +258,54 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
         </div>
       )}
 
-
-
+      {/* Trending row — full width */}
       {!loading && filteredPosts.length > 0 && (
         <SpotlightRow posts={filteredPosts} />
       )}
 
-      {loading ? (
-        <p className="mt-6 text-center text-sm text-quiet-muted">
-          Loading posts...
-        </p>
-      ) : circles.length === 0 ? (
-        <div className="mt-12 text-center">
-          <p className="text-sm text-quiet-muted">
-            You haven't joined any circles yet.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-3"
-            onClick={() => navigate("/explore")}
-          >
-            Explore circles
-          </Button>
-        </div>
-      ) : (
-        <div className="mt-6 space-y-3">
-          {filteredPosts.map((post) => {
-            const isAdminOrMod = isAdminOrModForCircle(post.circle_id)
-            return (
-              <PostCard
-                key={post.id}
-                post={post}
-                userId={userId}
-                isMember={true}
-                isAdminOrMod={isAdminOrMod}
-                onUpvote={toggleUpvote}
-                onDelete={deletePost}
-                onEdit={handleUpdatePost}
-                onMakePermanent={makePermanent}
-              />
-            )
-          })}
-          {filteredPosts.length === 0 && (
-            <p className="text-center text-sm text-quiet-muted">
-              No posts yet. Check back later!
-            </p>
+      {/* Two-column layout: posts + sidebar */}
+      <div className="flex gap-6 items-start">
+        {/* Posts feed */}
+        <div className="flex-1 min-w-0">
+          <h2 className="mb-3 text-sm font-semibold text-quiet-slate uppercase tracking-wide">Recent posts</h2>
+          {loading ? (
+            <p className="mt-6 text-center text-sm text-quiet-muted">Loading posts...</p>
+          ) : circles.length === 0 ? (
+            <div className="mt-12 text-center">
+              <p className="text-sm text-quiet-muted">You haven't joined any circles yet.</p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate("/explore")}>
+                Explore circles
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredPosts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  userId={userId}
+                  isMember={true}
+                  isAdminOrMod={isAdminOrModForCircle(post.circle_id)}
+                  onUpvote={toggleUpvote}
+                  onDelete={deletePost}
+                  onEdit={handleUpdatePost}
+                  onMakePermanent={makePermanent}
+                />
+              ))}
+              {filteredPosts.length === 0 && (
+                <p className="text-center text-sm text-quiet-muted">No posts yet. Check back later!</p>
+              )}
+            </div>
           )}
         </div>
-      )}
 
-      {/* FAB: Share something nearby */}
+        {/* Right sidebar — hidden on mobile */}
+        <div className="hidden lg:flex flex-col gap-4 w-56 flex-shrink-0">
+          <PopularCommunitiesPanel allCircles={allCircles} joinedIds={joinedIds} />
+        </div>
+      </div>
+
+      {/* FAB */}
       {circles.length > 0 && composerState === "closed" && (
         <button
           onClick={() => {
@@ -276,9 +329,7 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
           ref={pickerRef}
           className="fixed bottom-40 right-5 md:bottom-20 md:right-8 z-50 w-56 rounded-xl border border-quiet-border bg-white p-2 shadow-xl"
         >
-          <p className="px-2 py-1.5 text-xs font-medium text-quiet-muted">
-            Which circle?
-          </p>
+          <p className="px-2 py-1.5 text-xs font-medium text-quiet-muted">Which circle?</p>
           {circles.map((circle) => (
             <button
               key={circle.id}
@@ -294,6 +345,6 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
           ))}
         </div>
       )}
-    </Shell>
+    </div>
   )
 }

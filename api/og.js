@@ -11,6 +11,7 @@ function isCrawler(userAgent) {
     ua.includes('twitterbot') ||
     ua.includes('linkedinbot') ||
     ua.includes('whatsapp') ||
+    ua.includes('signal') ||
     ua.includes('telegrambot') ||
     ua.includes('slackbot') ||
     ua.includes('discordbot') ||
@@ -23,6 +24,17 @@ function isCrawler(userAgent) {
 function extractPostId(pathname) {
   const match = pathname.match(/\/p\/([a-f0-9-]+)$/i)
   return match ? match[1] : null
+}
+
+// Known non-circle top-level routes
+const APP_ROUTES = new Set(['explore', 'about', 'profile', 'notifications', 'settings', 'admin', 'user', 'p', 'api'])
+
+// Extract circle slug from URL path (single-segment paths that aren't app routes)
+function extractCircleSlug(pathname) {
+  const match = pathname.match(/^\/([^/]+)$/)
+  if (!match) return null
+  const slug = match[1]
+  return APP_ROUTES.has(slug) ? null : slug
 }
 
 // Strip HTML tags, markdown formatting, and truncate text
@@ -112,6 +124,60 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;')
 }
 
+// Fetch circle data from Supabase by slug
+async function fetchCircleData(slug) {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) return null
+
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/circles?slug=eq.${encodeURIComponent(slug)}&select=name,slug,about,description,avatar_url`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+      }
+    )
+    if (!response.ok) return null
+    const data = await response.json()
+    return data && data.length > 0 ? data[0] : null
+  } catch (error) {
+    console.error('Error fetching circle:', error)
+    return null
+  }
+}
+
+// Generate meta tags for a circle page
+function generateCircleMetaTags(circle, siteUrl) {
+  const name = escapeHtml(circle.name)
+  const about = circle.about || circle.description || ''
+  const description = escapeHtml(sanitizeText(about, 200) || `A circle on Quiet Network`)
+  const imageUrl = circle.avatar_url || `${siteUrl}/images/landscape_with_boats.jpg`
+  const circleUrl = `${siteUrl}/${circle.slug}`
+
+  return `
+    <title>${name} — Quiet Network</title>
+    <meta name="description" content="${description}" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="${name}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:image" content="${imageUrl}" />
+    <meta property="og:url" content="${circleUrl}" />
+    <meta property="og:site_name" content="Quiet Network" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${name}" />
+    <meta name="twitter:description" content="${description}" />
+    <meta name="twitter:image" content="${imageUrl}" />
+  `.trim()
+}
+
 // Generate meta tags
 function generateMetaTags(post, siteUrl) {
   const author = escapeHtml(post.profiles?.display_name || 'Someone')
@@ -182,10 +248,11 @@ export default async function handler(request) {
   // Get the original path from query parameter (passed by rewrite)
   const pathname = url.searchParams.get('path') || url.pathname
 
-  // Only process post detail pages with crawler user agents
   const postId = extractPostId(pathname)
-  if (!postId || !isCrawler(userAgent)) {
-    // Redirect non-crawlers to index.html (client-side routing takes over)
+  const circleSlug = !postId ? extractCircleSlug(pathname) : null
+
+  // Non-crawlers or unrecognised paths: serve index.html
+  if ((!postId && !circleSlug) || !isCrawler(userAgent)) {
     const indexUrl = new URL('/index.html', request.url)
     const response = await fetch(indexUrl.toString())
     return new Response(response.body, {
@@ -195,10 +262,19 @@ export default async function handler(request) {
   }
 
   try {
-    // Fetch post data
-    const post = await fetchPostData(postId)
-    if (!post) {
-      // Post not found, return regular index.html
+    const siteUrl = `${url.protocol}//${url.host}`
+    let metaTags = null
+
+    if (postId) {
+      const post = await fetchPostData(postId)
+      if (post) metaTags = generateMetaTags(post, siteUrl)
+    } else if (circleSlug) {
+      const circle = await fetchCircleData(circleSlug)
+      if (circle) metaTags = generateCircleMetaTags(circle, siteUrl)
+    }
+
+    if (!metaTags) {
+      // Not found, return regular index.html
       const indexUrl = new URL('/index.html', request.url)
       const response = await fetch(indexUrl.toString())
       return new Response(response.body, {
@@ -212,7 +288,6 @@ export default async function handler(request) {
     const response = await fetch(indexUrl.toString())
 
     if (!response.ok) {
-      // Error fetching index, return as-is
       return new Response(response.body, {
         status: response.status,
         headers: response.headers,
@@ -221,16 +296,11 @@ export default async function handler(request) {
 
     let html = await response.text()
 
-    // Generate meta tags
-    const siteUrl = `${url.protocol}//${url.host}`
-    const metaTags = generateMetaTags(post, siteUrl)
-
-    // Remove existing meta tags
+    // Remove existing meta tags and inject circle/post-specific ones
     html = html.replace(/<meta property="og:[^"]*"[^>]*>\n?/g, '')
     html = html.replace(/<meta name="twitter:[^"]*"[^>]*>\n?/g, '')
     html = html.replace(/<meta name="description"[^>]*>\n?/g, '')
 
-    // Inject new tags
     html = html.replace(
       /(<title>[^<]*<\/title>)/,
       `$1\n    ${metaTags}`

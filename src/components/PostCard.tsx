@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react"
-import { Link, useLocation } from "react-router-dom" // Removed useNavigate as it's not directly used for navigation here
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown, Lock, Pencil, Link2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -246,7 +247,16 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const [editContent, setEditContent] = useState(post.content)
   const [editTags, setEditTags] = useState<string[]>(post.tags || [])
   const contentRef = useRef<HTMLDivElement>(null)
-  const location = useLocation() // Get current location
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const handleProfileClick = useCallback((username: string) => {
+    if (!userId) {
+      toast.info("Log in to view profiles")
+      return
+    }
+    navigate(`/user/${username}`)
+  }, [userId, navigate])
 
   const postDetailUrl = post.circles?.slug ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`;
   // Check if we're on the post detail page (matches both /p/:id and /:circle/p/:id formats)
@@ -394,7 +404,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
             <div className="flex items-center justify-between gap-2 mb-1">
               <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
                 {authorUsername ? (
-                  <Link to={`/user/${authorUsername}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0 flex-shrink">
+                  <button onClick={() => handleProfileClick(authorUsername)} className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0 flex-shrink">
                     <img
                       src={avatarUrl(authorAvatar)}
                       alt="avatar"
@@ -403,7 +413,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                     <span className="text-sm font-medium text-quiet-slate truncate">
                       {authorName}
                     </span>
-                  </Link>
+                  </button>
                 ) : (
                   <div className="flex items-center gap-2 min-w-0 flex-shrink">
                     <img

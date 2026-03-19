@@ -7,7 +7,8 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
-import { useCircleMembers } from "@/lib/hooks"
+import { useCircleMembers, useAuth } from "@/lib/hooks"
+import { toast } from "sonner"
 import { avatarUrl, getBannerBg } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -321,7 +322,16 @@ function AboutContent({
 function MembersSection({ circleId, creatorId }: { circleId: string; creatorId: string }) {
   const { members, count, loading } = useCircleMembers(circleId)
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [showAll, setShowAll] = useState(false)
+
+  const handleMemberClick = (username: string) => {
+    if (!user) {
+      toast.info("Log in to view profiles")
+      return
+    }
+    navigate(`/user/${username}`)
+  }
 
   if (loading) return null
 
@@ -345,7 +355,7 @@ function MembersSection({ circleId, creatorId }: { circleId: string; creatorId: 
             <Tooltip key={m.username}>
               <TooltipTrigger asChild>
                 <button
-                  onClick={() => navigate(`/user/${m.username}`)}
+                  onClick={() => handleMemberClick(m.username)}
                   className="relative shrink-0"
                 >
                   <img

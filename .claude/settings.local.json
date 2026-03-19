@@ -52,7 +52,9 @@
       "Bash(./node_modules/.bin/tsc:*)",
       "Bash(export:*)",
       "Bash(git push:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(find /Users/mischavandergoes/Documents/GitHub/quiet-network -type f \\\\\\(-name *.sql -o -name schema* -o -name *migration* \\\\\\))",
+      "Bash(npm list:*)"
     ]
   }
 }

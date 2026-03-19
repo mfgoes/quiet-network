@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback } from "react"
-import { Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { ChevronUp, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 import type { Reply } from "@/types"
 import { avatarUrl } from "@/types"
 
@@ -26,6 +27,15 @@ function formatRelativeAge(createdAt: string): string {
 export function ReplyCard({ reply, userId, isAdminOrMod, onUpvote, onDelete }: ReplyCardProps) {
   const age = useMemo(() => formatRelativeAge(reply.created_at), [reply.created_at])
   const [upvoteAnimating, setUpvoteAnimating] = useState(false)
+  const navigate = useNavigate()
+
+  const handleProfileClick = useCallback((username: string) => {
+    if (!userId) {
+      toast.info("Log in to view profiles")
+      return
+    }
+    navigate(`/user/${username}`)
+  }, [userId, navigate])
 
   const handleUpvoteClick = useCallback((replyId: string) => {
     setUpvoteAnimating(true)
@@ -43,9 +53,9 @@ export function ReplyCard({ reply, userId, isAdminOrMod, onUpvote, onDelete }: R
   return (
     <div className="group flex gap-2.5 py-2">
       {authorUsername ? (
-        <Link to={`/user/${authorUsername}`} className="shrink-0">
+        <button onClick={() => handleProfileClick(authorUsername)} className="shrink-0">
           <img src={avatarUrl(authorAvatar)} alt="avatar" className="h-6 w-6 rounded-full object-cover" />
-        </Link>
+        </button>
       ) : (
         <img src={avatarUrl(authorAvatar)} alt="avatar" className="h-6 w-6 shrink-0 rounded-full object-cover" />
       )}
@@ -53,9 +63,9 @@ export function ReplyCard({ reply, userId, isAdminOrMod, onUpvote, onDelete }: R
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           {authorUsername ? (
-            <Link to={`/user/${authorUsername}`} className="text-xs font-medium text-quiet-slate hover:opacity-80 transition-opacity">
+            <button onClick={() => handleProfileClick(authorUsername)} className="text-xs font-medium text-quiet-slate hover:opacity-80 transition-opacity">
               {authorName}
-            </Link>
+            </button>
           ) : (
             <span className="text-xs font-medium text-quiet-slate">{authorName}</span>
           )}
