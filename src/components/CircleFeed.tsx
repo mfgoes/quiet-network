@@ -33,8 +33,13 @@ export function CircleFeed({
   onToggleFavorite,
 }: CircleFeedProps) {
   const circleId = circle.id
-  const { posts, loading, createPost, updatePost, deletePost, toggleUpvote, makePermanent } = usePosts(circleId, userId)
+  const { posts, loading, createPost, updatePost, deletePost, toggleUpvote, makePermanent, refetch: refetchPosts } = usePosts(circleId, userId)
   const { tags: circleTags, createTag, deleteTag } = useCircleTags(circleId)
+
+  const handleJoin = onJoin ? async () => {
+    await onJoin()
+    await refetchPosts()
+  } : undefined
   const [activeTag, setActiveTag] = useState<string | null>(null)
 
   const handleNewPost = async (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null) => {
@@ -56,7 +61,7 @@ export function CircleFeed({
     <>
       {/* Mobile: collapsible above feed */}
       <div className="lg:hidden">
-        <CircleAbout circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} isFavorited={isFavorited} onToggleFavorite={onToggleFavorite} circleTags={circleTags} onCreateTag={isAdminOrMod ? createTag : undefined} onDeleteTag={isAdminOrMod ? deleteTag : undefined} />
+        <CircleAbout circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? handleJoin : undefined} joining={!isMember ? joining : undefined} isFavorited={isFavorited} onToggleFavorite={onToggleFavorite} circleTags={circleTags} onCreateTag={isAdminOrMod ? createTag : undefined} onDeleteTag={isAdminOrMod ? deleteTag : undefined} />
       </div>
 
       <div className="lg:grid lg:grid-cols-[1fr_280px] lg:gap-6">
@@ -131,7 +136,7 @@ export function CircleFeed({
 
         {/* Desktop: sidebar */}
         <div className="hidden lg:block lg:sticky lg:top-8 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:self-start">
-          <CircleAbout sidebar circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? onJoin : undefined} joining={!isMember ? joining : undefined} isFavorited={isFavorited} onToggleFavorite={onToggleFavorite} circleTags={circleTags} onCreateTag={isAdminOrMod ? createTag : undefined} onDeleteTag={isAdminOrMod ? deleteTag : undefined} />
+          <CircleAbout sidebar circle={circle} userId={userId} isAdminOrMod={isAdminOrMod} onUpdate={onUpdateCircle} onUploadAvatar={onUploadAvatar} onLeave={isMember ? onLeave : undefined} onJoin={!isMember ? handleJoin : undefined} joining={!isMember ? joining : undefined} isFavorited={isFavorited} onToggleFavorite={onToggleFavorite} circleTags={circleTags} onCreateTag={isAdminOrMod ? createTag : undefined} onDeleteTag={isAdminOrMod ? deleteTag : undefined} />
         </div>
       </div>
     </>
