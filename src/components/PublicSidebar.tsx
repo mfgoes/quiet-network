@@ -1,6 +1,8 @@
+'use client'
+
 import { useState } from "react"
 import { Home, Compass, Info, LogIn, Search, X } from "lucide-react"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useRouter, usePathname } from "next/navigation"
 import { CircleIcon } from "@/components/CircleIcon"
 import { Button } from "@/components/ui/button"
 import type { Circle } from "@/types"
@@ -17,8 +19,8 @@ interface PublicSidebarProps {
 }
 
 export function PublicSidebar({ circles, onSignIn }: PublicSidebarProps) {
-  const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const router = useRouter()
+  const pathname = usePathname()
   const [query, setQuery] = useState("")
 
   const filteredCircles = query.trim()
@@ -31,7 +33,7 @@ export function PublicSidebar({ circles, onSignIn }: PublicSidebarProps) {
       <div className="px-5 pt-6 pb-4">
         <h1
           className="text-lg font-semibold text-quiet-slate cursor-pointer"
-          onClick={() => navigate("/")}
+          onClick={() => router.push("/")}
         >
           Quiet Network
         </h1>
@@ -47,7 +49,7 @@ export function PublicSidebar({ circles, onSignIn }: PublicSidebarProps) {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => router.push(item.path)}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                 isActive
                   ? "bg-quiet-aged text-quiet-slate font-medium"
@@ -99,7 +101,7 @@ export function PublicSidebar({ circles, onSignIn }: PublicSidebarProps) {
                   return (
                     <button
                       key={circle.id}
-                      onClick={() => navigate(`/${circle.slug}`)}
+                      onClick={() => router.push(`/${circle.slug}`)}
                       className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                         isActive
                           ? "bg-quiet-aged text-quiet-slate font-medium"

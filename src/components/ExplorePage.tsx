@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState } from "react"
 import { CirclePicker } from "@/components/CirclePicker"
 import type { Circle } from "@/types"

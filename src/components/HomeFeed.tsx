@@ -1,10 +1,12 @@
+'use client'
+
 import { useMemo, useRef, useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import { ArrowUp, ChevronRight, Clock, MessageSquare, PenLine, X } from "lucide-react"
 import { useAllMemberPosts, usePosts, useFavorites, useAllCircles } from "@/lib/hooks"
 import { sortPostsWithFreshness } from "@/lib/feedScoring"
 import { PostComposer } from "@/components/PostComposer"
-import { PostCard } from "@/components/PostCard.tsx"
+import { PostCard } from "@/components/PostCard"
 import { CircleIcon } from "@/components/CircleIcon"
 import { Button } from "@/components/ui/button"
 import { extractLeadingHeader } from "@/lib/markdown"
@@ -34,7 +36,7 @@ function timeAgo(dateStr: string): string {
 // ─── Spotlight / Trending row ──────────────────────────────────────────────────
 
 function SpotlightCard({ post }: { post: Post }) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const circle = post.circles
   const slug = circle?.slug
   const { header } = useMemo(() => extractLeadingHeader(post.content ?? ""), [post.content])
@@ -46,7 +48,7 @@ function SpotlightCard({ post }: { post: Post }) {
 
   return (
     <article
-      onClick={() => navigate(slug ? `/${slug}/p/${post.id}` : `/p/${post.id}`)}
+      onClick={() => router.push(slug ? `/${slug}/p/${post.id}` : `/p/${post.id}`)}
       className="relative cursor-pointer flex-shrink-0 w-64 rounded-xl overflow-hidden border border-quiet-border bg-white transition-shadow hover:shadow-md"
     >
       {post.image_url ? (
@@ -105,7 +107,7 @@ function SpotlightCard({ post }: { post: Post }) {
 }
 
 function SpotlightRow({ posts }: { posts: Post[] }) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const cards = useMemo(() => {
     const SLOTS = 8
     const withVisual = posts.filter(p => !!p.image_url || !!extractYouTubeIdFromContent(p.content ?? ""))
@@ -122,7 +124,7 @@ function SpotlightRow({ posts }: { posts: Post[] }) {
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-quiet-slate uppercase tracking-wide">Trending</h2>
         <button
-          onClick={() => navigate("/explore")}
+          onClick={() => router.push("/explore")}
           className="flex items-center gap-0.5 text-xs text-quiet-accent hover:underline"
         >
           Explore circles <ChevronRight className="h-3 w-3" />
@@ -140,7 +142,7 @@ function SpotlightRow({ posts }: { posts: Post[] }) {
 // ─── Popular Communities panel ─────────────────────────────────────────────────
 
 function PopularCommunitiesPanel({ allCircles, joinedIds }: { allCircles: Circle[]; joinedIds: Set<string> }) {
-  const navigate = useNavigate()
+  const router = useRouter()
 
   // Show circles the user hasn't joined first, then joined ones as fallback, up to 6
   const displayed = useMemo(() => {
@@ -160,7 +162,7 @@ function PopularCommunitiesPanel({ allCircles, joinedIds }: { allCircles: Circle
         {displayed.map(circle => (
           <li key={circle.id}>
             <button
-              onClick={() => navigate(`/${circle.slug}`)}
+              onClick={() => router.push(`/${circle.slug}`)}
               className="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-quiet-aged/50 transition-colors text-left"
             >
               <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="md" />
@@ -178,7 +180,7 @@ function PopularCommunitiesPanel({ allCircles, joinedIds }: { allCircles: Circle
       </ul>
       <div className="px-4 pb-4 pt-2">
         <button
-          onClick={() => navigate("/explore")}
+          onClick={() => router.push("/explore")}
           className="w-full rounded-lg border border-quiet-border py-2 text-xs font-medium text-quiet-muted hover:bg-quiet-aged/50 transition-colors"
         >
           See all communities
@@ -238,7 +240,7 @@ interface HomeFeedProps {
 }
 
 export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const circleIds = useMemo(() => circles.map((c) => c.id), [circles])
   const { favoritedCircleIds } = useFavorites(userId)
   const sessionSeed = useRef<number>(Math.random())
@@ -302,7 +304,7 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
           ) : circles.length === 0 ? (
             <div className="mt-12 text-center">
               <p className="text-sm text-quiet-muted">You haven't joined any circles yet.</p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate("/explore")}>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => router.push("/explore")}>
                 Explore circles
               </Button>
             </div>

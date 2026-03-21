@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useMemo } from "react"
 import { usePosts, useCircleTags } from "@/lib/hooks"
 import { PostComposer } from "@/components/PostComposer"

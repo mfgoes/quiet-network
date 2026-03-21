@@ -1,5 +1,8 @@
+'use client'
+
 import { useState, useRef, useEffect, useMemo } from "react"
-import { Link, useNavigate } from "react-router-dom" // Added useNavigate back
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ChevronDown, Star } from "lucide-react" // Import Star icon
 import { CircleIcon } from "@/components/CircleIcon"
 import type { Circle } from "@/types"
@@ -25,7 +28,7 @@ export function CircleDropdown({
 }: CircleDropdownProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const navigate = useNavigate()
+  const router = useRouter()
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -65,7 +68,7 @@ export function CircleDropdown({
         <div className="absolute left-0 top-full mt-1 z-50 min-w-[200px] rounded-lg border border-quiet-border bg-white shadow-lg py-1">
           <button
             onClick={() => {
-              navigate("/")
+              router.push("/")
               setOpen(false)
             }}
             className={`w-full text-left px-4 py-2 text-sm transition-colors ${
@@ -88,7 +91,7 @@ export function CircleDropdown({
                 }`}
               >
                 <Link
-                  to={`/${circle.slug}`}
+                  href={`/${circle.slug}`}
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-2.5 px-4 py-2 flex-grow" // flex-grow to take available space
                 >

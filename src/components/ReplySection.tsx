@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from "react"
 import { useReplies } from "@/lib/hooks"
 import { ReplyCard } from "@/components/ReplyCard"

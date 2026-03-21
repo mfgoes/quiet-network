@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom"
+import Link from "next/link"
 import { CircleIcon } from "@/components/CircleIcon"
 import { parseMarkdown } from "@/lib/markdown"
 import type { Post } from "@/types"
@@ -14,7 +14,7 @@ export function PostPreviewCard({ post }: PostPreviewCardProps) {
 
   return (
     <Link
-      to={post.circles ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`}
+      href={post.circles ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`}
       className="block rounded-xl border border-quiet-border bg-white p-3 hover:border-quiet-accent/40 transition-colors"
     >
       {post.circles && (

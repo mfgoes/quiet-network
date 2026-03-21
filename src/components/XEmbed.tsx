@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState } from "react"
 import { ExternalLink } from "lucide-react"
 import { Tweet } from "react-tweet"

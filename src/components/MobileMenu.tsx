@@ -1,6 +1,8 @@
+'use client'
+
 import { useState } from "react"
 import { Menu, X, Home, Compass, User, Info, Shield, ChevronDown, MessageSquare } from "lucide-react"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useRouter, usePathname } from "next/navigation"
 import { avatarUrl } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
 import { useDM } from "@/components/DMContext"
@@ -20,13 +22,12 @@ export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuPr
   const [isExpandingCircles, setIsExpandingCircles] = useState(false)
   const [adminExpanded, setAdminExpanded] = useState(true)
   const [isExpandingAdmin, setIsExpandingAdmin] = useState(false)
-  const navigate = useNavigate()
-  const location = useLocation()
-  const path = location.pathname
+  const router = useRouter()
+  const path = usePathname()
   const { openPanel } = useDM()
 
   const go = (to: string) => {
-    navigate(to)
+    router.push(to)
     setOpen(false)
   }
 

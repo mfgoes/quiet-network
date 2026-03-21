@@ -1,5 +1,7 @@
+'use client'
+
 import { useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import { ArrowUp, MessageSquare, Clock, Users, ChevronRight, Search, X } from "lucide-react"
 import { useAllMemberPosts } from "@/lib/hooks"
 import { CircleIcon } from "@/components/CircleIcon"
@@ -69,7 +71,7 @@ function interleaveByImpact(media: Post[], text: Post[]): Post[] {
 
 /** A single card in the horizontal spotlight strip */
 function SpotlightCard({ post }: { post: Post }) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const circle = post.circles
   const slug = circle?.slug
   const { header } = useMemo(() => extractLeadingHeader(post.content ?? ""), [post.content])
@@ -77,7 +79,7 @@ function SpotlightCard({ post }: { post: Post }) {
 
   return (
     <article
-      onClick={() => navigate(slug ? `/${slug}/p/${post.id}` : `/p/${post.id}`)}
+      onClick={() => router.push(slug ? `/${slug}/p/${post.id}` : `/p/${post.id}`)}
       className="relative cursor-pointer flex-shrink-0 w-56 rounded-xl overflow-hidden border border-quiet-border bg-white transition-shadow hover:shadow-md"
     >
       {/* Image or gradient fallback */}
@@ -129,7 +131,7 @@ function SpotlightCard({ post }: { post: Post }) {
  * so there are always at least 4 cards (or all available posts).
  */
 function SpotlightRow({ posts }: { posts: Post[] }) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const cards = useMemo(() => {
     const SLOTS = 6
     const withImage = posts.filter(p => !!p.image_url)
@@ -148,7 +150,7 @@ function SpotlightRow({ posts }: { posts: Post[] }) {
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-quiet-slate uppercase tracking-wide">Trending</h2>
         <button
-          onClick={() => navigate("/explore")}
+          onClick={() => router.push("/explore")}
           className="flex items-center gap-0.5 text-xs text-quiet-accent hover:underline"
         >
           Explore circles <ChevronRight className="h-3 w-3" />
@@ -166,7 +168,7 @@ function SpotlightRow({ posts }: { posts: Post[] }) {
 // ─── Popular communities sidebar card ────────────────────────────────────────
 
 function PopularCommunitiesCard({ circles, posts }: { circles: Circle[]; posts: Post[] }) {
-  const navigate = useNavigate()
+  const router = useRouter()
 
   // Rank circles by post count from already-loaded posts data
   const ranked = useMemo(() => {
@@ -190,7 +192,7 @@ function PopularCommunitiesCard({ circles, posts }: { circles: Circle[]; posts: 
         {ranked.map((circle) => (
           <button
             key={circle.id}
-            onClick={() => navigate(`/${circle.slug}`)}
+            onClick={() => router.push(`/${circle.slug}`)}
             className="flex w-full items-center gap-2.5 text-left transition-opacity hover:opacity-75"
           >
             <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
@@ -204,7 +206,7 @@ function PopularCommunitiesCard({ circles, posts }: { circles: Circle[]; posts: 
         ))}
       </div>
       <button
-        onClick={() => navigate("/explore")}
+        onClick={() => router.push("/explore")}
         className="mt-4 w-full rounded-lg bg-quiet-aged px-3 py-2 text-xs font-medium text-quiet-slate transition-colors hover:bg-quiet-border/40"
       >
         See all communities
@@ -216,7 +218,7 @@ function PopularCommunitiesCard({ circles, posts }: { circles: Circle[]; posts: 
 // ─── Post feed card ───────────────────────────────────────────────────────────
 
 function PostPreviewCard({ post }: { post: Post }) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const circle = post.circles
   const slug = circle?.slug
 
@@ -234,7 +236,7 @@ function PostPreviewCard({ post }: { post: Post }) {
 
   return (
     <article
-      onClick={() => navigate(slug ? `/${slug}/p/${post.id}` : `/p/${post.id}`)}
+      onClick={() => router.push(slug ? `/${slug}/p/${post.id}` : `/p/${post.id}`)}
       className="cursor-pointer overflow-hidden rounded-xl border border-quiet-border bg-white transition-colors hover:bg-quiet-aged/40"
     >
       {/* Image: proportional, capped height, portrait images get side padding */}
@@ -256,7 +258,7 @@ function PostPreviewCard({ post }: { post: Post }) {
               <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="sm" />
               <span
                 className="font-medium text-quiet-slate hover:underline"
-                onClick={(e) => { e.stopPropagation(); navigate(`/${slug}`) }}
+                onClick={(e) => { e.stopPropagation(); router.push(`/${slug}`) }}
               >
                 {circle.name}
               </span>
@@ -305,7 +307,7 @@ function PostPreviewCard({ post }: { post: Post }) {
 // ─── Public home feed ─────────────────────────────────────────────────────────
 
 export function PublicHomeFeed({ circles }: PublicHomeFeedProps) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const circleIds = useMemo(() => circles.map((c) => c.id), [circles])
   const { posts, loading } = useAllMemberPosts(circleIds)
 
@@ -349,14 +351,14 @@ export function PublicHomeFeed({ circles }: PublicHomeFeedProps) {
             <p className="text-sm text-quiet-muted">
               Want to see more?{" "}
               <button
-                onClick={() => navigate("/explore")}
+                onClick={() => router.push("/explore")}
                 className="font-medium text-quiet-accent hover:underline"
               >
                 Explore circles
               </button>
               {" "}or{" "}
               <button
-                onClick={() => navigate("/login")}
+                onClick={() => router.push("/login")}
                 className="font-medium text-quiet-accent hover:underline"
               >
                 join the community
@@ -383,7 +385,7 @@ interface PublicExplorePageProps {
 }
 
 export function PublicExplorePage({ circles, loading }: PublicExplorePageProps) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const [query, setQuery] = useState("")
 
   const filtered = useMemo(() => {
@@ -435,7 +437,7 @@ export function PublicExplorePage({ circles, loading }: PublicExplorePageProps) 
           {filtered.map((circle) => (
             <button
               key={circle.id}
-              onClick={() => navigate(`/${circle.slug}`)}
+              onClick={() => router.push(`/${circle.slug}`)}
               className="flex w-full items-center gap-3 rounded-xl border border-quiet-border bg-white p-4 text-left transition-colors hover:bg-quiet-aged/40"
             >
               <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} />

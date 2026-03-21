@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
@@ -20,7 +20,8 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/supabase-js": "^2.93.3",
-    "@tailwindcss/vite": "^4.1.18",
+    "@supabase/ssr": "^0.5.2",
+    "@tailwindcss/postcss": "^4.1.18",
     "@tiptap/extension-link": "^3.18.0",
     "@tiptap/extension-underline": "^3.18.0",
     "@tiptap/pm": "^3.18.0",
@@ -33,9 +34,9 @@
     "emoji-mart": "^5.6.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.563.0",
+    "next": "^15.3.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-helmet-async": "^2.0.5",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.13.0",
     "react-tweet": "^3.3.0",
@@ -48,14 +49,10 @@
     "@types/node": "^24.10.9",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
-    "@vercel/node": "^5.5.32",
-    "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "typescript-eslint": "^8.46.4"
   }
 }

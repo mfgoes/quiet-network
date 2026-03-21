@@ -1,5 +1,7 @@
+'use client'
+
 import { useState, useRef } from "react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import { ChevronDown, Crown, LogOut, MapPin, Pencil, Settings, Shield, ExternalLink, Plus, Sparkles, Trash2, Camera, Star, Infinity } from "lucide-react"
 import {
   Collapsible,
@@ -321,7 +323,7 @@ function AboutContent({
 
 function MembersSection({ circleId, creatorId }: { circleId: string; creatorId: string }) {
   const { members, count, loading } = useCircleMembers(circleId)
-  const navigate = useNavigate()
+  const router = useRouter()
   const { user } = useAuth()
   const [showAll, setShowAll] = useState(false)
 
@@ -330,7 +332,7 @@ function MembersSection({ circleId, creatorId }: { circleId: string; creatorId: 
       toast.info("Log in to view profiles")
       return
     }
-    navigate(`/user/${username}`)
+    router.push(`/user/${username}`)
   }
 
   if (loading) return null
@@ -409,7 +411,7 @@ function LeaveButton({ onLeave }: { onLeave: () => Promise<void> }) {
 }
 
 function ManageCircleLink({ circleSlug }: { circleSlug: string }) {
-  const navigate = useNavigate()
+  const router = useRouter()
 
   return (
     <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2.5">
@@ -418,7 +420,7 @@ function ManageCircleLink({ circleSlug }: { circleSlug: string }) {
         <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Admin</p>
       </div>
       <Button
-        onClick={() => navigate(`/admin/${circleSlug}`)}
+        onClick={() => router.push(`/admin/${circleSlug}`)}
         className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white"
       >
         <Settings className="h-4 w-4" />

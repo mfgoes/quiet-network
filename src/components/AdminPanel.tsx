@@ -1,5 +1,7 @@
+'use client'
+
 import { useState, useMemo, useEffect } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useRouter } from "next/navigation"
 import { Shield, Users, FileWarning, Ban, Settings, ArrowLeft, ChevronDown, Tag } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -32,10 +34,11 @@ interface AdminPanelProps {
   deleteCircle: (circleId: string) => Promise<unknown>
 }
 
-export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAvatar, deleteCircle }: AdminPanelProps) {
-  const { circleSlug } = useParams<{ circleSlug: string }>()
+export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAvatar, deleteCircle, circleSlug: propCircleSlug }: AdminPanelProps & { circleSlug?: string }) {
+  const params = useParams()
+  const circleSlug = propCircleSlug ?? (params.circleSlug as string | undefined)
   const { circle, loading: circleLoading, refetch: refetchCircle } = useCircleBySlug(circleSlug)
-  const navigate = useNavigate()
+  const router = useRouter()
 
   // Find user's role for this circle
   const adminEntry = useMemo(
@@ -72,7 +75,7 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
   if (!circle || !adminEntry) {
     return (
       <div>
-        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+        <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <p className="mt-4 text-center text-sm text-quiet-muted">
@@ -92,7 +95,7 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
       {/* Header row: back + title on left, circle selector on right */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/${circle.slug}`)}>
+          <Button variant="ghost" size="icon" onClick={() => router.push(`/${circle.slug}`)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <Shield className="h-5 w-5 text-blue-600" />
@@ -123,7 +126,7 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
                     <button
                       key={ac.id}
                       onClick={() => {
-                        navigate(`/admin/${ac.slug}`)
+                        router.push(`/admin/${ac.slug}`)
                         setDropdownOpen(false)
                       }}
                       className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
@@ -247,7 +250,7 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
                 const { error, data } = await updateCircle(circle.id, updates)
                 await refetchCircle()
                 if (!error && data?.slug && data.slug !== circle.slug) {
-                  navigate(`/admin/${data.slug}`)
+                  router.push(`/admin/${data.slug}`)
                 }
                 return { error }
               }}
@@ -258,7 +261,7 @@ export function AdminPanel({ userId, adminCircles, updateCircle, uploadCircleAva
               }}
               onDelete={async () => {
                 await deleteCircle(circle.id)
-                navigate("/")
+                router.push("/")
               }}
             />
           </TabsContent>

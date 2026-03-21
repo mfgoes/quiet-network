@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from "react"
 import { MoreHorizontal, Shield, ShieldCheck, UserMinus, Ban } from "lucide-react"
 import { Badge } from "@/components/ui/badge"

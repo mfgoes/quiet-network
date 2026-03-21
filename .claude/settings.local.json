@@ -54,7 +54,17 @@
       "Bash(git push:*)",
       "Bash(chmod:*)",
       "Bash(find /Users/mischavandergoes/Documents/GitHub/quiet-network -type f \\\\\\(-name *.sql -o -name schema* -o -name *migration* \\\\\\))",
-      "Bash(npm list:*)"
+      "Bash(npm list:*)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(if grep:*)",
+      "Bash(! grep:*)",
+      "Bash(then)",
+      "Bash(echo \"=== $f ===\")",
+      "Read(//Users/mischavandergoes/Documents/GitHub/quiet-network/.claude/worktrees/agent-a5afff05/**)",
+      "Bash(done)",
+      "Bash(ls /Users/mischavandergoes/Documents/GitHub/quiet-network/src/app/\\\\\\(auth\\\\\\)/)",
+      "Bash(pkill -f \"next dev\")"
     ]
   }
 }

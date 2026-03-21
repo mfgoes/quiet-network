@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useRef, useState } from "react"
 import { ArrowLeft, Maximize2, Minimize2, MessageSquare, Send, X, ChevronDown } from "lucide-react"
 import { avatarUrl } from "@/types"

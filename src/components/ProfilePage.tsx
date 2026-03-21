@@ -1,6 +1,8 @@
+'use client'
+
 import { useEffect, useRef, useState } from "react"
 import { Bell, Calendar, ChevronDown, Info, LogOut, MapPin, Pencil, Plus, Star, Trash2, UserMinus } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { linkifyText } from "@/lib/utils"
 import { PostPreviewCard } from "@/components/PostPreviewCard"
@@ -52,7 +54,7 @@ interface ProfilePageProps {
 }
 
 export function ProfilePage({ defaultEditing = false, profile, userId, circles, onSave, onSignOut, onAbout, onNotificationSettings, onLeaveAllCircles, onDeleteAccount }: ProfilePageProps) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const { favoritedCircleIds } = useFavorites(userId)
   const favoritedCircles = circles.filter(c => favoritedCircleIds.includes(c.id))
   const memberCounts = useCircleMemberCounts(circles.map(c => c.id))
@@ -212,7 +214,7 @@ export function ProfilePage({ defaultEditing = false, profile, userId, circles, 
                     return (
                       <button
                         key={circle.id}
-                        onClick={() => navigate(`/${circle.slug}`)}
+                        onClick={() => router.push(`/${circle.slug}`)}
                         className="relative flex items-center gap-3 rounded-xl border border-quiet-border bg-white p-3 text-left transition-all hover:shadow-sm overflow-hidden"
                       >
                         <div className="absolute inset-x-0 top-0 h-1 rounded-t-xl" style={{ backgroundColor: hint }} />

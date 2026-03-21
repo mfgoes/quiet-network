@@ -1,5 +1,7 @@
+'use client'
+
 import { useState, useCallback } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { useCircleBySlug, useFavorites } from "@/lib/hooks"
 import { CircleDropdown } from "@/components/CircleDropdown"
@@ -28,9 +30,10 @@ export function CircleFeedRoute({
   updateCircle,
   uploadCircleAvatar,
 }: CircleFeedRouteProps) {
-  const { circleSlug } = useParams<{ circleSlug: string }>()
+  const params = useParams()
+  const circleSlug = params.circleSlug as string | undefined
   const { circle, loading, refetch: refetchCircle } = useCircleBySlug(circleSlug)
-  const navigate = useNavigate()
+  const router = useRouter()
   const [joining, setJoining] = useState(false)
   const { favoritedCircleIds, toggleFavorite: toggleFavoriteById } = useFavorites(userId)
 
@@ -50,7 +53,7 @@ export function CircleFeedRoute({
   if (!circle) {
     return (
       <div>
-        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+        <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <p className="mt-4 text-center text-sm text-quiet-muted">Circle not found.</p>
@@ -84,7 +87,7 @@ export function CircleFeedRoute({
           }}
           onLeave={async () => {
             await leaveCircle(circle.id)
-            navigate("/")
+            router.push("/")
           }}
           joining={joining}
           onUpdateCircle={async (updates) => {
@@ -106,10 +109,11 @@ export function CircleFeedRoute({
 
 // ─── Public (unauthenticated) view ───────────────────
 
-export function PublicCircleFeedRoute({ onSignIn }: { onSignIn: () => void }) {
-  const { circleSlug } = useParams<{ circleSlug: string }>()
+export function PublicCircleFeedRoute({ onSignIn, circleSlug: propCircleSlug }: { onSignIn: () => void; circleSlug?: string }) {
+  const params = useParams()
+  const circleSlug = propCircleSlug ?? (params.circleSlug as string | undefined)
   const { circle, loading } = useCircleBySlug(circleSlug)
-  const navigate = useNavigate()
+  const router = useRouter()
 
   if (loading) {
     return <p className="text-center text-sm text-quiet-muted">Loading...</p>
@@ -118,7 +122,7 @@ export function PublicCircleFeedRoute({ onSignIn }: { onSignIn: () => void }) {
   if (!circle) {
     return (
       <div>
-        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+        <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <p className="mt-4 text-center text-sm text-quiet-muted">Circle not found.</p>

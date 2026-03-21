@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import { Lightbulb, Send, Tag, Bold, Italic, Underline, List, Smile, Link2, Heading2, Image, X } from "lucide-react"
 import { toast } from "sonner"

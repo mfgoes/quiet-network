@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useRef, useState } from "react"
 import { Link, Check, Shield, AlertTriangle, Send, Volume2, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -76,7 +78,7 @@ const features = [
 
 function HeroCopyLink() {
   const [copied, setCopied] = useState(false)
-  const inviteUrl = `${window.location.origin}/`
+  const inviteUrl = typeof window !== 'undefined' ? `${window.location.origin}/` : 'https://quiet-network.vercel.app/'
 
   const handleCopy = async () => {
     try {
@@ -117,7 +119,7 @@ function HeroCopyLink() {
 
 function InviteCard() {
   const [copied, setCopied] = useState(false)
-  const inviteUrl = `${window.location.origin}/`
+  const inviteUrl = typeof window !== 'undefined' ? `${window.location.origin}/` : 'https://quiet-network.vercel.app/'
 
   const handleCopy = async () => {
     try {

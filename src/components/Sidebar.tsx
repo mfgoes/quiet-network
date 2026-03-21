@@ -1,6 +1,8 @@
+'use client'
+
 import { useState } from "react"
 import { Home, Compass, Bell, ChevronDown, Shield, Info, MessageSquare, Search, X, Star } from "lucide-react"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useRouter, usePathname } from "next/navigation"
 import { avatarUrl } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
 import { useFavorites } from "@/lib/hooks"
@@ -20,9 +22,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCount = 0, unreadDmCount = 0 }: SidebarProps) {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const path = location.pathname
+  const router = useRouter()
+  const path = usePathname()
   const [query, setQuery] = useState("")
   const [expanded, setExpanded] = useState(false)
   const { favoritedCircleIds } = useFavorites(userId)
@@ -80,7 +81,7 @@ export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCou
       <div className="px-5 pt-6 pb-4">
         <h1
           className="text-lg font-semibold text-quiet-slate cursor-pointer"
-          onClick={() => navigate("/")}
+          onClick={() => router.push("/")}
         >
           Quiet Network
         </h1>
@@ -100,7 +101,7 @@ export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCou
           return (
             <button
               key={item.path}
-              onClick={() => item.path === "/messages" ? openPanel() : navigate(item.path)}
+              onClick={() => item.path === "/messages" ? openPanel() : router.push(item.path)}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                 isActive
                   ? "bg-quiet-aged text-quiet-slate font-medium"
@@ -132,7 +133,7 @@ export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCou
               return (
                 <button
                   key={circle.id}
-                  onClick={() => navigate(`/${circle.slug}`)}
+                  onClick={() => router.push(`/${circle.slug}`)}
                   className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                     isActive
                       ? "bg-quiet-aged text-quiet-slate font-medium"
@@ -190,7 +191,7 @@ export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCou
                     return (
                       <button
                         key={circle.id}
-                        onClick={() => navigate(`/${circle.slug}`)}
+                        onClick={() => router.push(`/${circle.slug}`)}
                         className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                           isActive
                             ? "bg-quiet-aged text-quiet-slate font-medium"
@@ -211,7 +212,7 @@ export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCou
                     return (
                       <button
                         key={circle.id}
-                        onClick={() => navigate(`/${circle.slug}`)}
+                        onClick={() => router.push(`/${circle.slug}`)}
                         className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                           isActive
                             ? "bg-quiet-aged text-quiet-slate font-medium"
@@ -230,7 +231,7 @@ export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCou
                         return (
                           <button
                             key={circle.id}
-                            onClick={() => navigate(`/${circle.slug}`)}
+                            onClick={() => router.push(`/${circle.slug}`)}
                             className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                               isActive
                                 ? "bg-quiet-aged text-quiet-slate font-medium"
@@ -283,7 +284,7 @@ export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCou
                 return (
                   <button
                     key={ac.id}
-                    onClick={() => navigate(`/admin/${ac.slug}`)}
+                    onClick={() => router.push(`/admin/${ac.slug}`)}
                     className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                       isActive
                         ? "bg-blue-50 text-blue-700 font-medium"
@@ -302,7 +303,7 @@ export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCou
                     return (
                       <button
                         key={ac.id}
-                        onClick={() => navigate(`/admin/${ac.slug}`)}
+                        onClick={() => router.push(`/admin/${ac.slug}`)}
                         className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                           isActive
                             ? "bg-blue-50 text-blue-700 font-medium"
@@ -338,7 +339,7 @@ export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCou
       {/* User info at bottom — click to go to profile */}
       <div className="mt-auto border-t border-quiet-border px-4 py-3">
         <button
-          onClick={() => navigate("/profile")}
+          onClick={() => router.push("/profile")}
           title="View your profile"
           className={`flex items-center gap-2.5 w-full rounded-lg px-2 py-1.5 transition-colors ${
             path === "/profile"

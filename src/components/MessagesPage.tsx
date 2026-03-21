@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom"
+'use client'
+
+import { useRouter } from "next/navigation"
 import { MessageSquare } from "lucide-react"
 import { avatarUrl } from "@/types"
 import { useConversations } from "@/lib/hooks"
@@ -13,7 +15,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export function MessagesPage({ userId }: { userId: string }) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const { conversations, loading } = useConversations(userId)
 
   if (loading) {
@@ -43,7 +45,7 @@ export function MessagesPage({ userId }: { userId: string }) {
           return (
             <button
               key={conv.id}
-              onClick={() => navigate(`/messages/${conv.id}`)}
+              onClick={() => router.push(`/messages/${conv.id}`)}
               className="flex w-full items-center gap-3 rounded-xl border border-quiet-border bg-white p-3 text-left transition-colors hover:border-quiet-accent/40"
             >
               <div className="relative shrink-0">

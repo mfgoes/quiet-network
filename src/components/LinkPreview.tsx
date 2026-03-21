@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useMemo, useEffect } from "react"
 import { ExternalLink } from "lucide-react"
 import { YouTubeEmbed, extractYouTubeId } from "@/components/YouTubeEmbed"

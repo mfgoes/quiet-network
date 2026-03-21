@@ -1,5 +1,7 @@
+'use client'
+
 import { useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, Calendar, Info, MapPin, MessageSquare, UserPlus, UserMinus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -34,7 +36,7 @@ interface PublicProfilePageProps {
 }
 
 export function PublicProfilePage({ profile, currentUserId, circles = [], posts = [], postsLoading = false }: PublicProfilePageProps) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const memberCounts = useCircleMemberCounts(circles.map(c => c.id))
   const [showAllCircles, setShowAllCircles] = useState(false)
   const visibleCircles = showAllCircles ? circles : circles.slice(0, CIRCLES_PREVIEW)
@@ -179,7 +181,7 @@ export function PublicProfilePage({ profile, currentUserId, circles = [], posts 
                 return (
                   <button
                     key={circle.id}
-                    onClick={() => navigate(`/${circle.slug}`)}
+                    onClick={() => router.push(`/${circle.slug}`)}
                     className="relative flex items-center gap-3 rounded-xl border border-quiet-border bg-white p-3 text-left transition-all hover:shadow-sm overflow-hidden"
                   >
                     <div className="absolute inset-x-0 top-0 h-1 rounded-t-xl" style={{ backgroundColor: hint }} />
@@ -226,12 +228,12 @@ export function PublicProfilePage({ profile, currentUserId, circles = [], posts 
 
       {/* ── Footer ── */}
       <div className="mt-10 flex flex-col items-center gap-3">
-        <Button variant="outline" onClick={() => navigate(-1)}>
+        <Button variant="outline" onClick={() => router.back()}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Go back
         </Button>
         <button
-          onClick={() => navigate("/about")}
+          onClick={() => router.push("/about")}
           className="flex items-center gap-1.5 text-xs text-quiet-muted/60 transition-colors hover:text-quiet-muted"
         >
           <Info className="h-3 w-3" />

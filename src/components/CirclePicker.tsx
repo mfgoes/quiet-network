@@ -1,8 +1,15 @@
+'use client'
+
 import { useState, useMemo, useCallback } from "react"
+import dynamic from "next/dynamic"
 import { AlertCircle, List, Map, MapPin, Plus, Search, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CircleIcon } from "@/components/CircleIcon"
-import { CircleMap } from "@/components/CircleMap"
+
+const CircleMap = dynamic(() => import("@/components/CircleMap").then(m => m.CircleMap), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-quiet-aged rounded-lg animate-pulse" />,
+})
 import { useCircleMemberCounts, useCircleLatestPosts } from "@/lib/hooks"
 import { getBannerBg, getBannerGradient, isBannerDark } from "@/types"
 import type { Circle } from "@/types"

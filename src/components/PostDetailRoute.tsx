@@ -1,5 +1,7 @@
+'use client'
+
 import { useState, useEffect } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { PostCard } from "@/components/PostCard"
@@ -15,22 +17,23 @@ interface PostDetailRouteProps {
   onJoinClick?: () => void
 }
 
-export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}, onJoinClick }: PostDetailRouteProps) {
-  const { postId } = useParams<{ postId: string }>()
-  const navigate = useNavigate()
+export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}, onJoinClick, postId: propPostId }: PostDetailRouteProps & { postId?: string }) {
+  const params = useParams()
+  const postId = propPostId ?? (params.postId as string | undefined)
+  const router = useRouter()
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
 
   const handleBackClick = () => {
     // If the post has a circle, navigate to it
     if (post?.circles?.slug) {
-      navigate(`/${post.circles.slug}`)
+      router.push(`/${post.circles.slug}`)
     } else {
       // Fallback: go back if possible, otherwise home
       if (window.history.length > 1) {
-        navigate(-1)
+        router.back()
       } else {
-        navigate('/')
+        router.push('/')
       }
     }
   }
@@ -112,7 +115,7 @@ export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}
 
   const handleDelete = async (postId: string) => {
     await supabase.from("posts").delete().eq("id", postId)
-    navigate(-1)
+    router.back()
   }
 
   const handleEdit = async (postId: string, content: string, tags: string[]) => {
@@ -186,7 +189,7 @@ export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}
         </Button>
         {post.circles && (
           <button
-            onClick={() => navigate(`/${post.circles!.slug}`)}
+            onClick={() => router.push(`/${post.circles!.slug}`)}
             className="text-sm text-quiet-accent hover:text-quiet-slate transition-colors"
           >
             View in {post.circles.name}

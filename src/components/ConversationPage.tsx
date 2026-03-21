@@ -1,12 +1,15 @@
+'use client'
+
 import { useEffect, useRef, useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Send } from "lucide-react"
 import { avatarUrl } from "@/types"
 import { useMessages, useConversations } from "@/lib/hooks"
 
 export function ConversationPage({ userId }: { userId: string }) {
-  const { conversationId } = useParams<{ conversationId: string }>()
-  const navigate = useNavigate()
+  const params = useParams()
+  const conversationId = params.conversationId as string | undefined
+  const router = useRouter()
   const { messages, loading, sendMessage, markRead } = useMessages(conversationId, userId)
   const { conversations } = useConversations(userId)
   const [text, setText] = useState("")
@@ -38,7 +41,7 @@ export function ConversationPage({ userId }: { userId: string }) {
       {/* Header */}
       <div className="flex items-center gap-3 pb-4 mb-2 border-b border-quiet-border shrink-0">
         <button
-          onClick={() => navigate("/messages")}
+          onClick={() => router.push("/messages")}
           className="p-1 rounded-lg text-quiet-muted hover:text-quiet-slate hover:bg-quiet-aged transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />

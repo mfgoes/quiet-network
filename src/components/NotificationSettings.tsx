@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from "react"
 import { Bell, Mail, Calendar, MessageCircle, Check } from "lucide-react"
 import { useNotificationPreferences } from "@/lib/hooks"

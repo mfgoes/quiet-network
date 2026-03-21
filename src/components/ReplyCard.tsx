@@ -1,5 +1,7 @@
+'use client'
+
 import { useMemo, useState, useCallback } from "react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import { ChevronUp, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import type { Reply } from "@/types"
@@ -27,15 +29,15 @@ function formatRelativeAge(createdAt: string): string {
 export function ReplyCard({ reply, userId, isAdminOrMod, onUpvote, onDelete }: ReplyCardProps) {
   const age = useMemo(() => formatRelativeAge(reply.created_at), [reply.created_at])
   const [upvoteAnimating, setUpvoteAnimating] = useState(false)
-  const navigate = useNavigate()
+  const router = useRouter()
 
   const handleProfileClick = useCallback((username: string) => {
     if (!userId) {
       toast.info("Log in to view profiles")
       return
     }
-    navigate(`/user/${username}`)
-  }, [userId, navigate])
+    router.push(`/user/${username}`)
+  }, [userId, router])
 
   const handleUpvoteClick = useCallback((replyId: string) => {
     setUpvoteAnimating(true)

@@ -1,9 +1,3 @@
 {
-  "installCommand": "npm install --legacy-peer-deps",
-  "rewrites": [
-    { "source": "/p/:postId", "destination": "/api/og?path=/p/:postId" },
-    { "source": "/:circleSlug/p/:postId", "destination": "/api/og?path=/:circleSlug/p/:postId" },
-    { "source": "/:circleSlug", "destination": "/api/og?path=/:circleSlug" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ]
+  "installCommand": "npm install --legacy-peer-deps"
 }

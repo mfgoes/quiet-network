@@ -16,7 +16,18 @@ function isCrawler(userAgent) {
     ua.includes('slackbot') ||
     ua.includes('discordbot') ||
     ua.includes('ia_archiver') ||
-    ua.includes('googlebot')
+    ua.includes('googlebot') ||
+    // LLM crawlers
+    ua.includes('gptbot') ||
+    ua.includes('chatgpt-user') ||
+    ua.includes('perplexitybot') ||
+    ua.includes('claudebot') ||
+    ua.includes('anthropic-ai') ||
+    ua.includes('cohere-ai') ||
+    ua.includes('youbot') ||
+    ua.includes('ccbot') ||
+    ua.includes('applebot') ||
+    ua.includes('bingbot')
   )
 }
 

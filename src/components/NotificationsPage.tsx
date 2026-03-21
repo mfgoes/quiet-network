@@ -1,5 +1,7 @@
+'use client'
+
 import { MessageCircle, ArrowUp, AtSign, Bell } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import { useNotifications } from "@/lib/hooks"
 import type { Notification } from "@/types"
 import { avatarUrl } from "@/types"
@@ -40,14 +42,14 @@ interface NotificationsPageProps {
 }
 
 export function NotificationsPage({ userId }: NotificationsPageProps) {
-  const navigate = useNavigate()
+  const router = useRouter()
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications(userId)
 
   const handleClick = (n: Notification) => {
     markAsRead(n.id)
     if (n.post_id) {
       const slug = n.post?.circles?.slug
-      navigate(slug ? `/${slug}/p/${n.post_id}` : `/p/${n.post_id}`)
+      router.push(slug ? `/${slug}/p/${n.post_id}` : `/p/${n.post_id}`)
     }
   }
 

@@ -1,5 +1,8 @@
+'use client'
+
 import { useMemo, useState, useCallback, useRef, useEffect } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Pin, Clock, ChevronUp, Trash2, MessageSquare, ChevronDown, Lock, Pencil, Link2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -159,7 +162,7 @@ function CircleBadge({ name, slug, description, avatarUrl }: { name: string; slu
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Link
-          to={`/${slug}`}
+          href={`/${slug}`}
           className="flex items-center gap-1 rounded-full bg-quiet-border/40 px-2 py-0.5 text-[11px] text-quiet-muted transition-colors hover:bg-quiet-border/70 hover:text-quiet-slate"
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}
@@ -247,20 +250,20 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const [editContent, setEditContent] = useState(post.content)
   const [editTags, setEditTags] = useState<string[]>(post.tags || [])
   const contentRef = useRef<HTMLDivElement>(null)
-  const location = useLocation()
-  const navigate = useNavigate()
+  const pathname = usePathname()
+  const router = useRouter()
 
   const handleProfileClick = useCallback((username: string) => {
     if (!userId) {
       toast.info("Log in to view profiles")
       return
     }
-    navigate(`/user/${username}`)
-  }, [userId, navigate])
+    router.push(`/user/${username}`)
+  }, [userId, router])
 
   const postDetailUrl = post.circles?.slug ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`;
   // Check if we're on the post detail page (matches both /p/:id and /:circle/p/:id formats)
-  const isDedicatedPostPage = location.pathname === `/p/${post.id}` || location.pathname === `/${post.circles?.slug}/p/${post.id}`;
+  const isDedicatedPostPage = pathname === `/p/${post.id}` || pathname === `/${post.circles?.slug}/p/${post.id}`;
 
   // Initialize repliesOpen based on whether it's a dedicated post page
   const [repliesOpen, setRepliesOpen] = useState(isDedicatedPostPage);
@@ -644,14 +647,14 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
             <div className="block relative">
               {/* Leading header above image - clickable to post detail */}
               {leadingHeader && (
-                <Link to={postDetailUrl} className="block">
+                <Link href={postDetailUrl} className="block">
                   <h2 className="text-base font-semibold text-quiet-slate mb-2 hover:text-quiet-accent transition-colors">{leadingHeader}</h2>
                 </Link>
               )}
 
               {/* Image - clickable to post detail */}
               {post.image_url && (
-                <Link to={postDetailUrl} className="block mb-3">
+                <Link href={postDetailUrl} className="block mb-3">
                   <img
                     src={post.image_url}
                     alt="Post image"
@@ -661,7 +664,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               )}
 
               {/* Content - clickable to post detail */}
-              <Link to={postDetailUrl} className="block relative group/content">
+              <Link href={postDetailUrl} className="block relative group/content">
                 <div
                   ref={contentRef}
                   className={`transition-all ${

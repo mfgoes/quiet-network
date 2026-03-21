@@ -1,4 +1,6 @@
-import { Helmet } from 'react-helmet-async'
+'use client'
+
+import { useEffect } from 'react'
 import type { Post } from '@/types'
 
 interface PostMetaTagsProps {
@@ -70,48 +72,14 @@ export function PostMetaTags({ post }: PostMetaTagsProps) {
     }
   }
 
-  // Description: post content
-  const description = content || `A post by ${author} in ${circle}`
+  const fullTitle = `${title} — Quiet Network`
 
-  // Image: 1) Image from post, 2) Circle avatar, 3) Default
-  const siteUrl = window.location.origin
-  let imageUrl = extractImageUrl(post.content)
+  useEffect(() => {
+    document.title = fullTitle
+    return () => { document.title = 'Quiet Network' }
+  }, [fullTitle])
 
-  if (!imageUrl && post.circles?.avatar_url) {
-    imageUrl = post.circles.avatar_url
-  }
-
-  if (!imageUrl) {
-    imageUrl = `${siteUrl}/images/landscape_with_boats.jpg`
-  }
-
-  // Post URL
-  const postUrl = post.circles?.slug
-    ? `${siteUrl}/${post.circles.slug}/p/${post.id}`
-    : `${siteUrl}/p/${post.id}`
-
-  return (
-    <Helmet>
-      <title>{title} — Quiet Network</title>
-      <meta name="description" content={description} />
-
-      {/* Open Graph */}
-      <meta property="og:type" content="article" />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={imageUrl} />
-      <meta property="og:url" content={postUrl} />
-      <meta property="og:site_name" content="Quiet Network" />
-
-      {/* Twitter Card */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={imageUrl} />
-
-      {/* Additional article metadata */}
-      <meta property="article:published_time" content={post.created_at} />
-      <meta property="article:author" content={author} />
-    </Helmet>
-  )
+  // Metadata is handled server-side via generateMetadata in page.tsx
+  // This component only handles dynamic client-side title updates
+  return null
 }

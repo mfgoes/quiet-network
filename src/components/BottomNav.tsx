@@ -1,5 +1,7 @@
+'use client'
+
 import { Home, Compass, Bell, MessageSquare } from "lucide-react"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useRouter, usePathname } from "next/navigation"
 import { avatarUrl } from "@/types"
 import { useDM } from "@/components/DMContext"
 
@@ -10,9 +12,8 @@ interface BottomNavProps {
 }
 
 export function BottomNav({ avatar, unreadCount = 0, unreadDmCount = 0 }: BottomNavProps) {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const path = location.pathname
+  const router = useRouter()
+  const path = usePathname()
   const { openPanel } = useDM()
 
   const isHome = path === "/" || (
@@ -33,7 +34,7 @@ export function BottomNav({ avatar, unreadCount = 0, unreadDmCount = 0 }: Bottom
       <div className="mx-auto flex max-w-xl items-center justify-around py-2">
         {/* Home */}
         <button
-          onClick={() => navigate("/")}
+          onClick={() => router.push("/")}
           className={`flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${isHome ? "text-quiet-slate" : "text-quiet-muted"}`}
         >
           <Home className="h-5 w-5" />
@@ -42,7 +43,7 @@ export function BottomNav({ avatar, unreadCount = 0, unreadDmCount = 0 }: Bottom
 
         {/* Explore */}
         <button
-          onClick={() => navigate("/explore")}
+          onClick={() => router.push("/explore")}
           className={`flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${isExplore ? "text-quiet-slate" : "text-quiet-muted"}`}
         >
           <Compass className="h-5 w-5" />
@@ -67,7 +68,7 @@ export function BottomNav({ avatar, unreadCount = 0, unreadDmCount = 0 }: Bottom
 
         {/* Notifications */}
         <button
-          onClick={() => navigate("/notifications")}
+          onClick={() => router.push("/notifications")}
           className={`relative flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${isNotifications ? "text-quiet-slate" : "text-quiet-muted"}`}
         >
           <span className="relative">
@@ -83,7 +84,7 @@ export function BottomNav({ avatar, unreadCount = 0, unreadDmCount = 0 }: Bottom
 
         {/* Profile */}
         <button
-          onClick={() => navigate("/profile")}
+          onClick={() => router.push("/profile")}
           className={`flex flex-col items-center gap-0.5 px-3 py-1 text-xs transition-colors ${isProfile ? "text-quiet-slate" : "text-quiet-muted"}`}
         >
           <img
