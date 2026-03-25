@@ -4,7 +4,103 @@ import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Send } from "lucide-react"
 import { avatarUrl } from "@/types"
+import type { DMMessage } from "@/lib/hooks"
 import { useMessages, useConversations } from "@/lib/hooks"
+
+function formatMessageTime(dateStr: string): string {
+  const d = new Date(dateStr)
+  const now = new Date()
+  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000)
+  if (diffDays === 0) return time
+  if (diffDays === 1) return `Yesterday ${time}`
+  if (diffDays < 7) return `${d.toLocaleDateString([], { weekday: "short" })} ${time}`
+  return `${d.toLocaleDateString([], { month: "short", day: "numeric" })} ${time}`
+}
+
+function ProfileHoverCard({
+  avatar,
+  displayName,
+  username,
+}: {
+  avatar: string
+  displayName: string
+  username: string
+}) {
+  return (
+    <div className="absolute bottom-full left-0 mb-1.5 z-10 rounded-xl border border-quiet-border bg-white px-3 py-2.5 shadow-lg pointer-events-none w-48">
+      <div className="flex items-center gap-2">
+        <img src={avatar} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-quiet-slate leading-tight">{displayName}</p>
+          <p className="truncate text-xs text-quiet-muted leading-tight">@{username}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MessageBubble({
+  msg,
+  isMe,
+  otherUser,
+}: {
+  msg: DMMessage
+  isMe: boolean
+  otherUser?: { avatar_emoji: string; display_name: string; username: string }
+}) {
+  const [hovered, setHovered] = useState(false)
+  const [avatarHovered, setAvatarHovered] = useState(false)
+
+  return (
+    <div className={`group relative flex ${isMe ? "justify-end" : "justify-start"}`}>
+      {!isMe && otherUser && (
+        <div
+          className="relative shrink-0 mr-2 self-end"
+          onMouseEnter={() => setAvatarHovered(true)}
+          onMouseLeave={() => setAvatarHovered(false)}
+        >
+          <img
+            src={avatarUrl(otherUser.avatar_emoji)}
+            alt=""
+            className="h-6 w-6 rounded-full object-cover cursor-pointer"
+          />
+          {avatarHovered && (
+            <ProfileHoverCard
+              avatar={avatarUrl(otherUser.avatar_emoji)}
+              displayName={otherUser.display_name}
+              username={otherUser.username}
+            />
+          )}
+        </div>
+      )}
+      <div
+        className="relative"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <div
+          className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed break-words ${
+            isMe
+              ? "bg-quiet-slate text-white rounded-br-sm"
+              : "bg-white border border-quiet-border text-quiet-slate rounded-bl-sm"
+          }`}
+        >
+          {msg.content}
+        </div>
+        {hovered && (
+          <div
+            className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-quiet-slate px-2 py-1 text-[10px] text-white shadow-md ${
+              isMe ? "right-full mr-2" : "left-full ml-2"
+            }`}
+          >
+            {formatMessageTime(msg.created_at)}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export function ConversationPage({ userId }: { userId: string }) {
   const params = useParams()
@@ -70,22 +166,14 @@ export function ConversationPage({ userId }: { userId: string }) {
         ) : messages.length === 0 ? (
           <p className="text-center text-sm text-quiet-muted mt-6 italic">No messages yet. Say hello!</p>
         ) : (
-          messages.map(msg => {
-            const isMe = msg.sender_id === userId
-            return (
-              <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed break-words ${
-                    isMe
-                      ? "bg-quiet-slate text-white rounded-br-sm"
-                      : "bg-white border border-quiet-border text-quiet-slate rounded-bl-sm"
-                  }`}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            )
-          })
+          messages.map(msg => (
+            <MessageBubble
+              key={msg.id}
+              msg={msg}
+              isMe={msg.sender_id === userId}
+              otherUser={conversation?.otherUser}
+            />
+          ))
         )}
         <div ref={bottomRef} />
       </div>

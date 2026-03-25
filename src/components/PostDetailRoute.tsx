@@ -6,7 +6,6 @@ import { ArrowLeft } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { PostCard } from "@/components/PostCard"
 import { PostMetaTags } from "@/components/PostMetaTags"
-import { JoinBanner } from "@/components/JoinBanner"
 import { Button } from "@/components/ui/button"
 import type { Post } from "@/types"
 
@@ -17,7 +16,7 @@ interface PostDetailRouteProps {
   onJoinClick?: () => void
 }
 
-export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}, onJoinClick, postId: propPostId }: PostDetailRouteProps & { postId?: string }) {
+export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}, postId: propPostId }: PostDetailRouteProps & { postId?: string }) {
   const params = useParams()
   const postId = propPostId ?? (params.postId as string | undefined)
   const router = useRouter()
@@ -182,7 +181,6 @@ export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}
   return (
     <div>
       <PostMetaTags post={post} />
-      {!isAuthenticated && onJoinClick && <JoinBanner onJoin={onJoinClick} />}
       <div className="mb-4 flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={handleBackClick}>
           <ArrowLeft className="h-4 w-4" />
@@ -190,7 +188,7 @@ export function PostDetailRoute({ userId, memberCircleIds = [], circleRoles = {}
         {post.circles && (
           <button
             onClick={() => router.push(`/${post.circles!.slug}`)}
-            className="text-sm text-quiet-accent hover:text-quiet-slate transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full border border-quiet-border bg-white px-3 py-1.5 text-sm font-medium text-quiet-accent shadow-sm hover:bg-quiet-offwhite transition-colors"
           >
             View in {post.circles.name}
           </button>
