@@ -20,8 +20,14 @@ export default function LoginPage() {
         <div className="px-6 py-8">
           <AuthForm onSignIn={signIn} onSignUp={signUp} onMagicLink={signInWithMagicLink} onForgotPassword={resetPassword} />
           <button
+            onClick={() => router.push('/')}
+            className="mt-4 w-full rounded-lg border border-quiet-border py-2.5 text-sm font-medium text-quiet-muted hover:bg-quiet-border/30 transition-colors"
+          >
+            Browse without signing in
+          </button>
+          <button
             onClick={() => router.push('/about')}
-            className="mt-8 w-full text-center text-xs text-quiet-muted hover:text-quiet-accent transition-colors"
+            className="mt-4 w-full text-center text-xs text-quiet-muted hover:text-quiet-accent transition-colors"
           >
             Learn more about Quiet Network
           </button>
@@ -35,8 +41,14 @@ export default function LoginPage() {
           <div className="w-full max-w-sm">
             <AuthForm onSignIn={signIn} onSignUp={signUp} onMagicLink={signInWithMagicLink} onForgotPassword={resetPassword} />
             <button
+              onClick={() => router.push('/')}
+              className="mt-4 w-full rounded-lg border border-quiet-border py-2.5 text-sm font-medium text-quiet-muted hover:bg-quiet-border/30 transition-colors"
+            >
+              Browse without signing in
+            </button>
+            <button
               onClick={() => router.push('/about')}
-              className="mt-8 w-full text-center text-xs text-quiet-muted hover:text-quiet-accent transition-colors"
+              className="mt-4 w-full text-center text-xs text-quiet-muted hover:text-quiet-accent transition-colors"
             >
               Learn more about Quiet Network
             </button>
