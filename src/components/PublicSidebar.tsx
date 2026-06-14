@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from "react"
-import { Home, Compass, Info, LogIn, Search, X } from "lucide-react"
+import { Home, Compass, Info, LogIn, Search, X, Wrench } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { CircleIcon } from "@/components/CircleIcon"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,7 @@ import type { Circle } from "@/types"
 const NAV_ITEMS = [
   { label: "Home", path: "/", icon: Home },
   { label: "Explore", path: "/explore", icon: Compass },
+  { label: "Watchmakers", path: "/watchmakers", icon: Wrench },
   { label: "About", path: "/about", icon: Info },
 ]
 

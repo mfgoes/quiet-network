@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from "react"
-import { Menu, X, Home, Compass, User, Info, Shield, ChevronDown, MessageSquare } from "lucide-react"
+import { Menu, X, Home, Compass, User, Info, Shield, ChevronDown, MessageSquare, Wrench } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { avatarUrl } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
@@ -59,11 +59,12 @@ export function MobileMenu({ profile, circles, adminCircles = [] }: MobileMenuPr
     }
   }
 
-  const isHome = path === "/" || (path !== "/explore" && path !== "/profile" && path !== "/about" && !path.startsWith("/user/") && !path.startsWith("/admin/") && !path.startsWith("/messages"))
+  const isHome = path === "/" || (path !== "/explore" && path !== "/watchmakers" && path !== "/profile" && path !== "/about" && !path.startsWith("/user/") && !path.startsWith("/admin/") && !path.startsWith("/messages"))
 
   const navItems = [
     { label: "Home", path: "/", icon: Home, active: isHome },
     { label: "Explore", path: "/explore", icon: Compass, active: path === "/explore" },
+    { label: "Watchmakers", path: "/watchmakers", icon: Wrench, active: path === "/watchmakers" },
     { label: "Messages", path: "", icon: MessageSquare, active: false },
     { label: "Profile", path: "/profile", icon: User, active: path === "/profile" },
     { label: "About", path: "/about", icon: Info, active: path === "/about" },

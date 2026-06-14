@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser, Reply, NotificationPreferences, Notification, CircleTag } from "@/types"
+import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser, Reply, NotificationPreferences, Notification, CircleTag, WatchmakerClaimRequest } from "@/types"
 import { slugify } from "@/types"
 
 // ─── Auth ────────────────────────────────────────────
@@ -180,6 +180,94 @@ export function useProfile(userId: string | undefined) {
   const needsSetup = profile?.display_name === "Neighbor" || !profile?.username
 
   return { profile, loading, needsSetup, updateProfile, refetch: fetchProfile }
+}
+
+export function useWatchmakerClaimRequests(userId: string | undefined) {
+  const [claims, setClaims] = useState<WatchmakerClaimRequest[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const fetchClaims = useCallback(async () => {
+    if (!userId) {
+      setClaims([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    const { data } = await supabase
+      .from("watchmaker_claim_requests")
+      .select("*")
+      .eq("claimant_id", userId)
+      .order("created_at", { ascending: false })
+
+    setClaims((data ?? []) as WatchmakerClaimRequest[])
+    setLoading(false)
+  }, [userId])
+
+  useEffect(() => {
+    fetchClaims()
+  }, [fetchClaims])
+
+  return { claims, loading, refetch: fetchClaims }
+}
+
+export function useWatchmakerClaimReviewQueue(userId: string | undefined) {
+  const [claims, setClaims] = useState<WatchmakerClaimRequest[]>([])
+  const [isReviewer, setIsReviewer] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const fetchQueue = useCallback(async () => {
+    if (!userId) {
+      setClaims([])
+      setIsReviewer(false)
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    const { data: reviewer } = await supabase
+      .from("watchmaker_claim_reviewers")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle()
+
+    const canReview = Boolean(reviewer)
+    setIsReviewer(canReview)
+
+    if (!canReview) {
+      setClaims([])
+      setLoading(false)
+      return
+    }
+
+    const { data } = await supabase
+      .from("watchmaker_claim_requests")
+      .select("*")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true })
+
+    setClaims((data ?? []) as WatchmakerClaimRequest[])
+    setLoading(false)
+  }, [userId])
+
+  useEffect(() => {
+    fetchQueue()
+  }, [fetchQueue])
+
+  const reviewClaim = useCallback(
+    async (claimId: string, decision: "approved" | "rejected") => {
+      const { error } = await supabase.rpc("review_watchmaker_claim_request", {
+        request_id: claimId,
+        decision,
+      })
+
+      if (!error) await fetchQueue()
+      return { error }
+    },
+    [fetchQueue],
+  )
+
+  return { claims, isReviewer, loading, reviewClaim, refetch: fetchQueue }
 }
 
 // ─── Circles ─────────────────────────────────────────

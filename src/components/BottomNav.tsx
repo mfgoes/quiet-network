@@ -18,6 +18,7 @@ export function BottomNav({ avatar, unreadCount = 0, unreadDmCount = 0 }: Bottom
 
   const isHome = path === "/" || (
     path !== "/explore" &&
+    path !== "/watchmakers" &&
     path !== "/notifications" &&
     path !== "/profile" &&
     path !== "/about" &&

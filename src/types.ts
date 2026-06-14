@@ -16,6 +16,20 @@ export interface Profile {
   posts_public?: boolean
 }
 
+export interface WatchmakerClaimRequest {
+  id: string
+  watchmaker_id: string | null
+  watchmaker_slug: string
+  watchmaker_name: string
+  claimant_id: string
+  claimant_role: string
+  proof: string
+  status: "pending" | "approved" | "rejected"
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+}
+
 export interface NotificationPreferences {
   id: string
   user_id: string

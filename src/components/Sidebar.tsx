@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from "react"
-import { Home, Compass, Bell, ChevronDown, Shield, Info, MessageSquare, Search, X, Star } from "lucide-react"
+import { Home, Compass, Bell, ChevronDown, Shield, Info, MessageSquare, Search, X, Star, Wrench } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { avatarUrl } from "@/types"
 import { CircleIcon } from "@/components/CircleIcon"
@@ -70,6 +70,7 @@ export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCou
   const navItems = [
     { label: "Home", path: "/", icon: Home, badge: 0 },
     { label: "Explore", path: "/explore", icon: Compass, badge: 0 },
+    { label: "Watchmakers", path: "/watchmakers", icon: Wrench, badge: 0 },
     { label: "Messages", path: "/messages", icon: MessageSquare, badge: unreadDmCount },
     { label: "Notifications", path: "/notifications", icon: Bell, badge: unreadCount },
     { label: "About", path: "/about", icon: Info, badge: 0 },
@@ -95,7 +96,7 @@ export function Sidebar({ profile, userId, circles, adminCircles = [], unreadCou
         {navItems.map((item) => {
           const isActive =
             item.path === "/"
-              ? path === "/" || (path !== "/explore" && path !== "/notifications" && path !== "/profile" && path !== "/about" && !path.startsWith("/user/") && !path.startsWith("/admin/") && !path.startsWith("/messages"))
+              ? path === "/" || (path !== "/explore" && path !== "/watchmakers" && path !== "/notifications" && path !== "/profile" && path !== "/about" && !path.startsWith("/user/") && !path.startsWith("/admin/") && !path.startsWith("/messages"))
               : item.path === "/messages" ? path.startsWith("/messages") : path === item.path
           const badgeCount = item.badge ?? 0
           return (

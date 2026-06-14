@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { SocialIcon } from "@/components/SocialIcon"
 import { CircleIcon } from "@/components/CircleIcon"
-import { useFavorites, useCircleMemberCounts, useUserPosts, useFollowCounts } from "@/lib/hooks"
+import { useFavorites, useCircleMemberCounts, useUserPosts, useFollowCounts, useWatchmakerClaimRequests } from "@/lib/hooks"
 import { AVATAR_OPTIONS, avatarUrl, getBannerBg } from "@/types"
 import type { Profile, ProfileLink, Circle } from "@/types"
 
@@ -60,6 +60,7 @@ export function ProfilePage({ defaultEditing = false, profile, userId, circles, 
   const memberCounts = useCircleMemberCounts(circles.map(c => c.id))
   const { posts } = useUserPosts(profile.posts_public !== false ? userId : undefined)
   const { followerCount, followingCount } = useFollowCounts(userId)
+  const { claims: watchmakerClaims } = useWatchmakerClaimRequests(userId)
   const [editing, setEditing] = useState(defaultEditing)
   const [showAllCircles, setShowAllCircles] = useState(false)
   const countryRef = useRef<HTMLSelectElement>(null)
@@ -202,6 +203,34 @@ export function ProfilePage({ defaultEditing = false, profile, userId, circles, 
 
           {/* ── Main column ── */}
           <div className="flex-1 min-w-0 space-y-8">
+            {watchmakerClaims.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-sm font-semibold text-quiet-slate">Business claims</h2>
+                <div className="space-y-2">
+                  {watchmakerClaims.map((claim) => (
+                    <div key={claim.id} className="rounded-xl border border-quiet-border bg-white p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-quiet-slate">{claim.watchmaker_name}</p>
+                          <p className="mt-1 text-xs text-quiet-muted">{claim.claimant_role}</p>
+                        </div>
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                            claim.status === 'approved'
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : claim.status === 'rejected'
+                                ? 'bg-rose-50 text-rose-700'
+                                : 'bg-amber-50 text-amber-700'
+                          }`}
+                        >
+                          {claim.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Circles */}
             {circles.length > 0 && (

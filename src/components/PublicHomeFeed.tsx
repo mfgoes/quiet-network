@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowUp, MessageSquare, Clock, Users, ChevronRight, Search, X } from "lucide-react"
+import { ArrowUp, MessageSquare, Clock, Users, ChevronRight, Search, X, Wrench } from "lucide-react"
 import { useAllMemberPosts } from "@/lib/hooks"
 import { CircleIcon } from "@/components/CircleIcon"
 import { LinkPreview } from "@/components/LinkPreview"
@@ -403,6 +403,19 @@ export function PublicExplorePage({ circles, loading }: PublicExplorePageProps) 
     <div>
       <h2 className="mb-1 text-lg font-semibold text-quiet-slate">Explore circles</h2>
       <p className="mb-4 text-sm text-quiet-muted">Browse communities on Quiet Network</p>
+      <button
+        onClick={() => router.push("/watchmakers")}
+        className="mb-4 flex w-full items-center gap-3 rounded-xl border border-quiet-border bg-white p-4 text-left transition-colors hover:bg-quiet-aged/40"
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-quiet-aged text-quiet-slate">
+          <Wrench className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-quiet-slate">Watchmakers</span>
+          <span className="mt-0.5 block text-xs text-quiet-muted">Find trusted watch repair near you</span>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-quiet-muted" />
+      </button>
 
       {/* Search */}
       {!loading && circles.length > 0 && (

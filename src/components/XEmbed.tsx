@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from "react"
+import { Component, useEffect, useMemo, useState, type ReactNode } from "react"
 import { ExternalLink } from "lucide-react"
-import { Tweet } from "react-tweet"
+import { EmbeddedTweet, TweetSkeleton, useTweet } from "react-tweet"
 import type { TweetComponents } from "react-tweet"
 
 // ── X / Twitter ────────────────────────────────────────
@@ -127,7 +127,7 @@ function SocialPostCard({
 }: {
   href: string
   fallbackAuthor: string
-  logo: React.ReactNode
+  logo: ReactNode
   meta: PostMeta | null
 }) {
   return (
@@ -158,6 +158,73 @@ function SocialPostCard({
   )
 }
 
+function XFallbackCard({ href, username }: { href: string; username: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-3 flex items-center gap-3 rounded-xl border border-quiet-border bg-quiet-offwhite p-3 transition-colors hover:bg-quiet-border/30"
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#000] text-white">
+        <XLogo />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-quiet-slate">
+          @{username} on X
+        </p>
+        <p className="truncate text-xs text-quiet-muted">{href}</p>
+      </div>
+      <ExternalLink className="h-4 w-4 shrink-0 text-quiet-muted" />
+    </a>
+  )
+}
+
+function normalizeTweetForReactTweet(tweet: any): any {
+  if (!tweet) return tweet
+
+  const text = typeof tweet.text === "string" ? tweet.text : ""
+  const rawEntities = tweet.entities && typeof tweet.entities === "object" ? tweet.entities : {}
+  const media = Array.isArray(rawEntities.media) && rawEntities.media.length > 0
+    ? rawEntities.media
+    : undefined
+
+  return {
+    ...tweet,
+    text,
+    display_text_range: Array.isArray(tweet.display_text_range)
+      ? tweet.display_text_range
+      : [0, Array.from(text).length],
+    entities: {
+      hashtags: Array.isArray(rawEntities.hashtags) ? rawEntities.hashtags : [],
+      urls: Array.isArray(rawEntities.urls) ? rawEntities.urls : [],
+      user_mentions: Array.isArray(rawEntities.user_mentions) ? rawEntities.user_mentions : [],
+      symbols: Array.isArray(rawEntities.symbols) ? rawEntities.symbols : [],
+      ...(media ? { media } : {}),
+    },
+    quoted_tweet: tweet.quoted_tweet ? normalizeTweetForReactTweet(tweet.quoted_tweet) : undefined,
+  }
+}
+
+class TweetRenderBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error("Failed to render X embed", error)
+  }
+
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children
+  }
+}
+
 function useSocialPostMeta(canonicalUrl: string | null): PostMeta | null {
   const [meta, setMeta] = useState<PostMeta | null>(null)
   useEffect(() => {
@@ -183,35 +250,26 @@ function useSocialPostMeta(canonicalUrl: string | null): PostMeta | null {
 
 export function XEmbed({ url }: { url: string }) {
   const parsed = parseXUrl(url)
-  if (!parsed) return null
-  const tweetId = parsed.canonicalUrl.match(/\/status\/(\d+)/)?.[1]
-  if (!tweetId) return null
+  const tweetId = parsed?.canonicalUrl.match(/\/status\/(\d+)/)?.[1] ?? null
+  const { data: tweet, error, isLoading } = useTweet(tweetId ?? undefined)
+  const normalizedTweet = useMemo(() => normalizeTweetForReactTweet(tweet), [tweet])
+
+  if (!parsed || !tweetId) return null
+
+  const fallback = <XFallbackCard href={parsed.canonicalUrl} username={parsed.username} />
 
   const components: TweetComponents = {
-    TweetNotFound: () => (
-      <a
-        href={parsed.canonicalUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-3 flex items-center gap-3 rounded-xl border border-quiet-border bg-quiet-offwhite p-3 transition-colors hover:bg-quiet-border/30"
-      >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#000] text-white">
-          <XLogo />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-quiet-slate">
-            @{parsed.username} on X
-          </p>
-          <p className="truncate text-xs text-quiet-muted">{parsed.canonicalUrl}</p>
-        </div>
-        <ExternalLink className="h-4 w-4 shrink-0 text-quiet-muted" />
-      </a>
-    ),
+    TweetNotFound: () => fallback,
   }
+
+  if (isLoading) return <TweetSkeleton />
+  if (error || !normalizedTweet) return fallback
 
   return (
     <div className="mt-3 [&_.react-tweet-theme]:!my-0 [&_article]:!mx-0">
-      <Tweet id={tweetId} components={components} />
+      <TweetRenderBoundary fallback={fallback}>
+        <EmbeddedTweet tweet={normalizedTweet} components={components} />
+      </TweetRenderBoundary>
     </div>
   )
 }

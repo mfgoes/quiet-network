@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks'
 import { AuthForm } from '@/components/AuthForm'
@@ -8,10 +8,19 @@ import { AuthForm } from '@/components/AuthForm'
 export default function LoginPage() {
   const router = useRouter()
   const { user, signIn, signUp, signInWithMagicLink, resetPassword } = useAuth()
+  const [redirectTo, setRedirectTo] = useState('/')
 
   useEffect(() => {
-    if (user) router.replace('/')
-  }, [user, router])
+    const params = new URLSearchParams(window.location.search)
+    const redirect = params.get('redirect')
+    if (redirect?.startsWith('/')) {
+      setRedirectTo(redirect)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (user) router.replace(redirectTo)
+  }, [redirectTo, user, router])
 
   return (
     <div className="min-h-screen bg-quiet-offwhite">
@@ -20,7 +29,7 @@ export default function LoginPage() {
         <div className="px-6 py-8">
           <AuthForm onSignIn={signIn} onSignUp={signUp} onMagicLink={signInWithMagicLink} onForgotPassword={resetPassword} />
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push(redirectTo)}
             className="mt-4 w-full rounded-lg border border-quiet-border py-2.5 text-sm font-medium text-quiet-muted hover:bg-quiet-border/30 transition-colors"
           >
             Browse without signing in
@@ -41,7 +50,7 @@ export default function LoginPage() {
           <div className="w-full max-w-sm">
             <AuthForm onSignIn={signIn} onSignUp={signUp} onMagicLink={signInWithMagicLink} onForgotPassword={resetPassword} />
             <button
-              onClick={() => router.push('/')}
+              onClick={() => router.push(redirectTo)}
               className="mt-4 w-full rounded-lg border border-quiet-border py-2.5 text-sm font-medium text-quiet-muted hover:bg-quiet-border/30 transition-colors"
             >
               Browse without signing in
