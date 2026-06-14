@@ -101,11 +101,12 @@ begin
         reviewed_at = now()
     where id = request_id;
 
-  if decision = 'approved' and claim.watchmaker_id is not null then
+  if decision = 'approved' then
     update public.watchmakers
       set profile_type = 'claimed',
           owner_id = claim.claimant_id
-      where id = claim.watchmaker_id;
+      where (claim.watchmaker_id is not null and id = claim.watchmaker_id)
+         or (claim.watchmaker_id is null and slug = claim.watchmaker_slug);
   end if;
 end;
 $$;

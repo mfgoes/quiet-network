@@ -1,5 +1,5 @@
--- Make watchmaker contributions persist the form's structured chips.
--- Community listings can now carry accepted watch types and common services.
+-- Make watchmaker service reports persist the form's structured chips.
+-- Community listings remain identity/location records; tags are derived from reports.
 -- Service reports can carry a watch type, work chip array, matched local slug,
 -- and Nominatim location data when no existing shop is matched.
 
@@ -30,29 +30,6 @@ alter table public.watchmaker_service_reports
   add constraint watchmaker_service_reports_osm_type_check
     check (osm_type is null or osm_type in ('node', 'way', 'relation'));
 
-alter table public.watchmakers
-  drop constraint if exists watchmakers_community_watch_types_empty,
-  drop constraint if exists watchmakers_community_services_empty;
-
-do $$
-declare
-  constraint_name text;
-begin
-  for constraint_name in
-    select conname
-    from pg_constraint
-    where conrelid = 'public.watchmakers'::regclass
-      and contype = 'c'
-      and pg_get_constraintdef(oid) like '%profile_type = ''claimed''::text%'
-      and (
-        pg_get_constraintdef(oid) like '%watch_types = ''{}''::text[]%'
-        or pg_get_constraintdef(oid) like '%services = ''{}''::text[]%'
-      )
-  loop
-    execute format('alter table public.watchmakers drop constraint %I', constraint_name);
-  end loop;
-end $$;
-
 drop policy if exists "Anyone can submit watchmakers" on public.watchmakers;
 create policy "Anyone can submit watchmakers"
   on public.watchmakers
@@ -63,6 +40,8 @@ create policy "Anyone can submit watchmakers"
     and profile_type = 'community'
     and owner_id is null
     and rep_friendly is null
+    and watch_types = '{}'
+    and services = '{}'
   );
 
 drop policy if exists "Anyone can submit service reports" on public.watchmaker_service_reports;

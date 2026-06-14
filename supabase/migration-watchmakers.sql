@@ -4,6 +4,7 @@
 create table if not exists public.watchmakers (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  slug text,
   profile_type text not null default 'community' check (profile_type in ('claimed', 'community')),
   owner_id uuid references auth.users(id) on delete set null,
   city text not null,
@@ -70,6 +71,10 @@ create table if not exists public.watchmaker_claim_reviewers (
 create unique index if not exists watchmaker_claim_requests_one_pending_per_user
   on public.watchmaker_claim_requests (watchmaker_slug, claimant_id)
   where status = 'pending';
+
+create unique index if not exists watchmakers_slug_unique
+  on public.watchmakers (slug)
+  where slug is not null;
 
 alter table public.watchmakers enable row level security;
 alter table public.watchmaker_service_reports enable row level security;
@@ -194,11 +199,12 @@ begin
         reviewed_at = now()
     where id = request_id;
 
-  if decision = 'approved' and claim.watchmaker_id is not null then
+  if decision = 'approved' then
     update public.watchmakers
       set profile_type = 'claimed',
           owner_id = claim.claimant_id
-      where id = claim.watchmaker_id;
+      where (claim.watchmaker_id is not null and id = claim.watchmaker_id)
+         or (claim.watchmaker_id is null and slug = claim.watchmaker_slug);
   end if;
 end;
 $$;

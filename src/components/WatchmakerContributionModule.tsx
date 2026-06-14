@@ -34,8 +34,6 @@ type WatchmakerContributionModuleProps = {
   onClose: () => void
 }
 
-const WATCH_TYPE_OPTIONS = ['Rolex', 'Omega', 'Seiko', 'Tudor', 'Microbrands', 'Vintage']
-const SERVICE_OPTIONS = ['Mechanical service', 'Vintage restoration', 'Pressure testing', 'Polishing', 'Regulation', 'Battery service']
 const WORK_DONE = ['Full service', 'Regulation', 'Pressure test', 'Battery', 'Crystal', 'Polish']
 const RETURN_OPTIONS = ['Yes', 'Probably', 'No']
 const REPORT_WATCH_TYPES: Array<{ label: string; value: ReportWatchType }> = [
@@ -45,6 +43,10 @@ const REPORT_WATCH_TYPES: Array<{ label: string; value: ReportWatchType }> = [
 
 function normalize(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+function slugify(value: string): string {
+  return normalize(value).replace(/\s+/g, '-')
 }
 
 function similarity(a: string, b: string): number {
@@ -101,6 +103,7 @@ function Chip({
   return (
     <button
       type="button"
+      aria-pressed={selected}
       onClick={onClick}
       className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
         selected
@@ -127,8 +130,6 @@ export function WatchmakerContributionModule({
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [watchTypes, setWatchTypes] = useState<string[]>([])
-  const [services, setServices] = useState<string[]>([])
   const [workDone, setWorkDone] = useState<string[]>([])
   const [reportWatchType, setReportWatchType] = useState<ReportWatchType>('genuine')
   const [wouldReturn, setWouldReturn] = useState('Yes')
@@ -143,8 +144,6 @@ export function WatchmakerContributionModule({
     setSelectedLocation(null)
     setLocationLoading(false)
     setSubmitting(false)
-    setWatchTypes([])
-    setServices([])
     setWorkDone([])
     setReportWatchType('genuine')
     setWouldReturn('Yes')
@@ -217,11 +216,6 @@ export function WatchmakerContributionModule({
       return
     }
 
-    if (type === 'watchmaker' && watchTypes.length === 0) {
-      setMessage('Choose at least one accepted watch type.')
-      return
-    }
-
     if (type === 'report' && workDone.length === 0) {
       setMessage('Choose at least one work item from the report.')
       return
@@ -236,6 +230,7 @@ export function WatchmakerContributionModule({
         const { city, country } = locationParts(selectedLocation)
         const { error } = await supabase.from('watchmakers').insert({
           name: shopName,
+          slug: slugify(`${shopName} ${city}`),
           profile_type: 'community',
           owner_id: null,
           city,
@@ -243,8 +238,8 @@ export function WatchmakerContributionModule({
           address: selectedLocation.display_name,
           website: formValue(formData, 'website') || null,
           description: formValue(formData, 'notes') || null,
-          services,
-          watch_types: watchTypes,
+          services: [],
+          watch_types: [],
           osm_place_id: selectedLocation.place_id,
           osm_type: selectedLocation.osm_type ?? null,
           osm_display_name: selectedLocation.display_name,
@@ -432,32 +427,6 @@ export function WatchmakerContributionModule({
                   placeholder="Website, phone, or Instagram"
                 />
               </label>
-              <div className="mt-4">
-                <p className="text-sm font-medium text-quiet-slate">Accepted watch types</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {WATCH_TYPE_OPTIONS.map((item) => (
-                    <Chip
-                      key={item}
-                      label={item}
-                      selected={watchTypes.includes(item)}
-                      onClick={() => toggle(item, watchTypes, setWatchTypes)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-sm font-medium text-quiet-slate">Common work</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {SERVICE_OPTIONS.map((item) => (
-                    <Chip
-                      key={item}
-                      label={item}
-                      selected={services.includes(item)}
-                      onClick={() => toggle(item, services, setServices)}
-                    />
-                  ))}
-                </div>
-              </div>
             </>
           ) : (
             <>

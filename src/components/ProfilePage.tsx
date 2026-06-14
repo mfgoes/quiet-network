@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from "react"
-import { Bell, Calendar, ChevronDown, Info, LogOut, MapPin, Pencil, Plus, Star, Trash2, UserMinus } from "lucide-react"
+import { Bell, Calendar, CheckCircle, ChevronDown, Info, LogOut, MapPin, Pencil, Plus, ShieldCheck, Star, Trash2, UserMinus, XCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { linkifyText } from "@/lib/utils"
@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { SocialIcon } from "@/components/SocialIcon"
 import { CircleIcon } from "@/components/CircleIcon"
-import { useFavorites, useCircleMemberCounts, useUserPosts, useFollowCounts, useWatchmakerClaimRequests } from "@/lib/hooks"
+import { useFavorites, useCircleMemberCounts, useUserPosts, useFollowCounts, useWatchmakerClaimRequests, useWatchmakerClaimReviewQueue } from "@/lib/hooks"
 import { AVATAR_OPTIONS, avatarUrl, getBannerBg } from "@/types"
 import type { Profile, ProfileLink, Circle } from "@/types"
 
@@ -61,8 +61,10 @@ export function ProfilePage({ defaultEditing = false, profile, userId, circles, 
   const { posts } = useUserPosts(profile.posts_public !== false ? userId : undefined)
   const { followerCount, followingCount } = useFollowCounts(userId)
   const { claims: watchmakerClaims } = useWatchmakerClaimRequests(userId)
+  const { claims: reviewClaims, isReviewer, reviewClaim } = useWatchmakerClaimReviewQueue(userId)
   const [editing, setEditing] = useState(defaultEditing)
   const [showAllCircles, setShowAllCircles] = useState(false)
+  const [reviewingClaimId, setReviewingClaimId] = useState<string | null>(null)
   const countryRef = useRef<HTMLSelectElement>(null)
 
   useEffect(() => {
@@ -84,6 +86,19 @@ export function ProfilePage({ defaultEditing = false, profile, userId, circles, 
   const memberSince = new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
   const countryDef = COUNTRIES.find(c => c.code === profile.country)
   const visibleCircles = showAllCircles ? circles : circles.slice(0, CIRCLES_PREVIEW)
+
+  const handleReviewClaim = async (claimId: string, decision: "approved" | "rejected") => {
+    setReviewingClaimId(claimId)
+    const { error } = await reviewClaim(claimId, decision)
+    setReviewingClaimId(null)
+
+    if (error) {
+      toast.error(error.message)
+      return
+    }
+
+    toast.success(decision === "approved" ? "Claim approved." : "Claim rejected.")
+  }
 
   const handleSave = async () => {
     setError(null)
@@ -203,6 +218,53 @@ export function ProfilePage({ defaultEditing = false, profile, userId, circles, 
 
           {/* ── Main column ── */}
           <div className="flex-1 min-w-0 space-y-8">
+            {isReviewer && reviewClaims.length > 0 && (
+              <section>
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-quiet-slate">
+                  <ShieldCheck className="h-4 w-4 text-quiet-muted" />
+                  Watchmaker claim review
+                </h2>
+                <div className="space-y-2">
+                  {reviewClaims.map((claim) => (
+                    <div key={claim.id} className="rounded-xl border border-quiet-border bg-white p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-quiet-slate">{claim.watchmaker_name}</p>
+                          <p className="mt-1 text-xs text-quiet-muted">{claim.claimant_role}</p>
+                        </div>
+                        <span className="rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+                          pending
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-quiet-slate">{claim.proof}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={reviewingClaimId === claim.id}
+                          onClick={() => handleReviewClaim(claim.id, "approved")}
+                        >
+                          <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                          Approve
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={reviewingClaimId === claim.id}
+                          onClick={() => handleReviewClaim(claim.id, "rejected")}
+                          className="bg-white"
+                        >
+                          <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {watchmakerClaims.length > 0 && (
               <section>
                 <h2 className="mb-3 text-sm font-semibold text-quiet-slate">Business claims</h2>

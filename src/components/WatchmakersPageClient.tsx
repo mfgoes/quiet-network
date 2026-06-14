@@ -45,6 +45,8 @@ type ServiceReport = {
 type WatchmakerBase = {
   id: string
   profileType: ProfileType
+  slug?: string | null
+  ownerId?: string | null
   name: string
   city: string
   country: string
@@ -63,6 +65,7 @@ type WatchmakerBase = {
   x: number
   y: number
   reports: ServiceReport[]
+  website?: string | null
 }
 
 type ClaimedWatchmaker = WatchmakerBase & {
@@ -83,6 +86,39 @@ type CommunityWatchmaker = WatchmakerBase & {
 }
 
 type Watchmaker = ClaimedWatchmaker | CommunityWatchmaker
+type DbWatchmakerRow = {
+  id: string
+  slug: string | null
+  profile_type: ProfileType
+  owner_id: string | null
+  name: string
+  city: string
+  country: string
+  address: string | null
+  website: string | null
+  description: string | null
+  shop_type: string | null
+  services: string[] | null
+  watch_types: string[] | null
+  movements: string[] | null
+  rep_friendly: ReplicaPolicy | null
+  typical_price: string | null
+  turnaround: string | null
+  latitude: number | null
+  longitude: number | null
+}
+type DbServiceReportRow = {
+  id: string
+  watchmaker_id: string | null
+  watchmaker_slug: string | null
+  watchmaker_name: string | null
+  watch: string
+  work_performed: string
+  price: string | null
+  turnaround: string | null
+  would_return: boolean | null
+  watch_accepted: boolean | null
+}
 type GeoLookup = {
   city?: string
   country?: string
@@ -357,15 +393,6 @@ const WATCHMAKERS: Watchmaker[] = [
   },
 ]
 
-const COUNTRY_FILTERS = Array.from(new Set(WATCHMAKERS.map((watchmaker) => watchmaker.country))).sort()
-const CITY_FILTERS_BY_COUNTRY = COUNTRY_FILTERS.reduce<Record<string, string[]>>((filters, country) => {
-  filters[country] = Array.from(
-    new Set(WATCHMAKERS.filter((watchmaker) => watchmaker.country === country).map((watchmaker) => watchmaker.city)),
-  ).sort()
-
-  return filters
-}, {})
-
 function FilterCheckbox({
   label,
   checked,
@@ -376,7 +403,12 @@ function FilterCheckbox({
   onChange: () => void
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-slate-700 hover:bg-slate-100">
+    <button
+      type="button"
+      aria-pressed={checked}
+      onClick={onChange}
+      className="flex w-full cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-left text-sm text-slate-700 hover:bg-slate-100"
+    >
       <span
         className={`flex h-4 w-4 items-center justify-center rounded border ${
           checked ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white'
@@ -385,7 +417,7 @@ function FilterCheckbox({
         {checked && <Check className="h-3 w-3" />}
       </span>
       <span>{label}</span>
-    </label>
+    </button>
   )
 }
 
@@ -404,6 +436,87 @@ function Stars({ rating }: { rating: number }) {
 
 function canShowReplicaPolicy(watchmaker: Watchmaker): watchmaker is ClaimedWatchmakerWithReplicaPolicy {
   return watchmaker.profileType === 'claimed' && watchmaker.repFriendly !== 'unknown'
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
+function priceBucketFromText(price: string): Watchmaker['priceBucket'] {
+  const values = Array.from(price.matchAll(/\d+/g)).map((match) => Number(match[0])).filter(Number.isFinite)
+  const average = values.length > 0 ? values.reduce((sum, value) => sum + value, 0) / values.length : 0
+
+  if (average > 400) return 'over400'
+  if (average >= 150) return '150to400'
+  return 'under150'
+}
+
+function turnaroundBucketFromText(turnaround: string): Watchmaker['turnaroundBucket'] {
+  const lower = turnaround.toLowerCase()
+  const values = Array.from(lower.matchAll(/\d+/g)).map((match) => Number(match[0])).filter(Number.isFinite)
+  const maxValue = values.length > 0 ? Math.max(...values) : 0
+
+  if (lower.includes('month') || (lower.includes('week') && maxValue > 4)) return 'over4'
+  if (lower.includes('day') && maxValue <= 7) return 'under1'
+  return '1to4'
+}
+
+function dbReportToServiceReport(report: DbServiceReportRow): ServiceReport {
+  return {
+    title: report.work_performed || 'Service report',
+    watch: report.watch,
+    work: report.work_performed,
+    price: report.price ?? 'Price not shared',
+    turnaround: report.turnaround ?? 'Timing not shared',
+    wouldReturn: report.would_return ?? false,
+    watchAccepted: report.watch_accepted ?? undefined,
+  }
+}
+
+function mapDbWatchmaker(row: DbWatchmakerRow, reports: ServiceReport[]): Watchmaker {
+  const fallbackPrice = reports.find((report) => report.price !== 'Price not shared')?.price ?? 'Reported prices vary'
+  const fallbackTurnaround = reports.find((report) => report.turnaround !== 'Timing not shared')?.turnaround ?? 'Timing varies'
+  const price = row.typical_price ?? fallbackPrice
+  const turnaround = row.turnaround ?? fallbackTurnaround
+  const base: WatchmakerBase = {
+    id: row.id,
+    slug: row.slug,
+    ownerId: row.owner_id,
+    profileType: row.profile_type,
+    name: row.name,
+    city: row.city,
+    country: row.country,
+    address: row.address ?? [row.city, row.country].filter(Boolean).join(', '),
+    type: row.shop_type ?? (row.profile_type === 'claimed' ? 'Claimed watchmaker' : 'Community listing'),
+    distanceKm: 0,
+    rating: reports.length > 0 ? 4.5 : 0,
+    reviews: reports.length,
+    description: row.description ?? 'Community profile awaiting more service reports.',
+    movements: row.movements ?? [],
+    price,
+    priceBucket: priceBucketFromText(price),
+    turnaround,
+    turnaroundBucket: turnaroundBucketFromText(turnaround),
+    x: 50,
+    y: 50,
+    reports,
+    website: row.website,
+  }
+
+  if (row.profile_type === 'claimed') {
+    return {
+      ...base,
+      profileType: 'claimed',
+      repFriendly: row.rep_friendly ?? 'unknown',
+      services: row.services ?? [],
+      watchTypes: row.watch_types ?? [],
+    }
+  }
+
+  return {
+    ...base,
+    profileType: 'community',
+  }
 }
 
 function RepLabel({ value }: { value: Exclude<ReplicaPolicy, 'unknown'> }) {
@@ -551,10 +664,14 @@ function DetailPanel({
   watchmaker,
   onClose,
   onClaim,
+  onManage,
+  canManage,
 }: {
   watchmaker: Watchmaker
   onClose?: () => void
   onClaim: (watchmaker: Watchmaker) => void
+  onManage?: (watchmaker: ClaimedWatchmaker) => void
+  canManage?: boolean
 }) {
   const services = displayServices(watchmaker)
   const watchTypes = displayWatchTypes(watchmaker)
@@ -633,6 +750,16 @@ function DetailPanel({
           <BadgeCheck className="h-4 w-4" />
           {watchmaker.profileType === 'claimed' ? 'Manage or verify claim' : 'Claim this business'}
         </Button>
+        {canManage && watchmaker.profileType === 'claimed' && onManage && (
+          <Button
+            type="button"
+            onClick={() => onManage(watchmaker)}
+            className="mt-2 w-full gap-2 bg-slate-950 hover:bg-slate-800"
+          >
+            <Wrench className="h-4 w-4" />
+            Edit owner profile
+          </Button>
+        )}
 
         <section className="mt-6 border-t border-slate-200 pt-5">
           <p className="text-sm leading-6 text-slate-700">{watchmaker.description}</p>
@@ -744,6 +871,7 @@ function ClaimBusinessModal({
     setSubmitting(true)
 
     const { error } = await supabase.from('watchmaker_claim_requests').insert({
+      watchmaker_id: isUuid(watchmaker.id) ? watchmaker.id : null,
       watchmaker_slug: watchmaker.id,
       watchmaker_name: watchmaker.name,
       claimant_id: userId,
@@ -841,6 +969,205 @@ function ClaimBusinessModal({
   )
 }
 
+function OwnerProfileModal({
+  watchmaker,
+  onClose,
+  onSaved,
+}: {
+  watchmaker: ClaimedWatchmaker
+  onClose: () => void
+  onSaved: (watchmaker: ClaimedWatchmaker) => void
+}) {
+  const [repFriendly, setRepFriendly] = useState<ReplicaPolicy>(watchmaker.repFriendly)
+  const [watchTypes, setWatchTypes] = useState(watchmaker.watchTypes.join(', '))
+  const [services, setServices] = useState(watchmaker.services.join(', '))
+  const [price, setPrice] = useState(watchmaker.price)
+  const [turnaround, setTurnaround] = useState(watchmaker.turnaround)
+  const [website, setWebsite] = useState(watchmaker.website ?? '')
+  const [description, setDescription] = useState(watchmaker.description)
+  const [message, setMessage] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const splitTags = (value: string) =>
+    Array.from(new Set(value.split(',').map((item) => item.trim()).filter(Boolean)))
+
+  const submitOwnerProfile = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setMessage('')
+    setSubmitting(true)
+
+    const nextWatchTypes = splitTags(watchTypes)
+    const nextServices = splitTags(services)
+    const payload = {
+      rep_friendly: repFriendly,
+      watch_types: nextWatchTypes,
+      services: nextServices,
+      typical_price: price.trim() || null,
+      turnaround: turnaround.trim() || null,
+      website: website.trim() || null,
+      description: description.trim() || null,
+    }
+    const query = supabase.from('watchmakers').update(payload)
+    const { error } = isUuid(watchmaker.id)
+      ? await query.eq('id', watchmaker.id)
+      : await query.eq('slug', watchmaker.slug ?? watchmaker.id)
+
+    setSubmitting(false)
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    onSaved({
+      ...watchmaker,
+      repFriendly,
+      watchTypes: nextWatchTypes,
+      services: nextServices,
+      price: price.trim() || watchmaker.price,
+      priceBucket: priceBucketFromText(price.trim() || watchmaker.price),
+      turnaround: turnaround.trim() || watchmaker.turnaround,
+      turnaroundBucket: turnaroundBucketFromText(turnaround.trim() || watchmaker.turnaround),
+      website: website.trim() || null,
+      description: description.trim() || watchmaker.description,
+    })
+    setMessage('Owner profile saved.')
+  }
+
+  return (
+    <section
+      className="fixed inset-0 z-[75] overflow-y-auto bg-slate-950/50 px-4 py-6 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="owner-profile-title"
+      onClick={onClose}
+    >
+      <div className="mx-auto flex min-h-full w-full max-w-2xl items-center">
+        <form
+          onSubmit={submitOwnerProfile}
+          onClick={(event) => event.stopPropagation()}
+          className="w-full rounded-lg border border-slate-200 bg-white p-5 shadow-2xl"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Owner profile</p>
+              <h2 id="owner-profile-title" className="mt-2 text-xl font-extrabold text-slate-950">
+                Edit {watchmaker.name}
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                These shop-level tags are controlled by the claimed owner account.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              aria-label="Close owner profile form"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold text-slate-800">
+              Replica policy
+              <select
+                value={repFriendly}
+                onChange={(event) => setRepFriendly(event.target.value as ReplicaPolicy)}
+                className="mt-1 h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:ring-4 focus:ring-slate-900/10"
+              >
+                <option value="unknown">Do not show a policy</option>
+                <option value="yes">Rep friendly</option>
+                <option value="no">Factory only</option>
+              </select>
+            </label>
+
+            <label className="block text-sm font-semibold text-slate-800">
+              Website or contact
+              <input
+                value={website}
+                onChange={(event) => setWebsite(event.target.value)}
+                className="mt-1 h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:ring-4 focus:ring-slate-900/10"
+                placeholder="https://..."
+              />
+            </label>
+          </div>
+
+          <label className="mt-4 block text-sm font-semibold text-slate-800">
+            Accepted brands
+            <input
+              value={watchTypes}
+              onChange={(event) => setWatchTypes(event.target.value)}
+              className="mt-1 h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:ring-4 focus:ring-slate-900/10"
+              placeholder="Rolex, Omega, Seiko"
+            />
+          </label>
+
+          <label className="mt-4 block text-sm font-semibold text-slate-800">
+            Service types
+            <input
+              value={services}
+              onChange={(event) => setServices(event.target.value)}
+              className="mt-1 h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:ring-4 focus:ring-slate-900/10"
+              placeholder="Mechanical service, Regulation"
+            />
+          </label>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold text-slate-800">
+              Typical price
+              <input
+                value={price}
+                onChange={(event) => setPrice(event.target.value)}
+                className="mt-1 h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:ring-4 focus:ring-slate-900/10"
+                placeholder="EUR 250 - EUR 450"
+              />
+            </label>
+            <label className="block text-sm font-semibold text-slate-800">
+              Turnaround
+              <input
+                value={turnaround}
+                onChange={(event) => setTurnaround(event.target.value)}
+                className="mt-1 h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:ring-4 focus:ring-slate-900/10"
+                placeholder="2 - 4 weeks"
+              />
+            </label>
+          </div>
+
+          <label className="mt-4 block text-sm font-semibold text-slate-800">
+            Description
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              rows={4}
+              className="mt-1 w-full resize-none rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-slate-900/10"
+            />
+          </label>
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Button type="submit" disabled={submitting} className="bg-slate-950 hover:bg-slate-800">
+              {submitting ? 'Saving...' : 'Save owner profile'}
+            </Button>
+            <p className="text-xs text-slate-500">Only the claimed owner account can save these fields.</p>
+          </div>
+
+          {message && (
+            <p
+              className={`mt-4 rounded-md border px-3 py-2 text-sm font-semibold ${
+                message === 'Owner profile saved.'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  : 'border-rose-200 bg-rose-50 text-rose-800'
+              }`}
+            >
+              {message}
+            </p>
+          )}
+        </form>
+      </div>
+    </section>
+  )
+}
+
 export function WatchmakersPageClient() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
@@ -849,11 +1176,13 @@ export function WatchmakersPageClient() {
   const [contributionOpen, setContributionOpen] = useState(false)
   const [contributionType, setContributionType] = useState<ContributionType>('watchmaker')
   const [claimTarget, setClaimTarget] = useState<Watchmaker | null>(null)
+  const [manageTarget, setManageTarget] = useState<ClaimedWatchmaker | null>(null)
   const [serviceFilters, setServiceFilters] = useState<string[]>([])
   const [watchTypeFilters, setWatchTypeFilters] = useState<string[]>([])
   const [countryFilter, setCountryFilter] = useState('all')
   const [cityFilter, setCityFilter] = useState('all')
   const [geoLookup, setGeoLookup] = useState<GeoLookup | null>(null)
+  const [dbWatchmakers, setDbWatchmakers] = useState<Watchmaker[]>([])
   const [heroSearchOpen, setHeroSearchOpen] = useState(false)
   const [repOnly, setRepOnly] = useState(false)
   const [priceBucket, setPriceBucket] = useState<'all' | Watchmaker['priceBucket']>('all')
@@ -880,10 +1209,69 @@ export function WatchmakersPageClient() {
     }
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function fetchApprovedWatchmakers() {
+      const [{ data: shopRows, error: shopError }, { data: reportRows, error: reportError }] = await Promise.all([
+        supabase.from('watchmakers').select('*').eq('approved', true).order('created_at', { ascending: false }),
+        supabase.from('watchmaker_service_reports').select('*').eq('approved', true).order('created_at', { ascending: false }),
+      ])
+
+      if (cancelled || shopError || reportError) return
+
+      const reportsByKey = new Map<string, ServiceReport[]>()
+      ;((reportRows ?? []) as DbServiceReportRow[]).forEach((report) => {
+        const keys = [report.watchmaker_id, report.watchmaker_slug, report.watchmaker_name].filter(Boolean) as string[]
+        const serviceReport = dbReportToServiceReport(report)
+
+        keys.forEach((key) => {
+          const existing = reportsByKey.get(key) ?? []
+          reportsByKey.set(key, [...existing, serviceReport])
+        })
+      })
+
+      const mapped = ((shopRows ?? []) as DbWatchmakerRow[]).map((shop) => {
+        const reports =
+          reportsByKey.get(shop.id) ??
+          (shop.slug ? reportsByKey.get(shop.slug) : undefined) ??
+          reportsByKey.get(shop.name) ??
+          []
+
+        return mapDbWatchmaker(shop, reports)
+      })
+
+      setDbWatchmakers(mapped)
+    }
+
+    fetchApprovedWatchmakers().catch(() => undefined)
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const watchmakers = useMemo(() => {
+    const dbKeys = new Set(dbWatchmakers.flatMap((watchmaker) => [watchmaker.id, watchmaker.slug].filter(Boolean) as string[]))
+    return [...dbWatchmakers, ...WATCHMAKERS.filter((watchmaker) => !dbKeys.has(watchmaker.id))]
+  }, [dbWatchmakers])
+  const countryFilters = useMemo(() => Array.from(new Set(watchmakers.map((watchmaker) => watchmaker.country))).sort(), [watchmakers])
+  const cityFiltersByCountry = useMemo(
+    () =>
+      countryFilters.reduce<Record<string, string[]>>((filters, country) => {
+        filters[country] = Array.from(
+          new Set(watchmakers.filter((watchmaker) => watchmaker.country === country).map((watchmaker) => watchmaker.city)),
+        ).sort()
+
+        return filters
+      }, {}),
+    [countryFilters, watchmakers],
+  )
+
   const filteredWatchmakers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
-    return WATCHMAKERS.filter((watchmaker) => {
+    return watchmakers.filter((watchmaker) => {
       const services = displayServices(watchmaker)
       const watchTypes = displayWatchTypes(watchmaker)
       const matchesQuery =
@@ -911,10 +1299,18 @@ export function WatchmakersPageClient() {
         matchesTurnaround
       )
     })
-  }, [cityFilter, countryFilter, priceBucket, query, repOnly, serviceFilters, turnaroundBucket, watchTypeFilters])
+  }, [cityFilter, countryFilter, priceBucket, query, repOnly, serviceFilters, turnaroundBucket, watchTypeFilters, watchmakers])
 
+  const hasRefinementCriteria =
+    query.trim().length > 0 ||
+    serviceFilters.length > 0 ||
+    watchTypeFilters.length > 0 ||
+    repOnly ||
+    priceBucket !== 'all' ||
+    turnaroundBucket !== 'all'
   const hasLocationContext = countryFilter !== 'all' || cityFilter !== 'all'
-  const visibleWatchmakers = hasLocationContext ? filteredWatchmakers : []
+  const shouldShowResults = hasLocationContext || hasRefinementCriteria
+  const visibleWatchmakers = shouldShowResults ? filteredWatchmakers : []
   const locationLabel =
     cityFilter !== 'all' && countryFilter !== 'all'
       ? `${cityFilter}, ${countryFilter}`
@@ -925,23 +1321,20 @@ export function WatchmakersPageClient() {
           : ''
   const selectedWatchmaker =
     selectedId ? visibleWatchmakers.find((watchmaker) => watchmaker.id === selectedId) ?? null : null
-  const hasRefinementCriteria =
-    query.trim().length > 0 ||
-    serviceFilters.length > 0 ||
-    watchTypeFilters.length > 0 ||
-    repOnly ||
-    priceBucket !== 'all' ||
-    turnaroundBucket !== 'all'
-  const resultHeading = !hasLocationContext
+  const resultHeading = !shouldShowResults
     ? 'Choose a location'
-    : hasRefinementCriteria
-      ? `${visibleWatchmakers.length} matching watchmakers near ${locationLabel}`
-      : `Trusted watchmakers near ${locationLabel}`
-  const resultSubheading = !hasLocationContext
+    : hasLocationContext
+      ? hasRefinementCriteria
+        ? `${visibleWatchmakers.length} matching watchmakers near ${locationLabel}`
+        : `Trusted watchmakers near ${locationLabel}`
+      : `${visibleWatchmakers.length} matching watchmakers`
+  const resultSubheading = !shouldShowResults
     ? 'Search a city or use a nearby suggestion before comparing trusted profiles.'
-    : hasRefinementCriteria
-      ? 'Matching your search and filters. Compare trust signals before distance.'
-      : 'Start with community reports and known watch experience; distance is a tiebreaker.'
+    : hasLocationContext
+      ? hasRefinementCriteria
+        ? 'Matching your search and filters. Compare trust signals before distance.'
+        : 'Start with community reports and known watch experience; distance is a tiebreaker.'
+      : 'Matching your filters across all locations. Add a city later if distance matters.'
 
   const toggleFilter = (value: string, current: string[], setter: (next: string[]) => void) => {
     setter(current.includes(value) ? current.filter((item) => item !== value) : [...current, value])
@@ -965,7 +1358,7 @@ export function WatchmakersPageClient() {
   }
   const openClaim = (watchmaker: Watchmaker) => {
     if (!user && !authLoading) {
-      router.push(`/login?redirect=${encodeURIComponent('/watchmakers')}&claim=${encodeURIComponent(watchmaker.id)}`)
+      router.push(`/login?redirect=${encodeURIComponent(`/watchmakers?claim=${encodeURIComponent(watchmaker.id)}`)}`)
       return
     }
 
@@ -973,6 +1366,28 @@ export function WatchmakersPageClient() {
       setClaimTarget(watchmaker)
     }
   }
+  const canManageWatchmaker = (watchmaker: Watchmaker) =>
+    Boolean(user && watchmaker.profileType === 'claimed' && watchmaker.ownerId === user.id)
+  const saveManagedWatchmaker = (updated: ClaimedWatchmaker) => {
+    setDbWatchmakers((current) => current.map((watchmaker) => (watchmaker.id === updated.id ? updated : watchmaker)))
+    setManageTarget(updated)
+  }
+
+  useEffect(() => {
+    if (!user) return
+
+    const params = new URLSearchParams(window.location.search)
+    const claimId = params.get('claim')
+    if (!claimId) return
+
+    const target = watchmakers.find((watchmaker) => watchmaker.id === claimId || watchmaker.slug === claimId)
+    if (!target) return
+
+    setClaimTarget(target)
+    params.delete('claim')
+    const nextSearch = params.toString()
+    window.history.replaceState(null, '', `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}`)
+  }, [user, watchmakers])
   const selectHeroCity = (suggestion: CitySuggestion) => {
     setQuery('')
     setCountryFilter(suggestion.country)
@@ -985,7 +1400,7 @@ export function WatchmakersPageClient() {
     () =>
       Array.from(
         new Map(
-          WATCHMAKERS.map((watchmaker) => [
+          watchmakers.map((watchmaker) => [
             `${watchmaker.city}-${watchmaker.country}`,
             {
               city: watchmaker.city,
@@ -997,7 +1412,7 @@ export function WatchmakersPageClient() {
           ]),
         ).values(),
       ),
-    [],
+    [watchmakers],
   )
   const heroCitySuggestions = useMemo(() => {
     if (!geoLookup?.countryCode) return defaultCitySuggestions
@@ -1036,17 +1451,17 @@ export function WatchmakersPageClient() {
 
     return `${suggestion.city} ${suggestion.country}`.toLowerCase().includes(normalizedQuery)
   })
-  const featuredProfiles = WATCHMAKERS.slice().sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || b.rating - a.rating).slice(0, 3)
-  const reportCount = WATCHMAKERS.reduce((count, watchmaker) => count + watchmaker.reports.length, 0)
-  const repFriendlyCount = WATCHMAKERS.filter(
+  const featuredProfiles = watchmakers.slice().sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || b.rating - a.rating).slice(0, 3)
+  const reportCount = watchmakers.reduce((count, watchmaker) => count + watchmaker.reports.length, 0)
+  const repFriendlyCount = watchmakers.filter(
     (watchmaker) => canShowReplicaPolicy(watchmaker) && watchmaker.repFriendly === 'yes',
   ).length
   const cityShopCount = (city: string, country: string) =>
-    WATCHMAKERS.filter((watchmaker) => watchmaker.city === city && watchmaker.country === country).length
+    watchmakers.filter((watchmaker) => watchmaker.city === city && watchmaker.country === country).length
   const availableCityFilters =
     countryFilter === 'all'
-      ? Array.from(new Set(WATCHMAKERS.map((watchmaker) => watchmaker.city))).sort()
-      : CITY_FILTERS_BY_COUNTRY[countryFilter] ?? []
+      ? Array.from(new Set(watchmakers.map((watchmaker) => watchmaker.city))).sort()
+      : cityFiltersByCountry[countryFilter] ?? []
 
   const filterPanel = (
     <div className="space-y-5">
@@ -1074,7 +1489,7 @@ export function WatchmakersPageClient() {
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               >
                 <option value="all">All countries</option>
-                {COUNTRY_FILTERS.map((country) => (
+                {countryFilters.map((country) => (
                   <option key={country} value={country}>
                     {country}
                   </option>
@@ -1144,6 +1559,7 @@ export function WatchmakersPageClient() {
             <button
               key={value}
               type="button"
+              aria-pressed={turnaroundBucket === value}
               onClick={() => setTurnaroundBucket(turnaroundBucket === value ? 'all' : (value as Watchmaker['turnaroundBucket']))}
               className={`rounded-md border px-2 py-2 text-xs font-semibold ${
                 turnaroundBucket === value ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-700'
@@ -1166,6 +1582,7 @@ export function WatchmakersPageClient() {
             <button
               key={value}
               type="button"
+              aria-pressed={priceBucket === value}
               onClick={() => setPriceBucket(priceBucket === value ? 'all' : (value as Watchmaker['priceBucket']))}
               className={`rounded-md border px-2 py-2 text-xs font-semibold ${
                 priceBucket === value ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-700'
@@ -1322,7 +1739,7 @@ export function WatchmakersPageClient() {
         <div className="border-t border-slate-200 bg-slate-50/70">
           <div className="mx-auto grid max-w-xl grid-cols-3 gap-4 px-4 py-6 text-center">
             <div>
-              <p className="text-2xl font-extrabold text-slate-950">{WATCHMAKERS.length}</p>
+              <p className="text-2xl font-extrabold text-slate-950">{watchmakers.length}</p>
               <p className="mt-1 text-xs font-semibold text-slate-500">Watchmakers listed</p>
             </div>
             <div>
@@ -1427,7 +1844,7 @@ export function WatchmakersPageClient() {
             </div>
           </div>
           <div className="space-y-3 p-4">
-            {!hasLocationContext ? (
+            {!shouldShowResults ? (
               <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center">
                 <MapPin className="mx-auto h-7 w-7 text-slate-400" />
                 <h3 className="mt-3 font-bold text-slate-950">Pick a city first</h3>
@@ -1469,9 +1886,14 @@ export function WatchmakersPageClient() {
         <div className="hidden min-h-0 border-l border-slate-200 bg-slate-100/60 p-5 lg:flex lg:justify-center">
           {selectedWatchmaker ? (
             <div className="flex min-h-0 w-full max-w-[640px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-              <DetailPanel watchmaker={selectedWatchmaker} onClaim={openClaim} />
+              <DetailPanel
+                watchmaker={selectedWatchmaker}
+                onClaim={openClaim}
+                onManage={setManageTarget}
+                canManage={canManageWatchmaker(selectedWatchmaker)}
+              />
             </div>
-          ) : !hasLocationContext ? (
+          ) : !shouldShowResults ? (
             <aside className="flex h-full min-h-[520px] w-full max-w-[640px] items-center justify-center rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
               <div className="max-w-sm">
                 <p className="text-sm font-semibold text-slate-950">Choose a location</p>
@@ -1520,8 +1942,11 @@ export function WatchmakersPageClient() {
                 <div className="mt-3 h-6">
                   {canShowReplicaPolicy(watchmaker) && watchmaker.repFriendly === 'yes' && <RepLabel value={watchmaker.repFriendly} />}
                 </div>
-                <p className="mt-2 text-sm font-semibold text-slate-600">
+                <p className="hidden mt-2 text-sm font-semibold text-slate-600">
                   {watchmaker.city} Â· {compactPrice(watchmaker.price)} Â· {compactTurnaround(watchmaker.turnaround)}
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-600">
+                  {watchmaker.city} - {compactPrice(watchmaker.price)} - {compactTurnaround(watchmaker.turnaround)}
                 </p>
               </button>
             ))}
@@ -1558,7 +1983,13 @@ export function WatchmakersPageClient() {
       {selectedWatchmaker && (
         <div className="fixed inset-0 z-50 bg-slate-950/40 lg:hidden">
           <div className="ml-auto h-full w-full max-w-md overflow-y-auto bg-white shadow-xl">
-            <DetailPanel watchmaker={selectedWatchmaker} onClose={() => setSelectedId(null)} onClaim={openClaim} />
+            <DetailPanel
+              watchmaker={selectedWatchmaker}
+              onClose={() => setSelectedId(null)}
+              onClaim={openClaim}
+              onManage={setManageTarget}
+              canManage={canManageWatchmaker(selectedWatchmaker)}
+            />
           </div>
         </div>
       )}
@@ -1567,11 +1998,19 @@ export function WatchmakersPageClient() {
         <ClaimBusinessModal watchmaker={claimTarget} userId={user.id} onClose={() => setClaimTarget(null)} />
       )}
 
+      {manageTarget && user && (
+        <OwnerProfileModal
+          watchmaker={manageTarget}
+          onClose={() => setManageTarget(null)}
+          onSaved={saveManagedWatchmaker}
+        />
+      )}
+
       <WatchmakerContributionModule
         open={contributionOpen}
         initialType={contributionType}
         onClose={() => setContributionOpen(false)}
-        shops={WATCHMAKERS.map((watchmaker) => ({
+        shops={watchmakers.map((watchmaker) => ({
           id: watchmaker.id,
           name: watchmaker.name,
           city: watchmaker.city,
