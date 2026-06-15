@@ -27,7 +27,13 @@ export default function LoginPage() {
       <div className="md:hidden">
         <img src="/images/landscape_with_boats.jpg" alt="Quiet neighborhood" className="h-48 w-full object-cover" />
         <div className="px-6 py-8">
-          <AuthForm onSignIn={signIn} onSignUp={signUp} onMagicLink={signInWithMagicLink} onForgotPassword={resetPassword} />
+          <AuthForm
+            onSignIn={signIn}
+            onSignUp={signUp}
+            onMagicLink={signInWithMagicLink}
+            onForgotPassword={resetPassword}
+            redirectTo={redirectTo}
+          />
           <button
             onClick={() => router.push(redirectTo)}
             className="mt-4 w-full rounded-lg border border-quiet-border py-2.5 text-sm font-medium text-quiet-muted hover:bg-quiet-border/30 transition-colors"
@@ -48,7 +54,13 @@ export default function LoginPage() {
         </div>
         <div className="flex w-1/2 items-center justify-center px-12">
           <div className="w-full max-w-sm">
-            <AuthForm onSignIn={signIn} onSignUp={signUp} onMagicLink={signInWithMagicLink} onForgotPassword={resetPassword} />
+            <AuthForm
+              onSignIn={signIn}
+              onSignUp={signUp}
+              onMagicLink={signInWithMagicLink}
+              onForgotPassword={resetPassword}
+              redirectTo={redirectTo}
+            />
             <button
               onClick={() => router.push(redirectTo)}
               className="mt-4 w-full rounded-lg border border-quiet-border py-2.5 text-sm font-medium text-quiet-muted hover:bg-quiet-border/30 transition-colors"

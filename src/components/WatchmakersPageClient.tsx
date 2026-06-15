@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Crosshair,
   Droplets,
+  Globe2,
   HeartHandshake,
   ListFilter,
   MapPin,
@@ -23,6 +24,7 @@ import {
   Star,
   Wrench,
   X,
+  ArrowRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { WatchmakerContributionModule, type ContributionType } from '@/components/WatchmakerContributionModule'
@@ -175,6 +177,48 @@ const MAJOR_CITY_SUGGESTIONS: CitySuggestion[] = [
   { city: 'Tokyo', country: 'Japan', countryCode: 'JP', lat: 35.6762, lon: 139.6503 },
   { city: 'Osaka', country: 'Japan', countryCode: 'JP', lat: 34.6937, lon: 135.5023 },
   { city: 'Singapore', country: 'Singapore', countryCode: 'SG', lat: 1.3521, lon: 103.8198 },
+]
+
+const COMMUNITY_SPECIALISTS = [
+  {
+    initials: 'NM',
+    name: 'Noleex the Modder',
+    reddit: 'u/Noleex_The_Modder',
+    redditUrl: 'https://www.reddit.com/u/Noleex_The_Modder',
+    region: 'EU / Netherlands',
+    website: 'superfranken.com',
+    websiteUrl: 'https://www.superfranken.com/',
+    badges: ['Rep specialist', 'Rolex', 'Netherlands'],
+    services: 'Full service - mods - gen parts',
+    quote: 'Specialist in Rolex modifications, repairs and service. Gen and rep, Cal 31XX-41XX.',
+    avatarClass: 'bg-emerald-50 text-emerald-800',
+  },
+  {
+    initials: 'MW',
+    name: 'MajorWilliams',
+    reddit: 'u/MajorWilliams',
+    redditUrl: 'https://www.reddit.com/u/MajorWilliams',
+    region: 'West Coast US',
+    website: 'majorwilliamswatchservices.com',
+    websiteUrl: 'https://majorwilliamswatchservices.com/',
+    badges: ['Rep specialist', 'Seiko', 'West Coast US'],
+    services: 'Full service - regulation - mods',
+    quote: 'West Coast based, taking rep and gen work. Known for thorough movement service.',
+    avatarClass: 'bg-amber-50 text-amber-800',
+  },
+  {
+    initials: 'P4',
+    name: 'P4GTR',
+    reddit: 'u/P4GTR',
+    redditUrl: 'https://www.reddit.com/u/P4GTR',
+    region: 'East Coast US',
+    website: 'swiss-hq.com',
+    websiteUrl: 'https://swiss-hq.com/',
+    badges: ['Rep specialist', 'Rolex', 'Omega', 'East Coast US'],
+    services: 'Full service - pressure test',
+    quote: 'East Coast, verified by r/RepTimeServices mods. Swiss-HQ.com for bookings.',
+    avatarClass: 'bg-indigo-50 text-indigo-800',
+  },
 ]
 
 const WATCHMAKERS: Watchmaker[] = [
@@ -525,6 +569,108 @@ function RepLabel({ value }: { value: Exclude<ReplicaPolicy, 'unknown'> }) {
   }
 
   return <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">Factory only</span>
+}
+
+function SpecialistBadge({ label }: { label: string }) {
+  const color =
+    label === 'Rep specialist'
+      ? 'bg-emerald-50 text-emerald-800 ring-emerald-100'
+      : label.includes('US') || label === 'Netherlands'
+        ? 'bg-slate-100 text-slate-700 ring-slate-200'
+        : 'bg-amber-50 text-amber-800 ring-amber-100'
+
+  return (
+    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${color}`}>
+      {label}
+    </span>
+  )
+}
+
+function CommunitySpecialistsSection() {
+  return (
+    <section className="border-b border-slate-200 bg-white px-4 py-9 lg:px-6">
+      <div className="mx-auto max-w-6xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-2 border-b border-slate-200 px-6 py-6 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-950">Community-verified specialists</h2>
+            <p className="mt-1 text-sm font-medium text-slate-500">
+              Active members of the rep community, known by reputation
+            </p>
+          </div>
+        </div>
+
+        <div className="grid divide-y divide-slate-200 md:grid-cols-3 md:divide-x md:divide-y-0">
+          {COMMUNITY_SPECIALISTS.map((specialist) => (
+            <article key={specialist.reddit} className="flex min-h-[340px] flex-col p-6 lg:p-7">
+              <div className="flex items-start gap-4">
+                <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-extrabold ${specialist.avatarClass}`}>
+                  {specialist.initials}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="truncate text-base font-extrabold text-slate-950">{specialist.name}</h3>
+                    <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                  </div>
+                  <p className="mt-0.5 text-sm font-medium text-slate-500">
+                    {specialist.reddit} - {specialist.region}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                {specialist.badges.map((badge) => (
+                  <SpecialistBadge key={badge} label={badge} />
+                ))}
+              </div>
+
+              <div className="mt-5 space-y-2.5 text-sm font-semibold text-slate-600">
+                <p className="flex items-center gap-2">
+                  <Wrench className="h-4 w-4 text-slate-400" />
+                  {specialist.services}
+                </p>
+                <a
+                  href={specialist.redditUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-slate-600 transition hover:text-emerald-700"
+                >
+                  <MessageSquareText className="h-4 w-4 text-slate-400" />
+                  Contact via Reddit
+                </a>
+                <a
+                  href={specialist.websiteUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-slate-600 transition hover:text-emerald-700"
+                >
+                  <Globe2 className="h-4 w-4 text-slate-400" />
+                  {specialist.website}
+                </a>
+              </div>
+
+              <blockquote className="mt-6 border-t border-slate-200 pt-5 text-sm font-semibold italic leading-6 text-slate-600">
+                "{specialist.quote}"
+              </blockquote>
+            </article>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 text-sm font-semibold text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+          <span className="flex items-center gap-2">
+            <BadgeCheck className="h-4 w-4 text-slate-400" />
+            All featured profiles are opt-in and community-verified
+          </span>
+          <Link
+            href={`/login?redirect=${encodeURIComponent('/watchmakers')}`}
+            className="inline-flex items-center gap-1 text-emerald-700 transition hover:text-emerald-900"
+          >
+            Claim your profile
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
 }
 
 function reportDerivedWatchTypes(reports: ServiceReport[]): string[] {
@@ -1188,6 +1334,8 @@ export function WatchmakersPageClient() {
   const [priceBucket, setPriceBucket] = useState<'all' | Watchmaker['priceBucket']>('all')
   const [turnaroundBucket, setTurnaroundBucket] = useState<'all' | Watchmaker['turnaroundBucket']>('all')
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [locating, setLocating] = useState(false)
+  const [locationMessage, setLocationMessage] = useState('')
 
   useEffect(() => {
     const controller = new AbortController()
@@ -1309,7 +1457,7 @@ export function WatchmakersPageClient() {
     priceBucket !== 'all' ||
     turnaroundBucket !== 'all'
   const hasLocationContext = countryFilter !== 'all' || cityFilter !== 'all'
-  const shouldShowResults = hasLocationContext || hasRefinementCriteria
+  const shouldShowResults = hasLocationContext
   const visibleWatchmakers = shouldShowResults ? filteredWatchmakers : []
   const locationLabel =
     cityFilter !== 'all' && countryFilter !== 'all'
@@ -1321,20 +1469,16 @@ export function WatchmakersPageClient() {
           : ''
   const selectedWatchmaker =
     selectedId ? visibleWatchmakers.find((watchmaker) => watchmaker.id === selectedId) ?? null : null
-  const resultHeading = !shouldShowResults
-    ? 'Choose a location'
-    : hasLocationContext
-      ? hasRefinementCriteria
-        ? `${visibleWatchmakers.length} matching watchmakers near ${locationLabel}`
-        : `Trusted watchmakers near ${locationLabel}`
-      : `${visibleWatchmakers.length} matching watchmakers`
-  const resultSubheading = !shouldShowResults
+  const resultHeading = !hasLocationContext
+    ? 'Trusted watchmakers'
+    : hasRefinementCriteria
+      ? `${visibleWatchmakers.length} matching watchmakers near ${locationLabel}`
+      : `Trusted watchmakers near ${locationLabel}`
+  const resultSubheading = !hasLocationContext
     ? 'Search a city or use a nearby suggestion before comparing trusted profiles.'
-    : hasLocationContext
-      ? hasRefinementCriteria
-        ? 'Matching your search and filters. Compare trust signals before distance.'
-        : 'Start with community reports and known watch experience; distance is a tiebreaker.'
-      : 'Matching your filters across all locations. Add a city later if distance matters.'
+    : hasRefinementCriteria
+      ? 'Matching your search and filters. Compare trust signals before distance.'
+      : 'Start with community reports and known watch experience; distance is a tiebreaker.'
 
   const toggleFilter = (value: string, current: string[], setter: (next: string[]) => void) => {
     setter(current.includes(value) ? current.filter((item) => item !== value) : [...current, value])
@@ -1378,17 +1522,34 @@ export function WatchmakersPageClient() {
 
     const params = new URLSearchParams(window.location.search)
     const claimId = params.get('claim')
-    if (!claimId) return
+    const manageId = params.get('manage')
 
-    const target = watchmakers.find((watchmaker) => watchmaker.id === claimId || watchmaker.slug === claimId)
-    if (!target) return
+    if (claimId) {
+      const target = watchmakers.find((watchmaker) => watchmaker.id === claimId || watchmaker.slug === claimId)
+      if (target) {
+        setClaimTarget(target)
+        params.delete('claim')
+      }
+    }
 
-    setClaimTarget(target)
-    params.delete('claim')
+    if (manageId) {
+      const target = watchmakers.find((watchmaker) => watchmaker.id === manageId || watchmaker.slug === manageId)
+      if (target?.profileType === 'claimed' && target.ownerId === user.id) {
+        setManageTarget(target)
+        setSelectedId(target.id)
+        setCountryFilter(target.country)
+        setCityFilter(target.city)
+        params.delete('manage')
+      }
+    }
+
     const nextSearch = params.toString()
-    window.history.replaceState(null, '', `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}`)
+    if (nextSearch !== window.location.search.slice(1)) {
+      window.history.replaceState(null, '', `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}`)
+    }
   }, [user, watchmakers])
   const selectHeroCity = (suggestion: CitySuggestion) => {
+    setLocationMessage('')
     setQuery('')
     setCountryFilter(suggestion.country)
     setCityFilter(suggestion.city)
@@ -1452,16 +1613,82 @@ export function WatchmakersPageClient() {
     return `${suggestion.city} ${suggestion.country}`.toLowerCase().includes(normalizedQuery)
   })
   const featuredProfiles = watchmakers.slice().sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || b.rating - a.rating).slice(0, 3)
-  const reportCount = watchmakers.reduce((count, watchmaker) => count + watchmaker.reports.length, 0)
-  const repFriendlyCount = watchmakers.filter(
-    (watchmaker) => canShowReplicaPolicy(watchmaker) && watchmaker.repFriendly === 'yes',
-  ).length
   const cityShopCount = (city: string, country: string) =>
     watchmakers.filter((watchmaker) => watchmaker.city === city && watchmaker.country === country).length
   const availableCityFilters =
     countryFilter === 'all'
       ? Array.from(new Set(watchmakers.map((watchmaker) => watchmaker.city))).sort()
       : cityFiltersByCountry[countryFilter] ?? []
+  const nearestSuggestion = (lat: number, lon: number, candidates = heroCitySuggestions) =>
+    (candidates.length > 0 ? candidates : defaultCitySuggestions)
+      .slice()
+      .sort((a, b) => distanceKmBetween(lat, lon, a.lat, a.lon) - distanceKmBetween(lat, lon, b.lat, b.lon))[0]
+  const selectIpLocation = () => {
+    if (typeof geoLookup?.lat === 'number' && typeof geoLookup.lon === 'number') {
+      const suggestion = nearestSuggestion(geoLookup.lat, geoLookup.lon)
+      if (suggestion) {
+        selectHeroCity(suggestion)
+        return true
+      }
+    }
+
+    if (geoLookup?.city && geoLookup.country) {
+      selectHeroCity({
+        city: geoLookup.city,
+        country: geoLookup.country,
+        countryCode: geoLookup.countryCode ?? '',
+        lat: geoLookup.lat ?? 0,
+        lon: geoLookup.lon ?? 0,
+      })
+      return true
+    }
+
+    return false
+  }
+  const useCurrentLocation = () => {
+    setLocationMessage('')
+
+    if (selectIpLocation()) return
+
+    if (!navigator.geolocation) {
+      const fallback = heroCitySuggestions[0] ?? defaultCitySuggestions[0]
+      if (fallback) {
+        selectHeroCity(fallback)
+        setLocationMessage('Location access is unavailable, so we opened the closest suggested city.')
+      }
+      return
+    }
+
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocating(false)
+        const suggestion = nearestSuggestion(position.coords.latitude, position.coords.longitude, [
+          ...heroCitySuggestions,
+          ...MAJOR_CITY_SUGGESTIONS,
+        ])
+
+        if (suggestion) {
+          selectHeroCity(suggestion)
+        } else {
+          setLocationMessage('We could not match your location to a city yet. Try a city from the list.')
+          setHeroSearchOpen(true)
+        }
+      },
+      () => {
+        setLocating(false)
+        const fallback = heroCitySuggestions[0] ?? defaultCitySuggestions[0]
+        if (fallback) {
+          selectHeroCity(fallback)
+          setLocationMessage('Location permission was not available, so we opened the closest suggested city.')
+        } else {
+          setLocationMessage('Location permission was not available. Pick a city from the list.')
+          setHeroSearchOpen(true)
+        }
+      },
+      { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 },
+    )
+  }
 
   const filterPanel = (
     <div className="space-y-5">
@@ -1597,7 +1824,7 @@ export function WatchmakersPageClient() {
   )
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-800">
+    <main className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="flex h-16 items-center gap-4 px-4 lg:px-6">
           <Link href="/watchmakers" className="flex items-center gap-2 text-slate-950">
@@ -1616,7 +1843,7 @@ export function WatchmakersPageClient() {
             </span>
           </Link>
 
-          <div className="relative ml-auto hidden w-full max-w-md md:block">
+          <div className={`relative ml-auto w-full max-w-md ${hasLocationContext ? 'hidden md:block' : 'hidden'}`}>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={query}
@@ -1629,7 +1856,7 @@ export function WatchmakersPageClient() {
           <Button
             type="button"
             variant="outline"
-            className="hidden bg-white md:inline-flex"
+            className={`${hasLocationContext ? '' : 'ml-auto '}hidden bg-white md:inline-flex`}
             onClick={() => openContribution('watchmaker')}
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -1683,26 +1910,20 @@ export function WatchmakersPageClient() {
             <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <button
                 type="button"
-                onClick={() => {
-                  if (geoLookup?.city && geoLookup.country) {
-                    selectHeroCity({
-                      city: geoLookup.city,
-                      country: geoLookup.country,
-                      countryCode: geoLookup.countryCode ?? '',
-                      lat: geoLookup.lat ?? 0,
-                      lon: geoLookup.lon ?? 0,
-                    })
-                  } else {
-                    setHeroSearchOpen(true)
-                  }
-                }}
+                onClick={useCurrentLocation}
+                disabled={locating}
                 className="flex w-full items-center gap-3 border-b border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 hover:bg-slate-50"
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
                   <Crosshair className="h-4 w-4" />
                 </span>
-                Use my location
+                {locating ? 'Finding your location...' : 'Use my location'}
               </button>
+              {locationMessage && (
+                <p className="border-b border-slate-200 px-4 py-2 text-xs font-medium text-slate-500">
+                  {locationMessage}
+                </p>
+              )}
               <div className="px-4 py-3">
                 <p className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Nearby cities</p>
                 <div className="mt-2 space-y-1">
@@ -1737,23 +1958,23 @@ export function WatchmakersPageClient() {
         </div>
 
         <div className="border-t border-slate-200 bg-slate-50/70">
-          <div className="mx-auto grid max-w-xl grid-cols-3 gap-4 px-4 py-6 text-center">
+          <div className="mx-auto grid max-w-3xl gap-4 px-4 py-6 text-center sm:grid-cols-3">
             <div>
-              <p className="text-2xl font-extrabold text-slate-950">{watchmakers.length}</p>
-              <p className="mt-1 text-xs font-semibold text-slate-500">Watchmakers listed</p>
+              <p className="text-sm font-extrabold text-slate-950">Community-verified</p>
+              <p className="mt-1 text-xs font-medium leading-5 text-slate-500">Trust comes from collector reports, not paid placement.</p>
             </div>
             <div>
-              <p className="text-2xl font-extrabold text-slate-950">{reportCount}</p>
-              <p className="mt-1 text-xs font-semibold text-slate-500">Service reports</p>
+              <p className="text-sm font-extrabold text-slate-950">Structured reports</p>
+              <p className="mt-1 text-xs font-medium leading-5 text-slate-500">Price, turnaround, work performed, and would-return notes.</p>
             </div>
             <div>
-              <p className="text-2xl font-extrabold text-slate-950">{repFriendlyCount}</p>
-              <p className="mt-1 text-xs font-semibold text-slate-500">Rep-friendly confirmed</p>
+              <p className="text-sm font-extrabold text-slate-950">No ads</p>
+              <p className="mt-1 text-xs font-medium leading-5 text-slate-500">Recommendations stay focused on useful service signals.</p>
             </div>
           </div>
         </div>
 
-        {false && (
+        {/*
         <div className="border-t border-slate-200 bg-white px-4 py-9 lg:px-6">
           <div className="mx-auto max-w-6xl">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Featured profiles</p>
@@ -1813,9 +2034,12 @@ export function WatchmakersPageClient() {
             </div>
           </div>
         </div>
-        )}
+        */}
       </section>
 
+      {!shouldShowResults && <CommunitySpecialistsSection />}
+
+      {shouldShowResults && (
       <section id="profiles" className="grid min-h-[calc(100vh-64px)] border-b border-slate-200 lg:grid-cols-[minmax(420px,520px)_minmax(420px,1fr)]">
         <section className="border-r border-slate-200 bg-slate-50">
           <div className="sticky top-16 z-20 border-b border-slate-200 bg-white p-4">
@@ -1844,27 +2068,7 @@ export function WatchmakersPageClient() {
             </div>
           </div>
           <div className="space-y-3 p-4">
-            {!shouldShowResults ? (
-              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center">
-                <MapPin className="mx-auto h-7 w-7 text-slate-400" />
-                <h3 className="mt-3 font-bold text-slate-950">Pick a city first</h3>
-                <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-600">
-                  Trusted watchmaker results appear after you choose a location, so the list starts local instead of global.
-                </p>
-                <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                  {heroCitySuggestions.slice(0, 4).map((suggestion) => (
-                    <button
-                      key={`${suggestion.city}-${suggestion.country}-empty`}
-                      type="button"
-                      onClick={() => selectHeroCity(suggestion)}
-                      className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 transition hover:border-slate-300 hover:bg-white"
-                    >
-                      {suggestion.city}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : visibleWatchmakers.length === 0 ? (
+            {visibleWatchmakers.length === 0 ? (
               <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center">
                 <Sparkles className="mx-auto h-6 w-6 text-slate-400" />
                 <h3 className="mt-3 font-bold text-slate-950">No exact match yet</h3>
@@ -1893,15 +2097,6 @@ export function WatchmakersPageClient() {
                 canManage={canManageWatchmaker(selectedWatchmaker)}
               />
             </div>
-          ) : !shouldShowResults ? (
-            <aside className="flex h-full min-h-[520px] w-full max-w-[640px] items-center justify-center rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
-              <div className="max-w-sm">
-                <p className="text-sm font-semibold text-slate-950">Choose a location</p>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Pick a city to load trusted local watchmakers, then select a profile to compare details.
-                </p>
-              </div>
-            </aside>
           ) : (
             <aside className="flex h-full min-h-[520px] w-full max-w-[640px] items-center justify-center rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
               <div className="max-w-sm">
@@ -1914,7 +2109,9 @@ export function WatchmakersPageClient() {
           )}
         </div>
       </section>
+      )}
 
+      {shouldShowResults && (
       <section className="border-b border-slate-200 bg-white px-4 py-9 lg:px-6">
         <div className="mx-auto max-w-6xl">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Featured profiles</p>
@@ -1979,6 +2176,7 @@ export function WatchmakersPageClient() {
           </div>
         </div>
       </section>
+      )}
 
       {selectedWatchmaker && (
         <div className="fixed inset-0 z-50 bg-slate-950/40 lg:hidden">
@@ -2035,16 +2233,26 @@ export function WatchmakersPageClient() {
         </div>
       )}
 
-      <footer className="border-t border-slate-200 bg-slate-950 px-4 py-8 text-white lg:px-6">
+      <footer className="mt-auto border-t border-slate-200 bg-white px-4 py-6 text-slate-800 lg:px-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-extrabold">Watchmakers by Quiet Network</p>
-            <p className="mt-1 text-sm text-slate-300">The easiest way to find trusted watchmakers.</p>
+            <p className="mt-1 text-sm text-slate-500">The easiest way to find trusted watchmakers.</p>
           </div>
-          <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-200 hover:text-white">
-            Quiet Network
-            <ChevronDown className="h-4 w-4 -rotate-90" />
-          </Link>
+          <div className="flex flex-wrap items-center gap-4">
+            <a
+              href="https://www.reddit.com/r/RepTimeServices/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-semibold text-slate-600 hover:text-slate-950"
+            >
+              RepTimeServices
+            </a>
+            <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950">
+              Quiet Network
+              <ChevronDown className="h-4 w-4 -rotate-90" />
+            </Link>
+          </div>
         </div>
       </footer>
     </main>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from "react"
-import { Bell, Calendar, CheckCircle, ChevronDown, Info, LogOut, MapPin, Pencil, Plus, ShieldCheck, Star, Trash2, UserMinus, XCircle } from "lucide-react"
+import { Bell, Calendar, CheckCircle, ChevronDown, Info, LogOut, MapPin, Pencil, Plus, ShieldCheck, Star, Trash2, UserMinus, Wrench, XCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { linkifyText } from "@/lib/utils"
@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { SocialIcon } from "@/components/SocialIcon"
 import { CircleIcon } from "@/components/CircleIcon"
-import { useFavorites, useCircleMemberCounts, useUserPosts, useFollowCounts, useWatchmakerClaimRequests, useWatchmakerClaimReviewQueue } from "@/lib/hooks"
+import { useFavorites, useCircleMemberCounts, useUserPosts, useFollowCounts, useWatchmakerClaimRequests, useWatchmakerClaimReviewQueue, useOwnedWatchmakerProfiles } from "@/lib/hooks"
 import { AVATAR_OPTIONS, avatarUrl, getBannerBg } from "@/types"
 import type { Profile, ProfileLink, Circle } from "@/types"
 
@@ -62,6 +62,7 @@ export function ProfilePage({ defaultEditing = false, profile, userId, circles, 
   const { followerCount, followingCount } = useFollowCounts(userId)
   const { claims: watchmakerClaims } = useWatchmakerClaimRequests(userId)
   const { claims: reviewClaims, isReviewer, reviewClaim } = useWatchmakerClaimReviewQueue(userId)
+  const { watchmakers: ownedWatchmakers } = useOwnedWatchmakerProfiles(userId)
   const [editing, setEditing] = useState(defaultEditing)
   const [showAllCircles, setShowAllCircles] = useState(false)
   const [reviewingClaimId, setReviewingClaimId] = useState<string | null>(null)
@@ -259,6 +260,44 @@ export function ProfilePage({ defaultEditing = false, profile, userId, circles, 
                           Reject
                         </Button>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {ownedWatchmakers.length > 0 && (
+              <section>
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-quiet-slate">
+                  <ShieldCheck className="h-4 w-4 text-quiet-muted" />
+                  Claimed businesses
+                </h2>
+                <div className="space-y-2">
+                  {ownedWatchmakers.map((watchmaker) => (
+                    <div key={watchmaker.id} className="rounded-xl border border-quiet-border bg-white p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-quiet-slate">{watchmaker.name}</p>
+                          <p className="mt-1 text-xs text-quiet-muted">
+                            {watchmaker.city}, {watchmaker.country}
+                          </p>
+                        </div>
+                        {watchmaker.rep_friendly && watchmaker.rep_friendly !== "unknown" && (
+                          <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
+                            {watchmaker.rep_friendly === "yes" ? "Rep friendly" : "Factory only"}
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => router.push(`/watchmakers?manage=${encodeURIComponent(watchmaker.slug ?? watchmaker.id)}`)}
+                        className="mt-3 bg-white"
+                      >
+                        <Wrench className="mr-1.5 h-3.5 w-3.5" />
+                        Manage profile
+                      </Button>
                     </div>
                   ))}
                 </div>

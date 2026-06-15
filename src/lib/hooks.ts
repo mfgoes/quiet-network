@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser, Reply, NotificationPreferences, Notification, CircleTag, WatchmakerClaimRequest } from "@/types"
+import type { Profile, Post, Circle, CircleRole, AdminCircleMember, Report, BannedUser, Reply, NotificationPreferences, Notification, CircleTag, WatchmakerClaimRequest, OwnedWatchmakerProfile } from "@/types"
 import { slugify } from "@/types"
 
 // ─── Auth ────────────────────────────────────────────
@@ -26,11 +26,27 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    let mounted = true
+
+    const clearLocalAuthState = async () => {
+      sessionStorage.removeItem('rememberMe')
+      await supabase.auth.signOut({ scope: 'local' })
+    }
+
+    supabase.auth.getSession().then(async ({ data, error }) => {
+      if (!mounted) return
+
+      if (error) {
+        await clearLocalAuthState()
+        setSession(null)
+        setLoading(false)
+        return
+      }
+
       // Check if user has a session but no rememberMe flag
       // This means browser was closed and user didn't want to stay logged in
       if (data.session && !sessionStorage.getItem('rememberMe')) {
-        supabase.auth.signOut()
+        await clearLocalAuthState()
         setSession(null)
         setLoading(false)
         return
@@ -42,6 +58,11 @@ export function useAuth() {
       if (data.session?.user) {
         ensureProfile(data.session.user.id).catch(() => {})
       }
+    }).catch(async () => {
+      if (!mounted) return
+      await clearLocalAuthState()
+      setSession(null)
+      setLoading(false)
     })
 
     const {
@@ -57,13 +78,26 @@ export function useAuth() {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const user: User | null = session?.user ?? null
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password })
+  const authRedirectUrl = (redirectTo?: string) => {
+    if (typeof window === "undefined") return undefined
+    const safeRedirect = redirectTo?.startsWith("/") ? redirectTo : "/"
+    return `${window.location.origin}/login?redirect=${encodeURIComponent(safeRedirect)}`
+  }
+
+  const signUp = async (email: string, password: string, redirectTo?: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: authRedirectUrl(redirectTo) },
+    })
 
     if (!error) {
       // Auto-remember new users
@@ -93,10 +127,10 @@ export function useAuth() {
     return error
   }
 
-  const signInWithMagicLink = async (email: string) => {
+  const signInWithMagicLink = async (email: string, redirectTo?: string) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: authRedirectUrl(redirectTo) },
     })
     return error
   }
@@ -110,7 +144,7 @@ export function useAuth() {
 
   const signOut = async () => {
     sessionStorage.removeItem('rememberMe')
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: 'local' })
   }
 
   const leaveAllCircles = async () => {
@@ -271,6 +305,36 @@ export function useWatchmakerClaimReviewQueue(userId: string | undefined) {
 }
 
 // ─── Circles ─────────────────────────────────────────
+
+export function useOwnedWatchmakerProfiles(userId: string | undefined) {
+  const [watchmakers, setWatchmakers] = useState<OwnedWatchmakerProfile[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const fetchWatchmakers = useCallback(async () => {
+    if (!userId) {
+      setWatchmakers([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    const { data } = await supabase
+      .from("watchmakers")
+      .select("id, slug, name, city, country, profile_type, owner_id, rep_friendly, created_at")
+      .eq("profile_type", "claimed")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: false })
+
+    setWatchmakers((data ?? []) as OwnedWatchmakerProfile[])
+    setLoading(false)
+  }, [userId])
+
+  useEffect(() => {
+    fetchWatchmakers()
+  }, [fetchWatchmakers])
+
+  return { watchmakers, loading, refetch: fetchWatchmakers }
+}
 
 export function useCircles(userId: string | undefined) {
   const [circles, setCircles] = useState<Circle[]>([])

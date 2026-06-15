@@ -30,6 +30,19 @@ export interface WatchmakerClaimRequest {
   created_at: string
 }
 
+export interface OwnedWatchmakerProfile {
+  id: string
+  slug: string | null
+  name: string
+  city: string
+  country: string
+  profile_type: "claimed"
+  owner_id: string
+  rep_friendly: "yes" | "no" | "unknown" | null
+  updated_at?: string | null
+  created_at: string
+}
+
 export interface NotificationPreferences {
   id: string
   user_id: string

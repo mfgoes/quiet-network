@@ -11,6 +11,7 @@ create table if not exists public.watchmakers (
   country text not null,
   address text,
   website text,
+  contact_methods jsonb not null default '[]'::jsonb,
   description text,
   shop_type text,
   services text[] not null default '{}',

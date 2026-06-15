@@ -6,14 +6,15 @@ import { Button } from "@/components/ui/button"
 
 interface AuthFormProps {
   onSignIn: (email: string, password: string, rememberMe?: boolean) => Promise<Error | null>
-  onSignUp: (email: string, password: string) => Promise<Error | null>
-  onMagicLink: (email: string) => Promise<Error | null>
+  onSignUp: (email: string, password: string, redirectTo?: string) => Promise<Error | null>
+  onMagicLink: (email: string, redirectTo?: string) => Promise<Error | null>
   onForgotPassword: (email: string) => Promise<Error | null>
+  redirectTo?: string
 }
 
 type Mode = "sign-in" | "sign-up" | "magic-link" | "forgot-password"
 
-export function AuthForm({ onSignIn, onSignUp, onMagicLink, onForgotPassword }: AuthFormProps) {
+export function AuthForm({ onSignIn, onSignUp, onMagicLink, onForgotPassword, redirectTo }: AuthFormProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [mode, setMode] = useState<Mode>("sign-in")
@@ -32,7 +33,7 @@ export function AuthForm({ onSignIn, onSignUp, onMagicLink, onForgotPassword }: 
     let result: Error | null = null
 
     if (mode === "magic-link") {
-      result = await onMagicLink(email)
+      result = await onMagicLink(email, redirectTo)
       if (!result) {
         setMagicLinkSent(true)
         setSubmitting(false)
@@ -46,7 +47,7 @@ export function AuthForm({ onSignIn, onSignUp, onMagicLink, onForgotPassword }: 
         return
       }
     } else if (mode === "sign-up") {
-      result = await onSignUp(email, password)
+      result = await onSignUp(email, password, redirectTo)
     } else {
       result = await onSignIn(email, password, rememberMe)
     }

@@ -1,0 +1,243 @@
+{
+  "source": {
+    "name": "r/RepTimeServices trusted watchmakers",
+    "url": "https://www.reddit.com/r/RepTimeServices/comments/18bo6ue/welcome_to_reptime_services_the_place_for/",
+    "scraped": "2026-06",
+    "permission_status": "not_obtained",
+    "permission_contacts": [
+      {
+        "type": "reddit",
+        "label": "u/ABezzy",
+        "username": "ABezzy",
+        "url": "https://www.reddit.com/u/ABezzy"
+      },
+      {
+        "type": "reddit",
+        "label": "u/jayalvin7",
+        "username": "jayalvin7",
+        "url": "https://www.reddit.com/u/jayalvin7"
+      }
+    ]
+  },
+  "defaults": {
+    "profile_type": "community",
+    "claim_status": "unclaimed",
+    "rep_friendly": null,
+    "approved_for_public_display": false
+  },
+  "watchmakers": [
+    {
+      "slug": "reddit-petehudso",
+      "name": "u/petehudso",
+      "source_region_group": "Canada",
+      "region": "Canada",
+      "country": "Canada",
+      "status": "active",
+      "website": null,
+      "contact_methods": [
+        {
+          "type": "reddit",
+          "label": "u/petehudso",
+          "username": "petehudso",
+          "url": "https://www.reddit.com/u/petehudso"
+        }
+      ]
+    },
+    {
+      "slug": "reddit-majorwilliams",
+      "name": "u/MajorWilliams",
+      "source_region_group": "CONUS",
+      "region": "West Coast",
+      "country": "United States",
+      "status": "active",
+      "website": "https://majorwilliamswatchservices.com/",
+      "contact_methods": [
+        {
+          "type": "reddit",
+          "label": "u/MajorWilliams",
+          "username": "MajorWilliams",
+          "url": "https://www.reddit.com/u/MajorWilliams"
+        },
+        {
+          "type": "website",
+          "label": "majorwilliamswatchservices.com",
+          "url": "https://majorwilliamswatchservices.com/"
+        }
+      ]
+    },
+    {
+      "slug": "reddit-oascom",
+      "name": "u/oascom",
+      "source_region_group": "CONUS",
+      "region": "East Coast",
+      "country": "United States",
+      "status": "inactive",
+      "status_note": "Marked on hold in source",
+      "website": null,
+      "contact_methods": [
+        {
+          "type": "reddit",
+          "label": "u/oascom",
+          "username": "oascom",
+          "url": "https://www.reddit.com/u/oascom"
+        }
+      ]
+    },
+    {
+      "slug": "reddit-p4gtr",
+      "name": "u/P4GTR",
+      "source_region_group": "CONUS",
+      "region": "East Coast",
+      "country": "United States",
+      "status": "active",
+      "website": "https://swiss-hq.com/",
+      "contact_methods": [
+        {
+          "type": "reddit",
+          "label": "u/P4GTR",
+          "username": "P4GTR",
+          "url": "https://www.reddit.com/u/P4GTR"
+        },
+        {
+          "type": "website",
+          "label": "swiss-hq.com",
+          "url": "https://swiss-hq.com/"
+        }
+      ]
+    },
+    {
+      "slug": "reddit-wingtrim",
+      "name": "u/Wingtrim",
+      "source_region_group": "CONUS",
+      "region": "Central",
+      "country": "United States",
+      "status": "active",
+      "website": "https://watchsmith.us/",
+      "contact_methods": [
+        {
+          "type": "reddit",
+          "label": "u/Wingtrim",
+          "username": "Wingtrim",
+          "url": "https://www.reddit.com/u/Wingtrim"
+        },
+        {
+          "type": "website",
+          "label": "watchsmith.us",
+          "url": "https://watchsmith.us/"
+        }
+      ]
+    },
+    {
+      "slug": "reddit-xzero-coolx",
+      "name": "u/xZero_Coolx",
+      "source_region_group": "CONUS",
+      "region": "East Coast",
+      "country": "United States",
+      "status": "active",
+      "website": null,
+      "contact_methods": [
+        {
+          "type": "reddit",
+          "label": "u/xZero_Coolx",
+          "username": "xZero_Coolx",
+          "url": "https://www.reddit.com/user/xZero_Coolx/"
+        }
+      ]
+    },
+    {
+      "slug": "reddit-h0796",
+      "name": "u/H0796",
+      "source_region_group": "EU",
+      "region": "Spain",
+      "country": "Spain",
+      "status": "active",
+      "website": "https://relojeriaali.wixsite.com/home",
+      "contact_methods": [
+        {
+          "type": "reddit",
+          "label": "u/H0796",
+          "username": "H0796",
+          "url": "https://www.reddit.com/user/H0796/"
+        },
+        {
+          "type": "website",
+          "label": "relojeriaali.wixsite.com",
+          "url": "https://relojeriaali.wixsite.com/home"
+        }
+      ]
+    },
+    {
+      "slug": "reddit-noleex-the-modder",
+      "name": "u/Noleex_The_Modder",
+      "source_region_group": "EU",
+      "region": "Europe",
+      "country": "Europe",
+      "status": "active",
+      "website": "https://www.superfranken.com/",
+      "contact_methods": [
+        {
+          "type": "reddit",
+          "label": "u/Noleex_The_Modder",
+          "username": "Noleex_The_Modder",
+          "url": "https://www.reddit.com/u/Noleex_The_Modder"
+        },
+        {
+          "type": "website",
+          "label": "superfranken.com",
+          "url": "https://www.superfranken.com/"
+        }
+      ]
+    },
+    {
+      "slug": "reddit-watchlszmo",
+      "name": "u/Watchlszmo",
+      "source_region_group": "EU",
+      "region": "Europe",
+      "country": "Europe",
+      "status": "active",
+      "website": null,
+      "contact_methods": [
+        {
+          "type": "reddit",
+          "label": "u/Watchlszmo",
+          "username": "Watchlszmo",
+          "url": "https://www.reddit.com/user/Watchlszmo/"
+        }
+      ]
+    },
+    {
+      "slug": "reddit-underthedial",
+      "name": "u/UnderTheDial_",
+      "source_region_group": "UK",
+      "region": "UK",
+      "country": "United Kingdom",
+      "status": "active",
+      "website": null,
+      "contact_methods": [
+        {
+          "type": "reddit",
+          "label": "u/UnderTheDial_",
+          "username": "UnderTheDial_",
+          "url": "https://www.reddit.com/u/UnderTheDial_"
+        }
+      ]
+    },
+    {
+      "slug": "reddit-onthebench-wr",
+      "name": "u/onthebench-wr",
+      "source_region_group": "UK",
+      "region": "UK",
+      "country": "United Kingdom",
+      "status": "active",
+      "website": null,
+      "contact_methods": [
+        {
+          "type": "reddit",
+          "label": "u/onthebench-wr",
+          "username": "onthebench-wr",
+          "url": "https://www.reddit.com/u/onthebench-wr"
+        }
+      ]
+    }
+  ]
+}
