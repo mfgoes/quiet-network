@@ -49,6 +49,12 @@ function slugify(value: string): string {
   return normalize(value).replace(/\s+/g, '-')
 }
 
+function uniqueSlug(value: string): string {
+  const base = slugify(value) || 'watchmaker'
+  const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+  return `${base}-${suffix}`
+}
+
 function similarity(a: string, b: string): number {
   const left = normalize(a)
   const right = normalize(b)
@@ -124,6 +130,7 @@ export function WatchmakerContributionModule({
 }: WatchmakerContributionModuleProps) {
   const [type, setType] = useState<ContributionType>(initialType)
   const [message, setMessage] = useState('')
+  const [messageKind, setMessageKind] = useState<'success' | 'error'>('success')
   const [shopQuery, setShopQuery] = useState('')
   const [locationQuery, setLocationQuery] = useState('')
   const [locationResults, setLocationResults] = useState<NominatimResult[]>([])
@@ -138,6 +145,7 @@ export function WatchmakerContributionModule({
     if (!open) return
     setType(initialType)
     setMessage('')
+    setMessageKind('success')
     setShopQuery('')
     setLocationQuery('')
     setLocationResults([])
@@ -198,12 +206,14 @@ export function WatchmakerContributionModule({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setMessage('')
+    setMessageKind('success')
 
     const formData = new FormData(event.currentTarget)
     const shopName = shopQuery.trim()
 
     if (!shopName) {
       setMessage('Add the shop or watchmaker name before submitting.')
+      setMessageKind('error')
       return
     }
 
@@ -213,11 +223,13 @@ export function WatchmakerContributionModule({
           ? 'Choose a location result before submitting this community listing.'
           : 'Choose a location result before submitting this report.',
       )
+      setMessageKind('error')
       return
     }
 
     if (type === 'report' && workDone.length === 0) {
       setMessage('Choose at least one work item from the report.')
+      setMessageKind('error')
       return
     }
 
@@ -230,7 +242,7 @@ export function WatchmakerContributionModule({
         const { city, country } = locationParts(selectedLocation)
         const { error } = await supabase.from('watchmakers').insert({
           name: shopName,
-          slug: slugify(`${shopName} ${city}`),
+          slug: uniqueSlug(`${shopName} ${city}`),
           profile_type: 'community',
           owner_id: null,
           city,
@@ -253,6 +265,7 @@ export function WatchmakerContributionModule({
         const watch = formValue(formData, 'watch')
         if (!watch) {
           setMessage('Add the watch, model, movement, or type before submitting this report.')
+          setMessageKind('error')
           return
         }
 
@@ -285,8 +298,10 @@ export function WatchmakerContributionModule({
         if (error) throw error
       }
 
+      setMessageKind('success')
       setMessage(type === 'watchmaker' ? 'Community listing saved for review.' : 'Service report saved for review.')
     } catch (error) {
+      setMessageKind('error')
       setMessage(errorMessage(error))
     } finally {
       setSubmitting(false)
@@ -527,7 +542,13 @@ export function WatchmakerContributionModule({
           </div>
 
           {message && (
-            <p className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+            <p
+              className={`mt-4 rounded-md border px-3 py-2 text-sm font-medium ${
+                messageKind === 'success'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  : 'border-red-200 bg-red-50 text-red-800'
+              }`}
+            >
               {message}
             </p>
           )}
