@@ -24,6 +24,7 @@ import {
   Star,
   Wrench,
   X,
+  ArrowLeft,
   ArrowRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -661,7 +662,7 @@ function CommunitySpecialistsSection() {
             All featured profiles are opt-in and community-verified
           </span>
           <Link
-            href={`/login?redirect=${encodeURIComponent('/watchmakers')}`}
+            href={`/watchmakers/login?redirect=${encodeURIComponent('/watchmakers')}`}
             className="inline-flex items-center gap-1 text-emerald-700 transition hover:text-emerald-900"
           >
             Claim your profile
@@ -697,8 +698,8 @@ function displayServices(watchmaker: Watchmaker): string[] {
   return Array.from(new Set(watchmaker.reports.map((report) => report.work.split(',')[0].trim()).filter(Boolean)))
 }
 
-function openStreetMapSearchUrl(watchmaker: Watchmaker): string {
-  return `https://www.openstreetmap.org/search?query=${encodeURIComponent(
+function googleMapsSearchUrl(watchmaker: Watchmaker): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     `${watchmaker.name}, ${watchmaker.address}, ${watchmaker.city}, ${watchmaker.country}`,
   )}`
 }
@@ -821,7 +822,14 @@ function DetailPanel({
 }) {
   const services = displayServices(watchmaker)
   const watchTypes = displayWatchTypes(watchmaker)
-  const mapUrl = openStreetMapSearchUrl(watchmaker)
+  const mapUrl = googleMapsSearchUrl(watchmaker)
+  const [reportsExpanded, setReportsExpanded] = useState(false)
+  const visibleReports = reportsExpanded ? watchmaker.reports : watchmaker.reports.slice(0, 2)
+  const hasMoreReports = watchmaker.reports.length > visibleReports.length
+
+  useEffect(() => {
+    setReportsExpanded(false)
+  }, [watchmaker.id])
 
   return (
     <aside className="flex min-h-0 w-full flex-col overflow-hidden bg-white">
@@ -964,10 +972,18 @@ function DetailPanel({
         <section className="mt-5 border-t border-slate-200 pt-5">
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-500">Reports</p>
-            <span className="text-xs font-medium text-blue-600">See all</span>
+            {watchmaker.reports.length > 2 && (
+              <button
+                type="button"
+                onClick={() => setReportsExpanded((expanded) => !expanded)}
+                className="text-xs font-medium text-blue-600 hover:text-blue-800"
+              >
+                {reportsExpanded ? 'Show less' : `See all ${watchmaker.reports.length}`}
+              </button>
+            )}
           </div>
           <div className="mt-3 space-y-3">
-            {watchmaker.reports.map((report) => (
+            {visibleReports.map((report) => (
               <article key={report.title} className="rounded-lg border border-slate-200 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -991,6 +1007,15 @@ function DetailPanel({
               </article>
             ))}
           </div>
+          {hasMoreReports && (
+            <button
+              type="button"
+              onClick={() => setReportsExpanded(true)}
+              className="mt-3 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              Show {watchmaker.reports.length - visibleReports.length} more reports
+            </button>
+          )}
         </section>
       </div>
     </aside>
@@ -1330,6 +1355,7 @@ export function WatchmakersPageClient() {
   const [geoLookup, setGeoLookup] = useState<GeoLookup | null>(null)
   const [dbWatchmakers, setDbWatchmakers] = useState<Watchmaker[]>([])
   const [heroSearchOpen, setHeroSearchOpen] = useState(false)
+  const [locationIntroOpen, setLocationIntroOpen] = useState(true)
   const [repOnly, setRepOnly] = useState(false)
   const [priceBucket, setPriceBucket] = useState<'all' | Watchmaker['priceBucket']>('all')
   const [turnaroundBucket, setTurnaroundBucket] = useState<'all' | Watchmaker['turnaroundBucket']>('all')
@@ -1458,6 +1484,7 @@ export function WatchmakersPageClient() {
     turnaroundBucket !== 'all'
   const hasLocationContext = countryFilter !== 'all' || cityFilter !== 'all'
   const shouldShowResults = hasLocationContext
+  const shouldShowLocationIntro = !hasLocationContext || locationIntroOpen
   const visibleWatchmakers = shouldShowResults ? filteredWatchmakers : []
   const locationLabel =
     cityFilter !== 'all' && countryFilter !== 'all'
@@ -1469,6 +1496,7 @@ export function WatchmakersPageClient() {
           : ''
   const selectedWatchmaker =
     selectedId ? visibleWatchmakers.find((watchmaker) => watchmaker.id === selectedId) ?? null : null
+  const previewWatchmaker = selectedWatchmaker ?? visibleWatchmakers[0] ?? null
   const resultHeading = !hasLocationContext
     ? 'Trusted watchmakers'
     : hasRefinementCriteria
@@ -1494,6 +1522,7 @@ export function WatchmakersPageClient() {
     setPriceBucket('all')
     setTurnaroundBucket('all')
     setSelectedId(null)
+    setLocationIntroOpen(true)
   }
 
   const openContribution = (type: ContributionType) => {
@@ -1502,7 +1531,7 @@ export function WatchmakersPageClient() {
   }
   const openClaim = (watchmaker: Watchmaker) => {
     if (!user && !authLoading) {
-      router.push(`/login?redirect=${encodeURIComponent(`/watchmakers?claim=${encodeURIComponent(watchmaker.id)}`)}`)
+      router.push(`/watchmakers/login?redirect=${encodeURIComponent(`/watchmakers?claim=${encodeURIComponent(watchmaker.id)}`)}`)
       return
     }
 
@@ -1539,6 +1568,7 @@ export function WatchmakersPageClient() {
         setSelectedId(target.id)
         setCountryFilter(target.country)
         setCityFilter(target.city)
+        setLocationIntroOpen(false)
         params.delete('manage')
       }
     }
@@ -1554,8 +1584,14 @@ export function WatchmakersPageClient() {
     setCountryFilter(suggestion.country)
     setCityFilter(suggestion.city)
     setSelectedId(null)
+    setLocationIntroOpen(false)
     setHeroSearchOpen(false)
     window.setTimeout(() => document.getElementById('profiles')?.scrollIntoView({ behavior: 'smooth' }), 0)
+  }
+
+  const reopenLocationIntro = () => {
+    setLocationIntroOpen(true)
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0)
   }
   const defaultCitySuggestions = useMemo(
     () =>
@@ -1712,6 +1748,7 @@ export function WatchmakersPageClient() {
                   const nextCountry = event.target.value
                   setCountryFilter(nextCountry)
                   setCityFilter('all')
+                  setLocationIntroOpen(nextCountry === 'all')
                 }}
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               >
@@ -1731,7 +1768,11 @@ export function WatchmakersPageClient() {
               <MapPin className="h-4 w-4 text-slate-500" />
               <select
                 value={cityFilter}
-                onChange={(event) => setCityFilter(event.target.value)}
+                onChange={(event) => {
+                  const nextCity = event.target.value
+                  setCityFilter(nextCity)
+                  setLocationIntroOpen(nextCity === 'all' && countryFilter === 'all')
+                }}
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               >
                 <option value="all">All cities</option>
@@ -1874,7 +1915,7 @@ export function WatchmakersPageClient() {
             type="button"
             variant="outline"
             className="hidden bg-white md:inline-flex"
-            onClick={() => router.push(user ? '/profile' : `/login?redirect=${encodeURIComponent('/watchmakers')}`)}
+            onClick={() => router.push(user ? '/profile' : `/watchmakers/login?redirect=${encodeURIComponent('/watchmakers')}`)}
           >
             {user ? 'Account' : 'Sign in'}
           </Button>
@@ -1884,6 +1925,7 @@ export function WatchmakersPageClient() {
         </div>
       </header>
 
+      {shouldShowLocationIntro && (
       <section className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-5xl px-4 py-12 text-center lg:px-6 lg:py-16">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Watchmakers by Quiet Network</p>
@@ -2036,6 +2078,7 @@ export function WatchmakersPageClient() {
         </div>
         */}
       </section>
+      )}
 
       {!shouldShowResults && <CommunitySpecialistsSection />}
 
@@ -2053,9 +2096,21 @@ export function WatchmakersPageClient() {
               />
             </div>
             <div className="mt-3 flex items-center justify-between gap-3 md:mt-0">
-              <div>
-                <h2 className="text-lg font-extrabold text-slate-950">{resultHeading}</h2>
-                <p className="text-xs text-slate-500">{resultSubheading}</p>
+              <div className="flex min-w-0 items-start gap-3">
+                {!shouldShowLocationIntro && (
+                  <button
+                    type="button"
+                    onClick={reopenLocationIntro}
+                    aria-label="Back to location search"
+                    className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </button>
+                )}
+                <div className="min-w-0">
+                  <h2 className="text-lg font-extrabold text-slate-950">{resultHeading}</h2>
+                  <p className="text-xs text-slate-500">{resultSubheading}</p>
+                </div>
               </div>
               <button
                 type="button"
@@ -2079,7 +2134,7 @@ export function WatchmakersPageClient() {
                 <WatchmakerCard
                   key={watchmaker.id}
                   watchmaker={watchmaker}
-                  active={selectedId === watchmaker.id}
+                  active={previewWatchmaker?.id === watchmaker.id}
                   onSelect={() => setSelectedId(watchmaker.id)}
                 />
               ))
@@ -2088,22 +2143,20 @@ export function WatchmakersPageClient() {
         </section>
 
         <div className="hidden min-h-0 border-l border-slate-200 bg-slate-100/60 p-5 lg:flex lg:justify-center">
-          {selectedWatchmaker ? (
+          {previewWatchmaker ? (
             <div className="flex min-h-0 w-full max-w-[640px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <DetailPanel
-                watchmaker={selectedWatchmaker}
+                watchmaker={previewWatchmaker}
                 onClaim={openClaim}
                 onManage={setManageTarget}
-                canManage={canManageWatchmaker(selectedWatchmaker)}
+                canManage={canManageWatchmaker(previewWatchmaker)}
               />
             </div>
           ) : (
-            <aside className="flex h-full min-h-[520px] w-full max-w-[640px] items-center justify-center rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <aside className="flex h-full min-h-[520px] w-full max-w-[640px] items-center justify-center p-8 text-center">
               <div className="max-w-sm">
-                <p className="text-sm font-semibold text-slate-950">Select a watchmaker</p>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Keep the list in view while you compare trust signals, services, reports, and distance.
-                </p>
+                <p className="text-sm font-semibold text-slate-950">No profile to preview</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">Adjust the filters or add the watchmaker you expected to find.</p>
               </div>
             </aside>
           )}
@@ -2124,6 +2177,7 @@ export function WatchmakersPageClient() {
                   setCountryFilter(watchmaker.country)
                   setCityFilter(watchmaker.city)
                   setSelectedId(watchmaker.id)
+                  setLocationIntroOpen(false)
                   document.getElementById('profiles')?.scrollIntoView({ behavior: 'smooth' })
                 }}
                 className="rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
@@ -2167,11 +2221,9 @@ export function WatchmakersPageClient() {
               <Plus className="mr-2 h-4 w-4" />
               Add a watchmaker
             </Button>
-            <Button asChild variant="outline" className="bg-white">
-              <a href="#profiles">
-                <Search className="mr-2 h-4 w-4" />
-                Search location
-              </a>
+            <Button type="button" variant="outline" className="bg-white" onClick={reopenLocationIntro}>
+              <Search className="mr-2 h-4 w-4" />
+              Search location
             </Button>
           </div>
         </div>

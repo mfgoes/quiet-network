@@ -89,7 +89,8 @@ export function useAuth() {
   const authRedirectUrl = (redirectTo?: string) => {
     if (typeof window === "undefined") return undefined
     const safeRedirect = redirectTo?.startsWith("/") ? redirectTo : "/"
-    return `${window.location.origin}/login?redirect=${encodeURIComponent(safeRedirect)}`
+    const loginPath = window.location.pathname.endsWith("/login") ? window.location.pathname : "/login"
+    return `${window.location.origin}${loginPath}?redirect=${encodeURIComponent(safeRedirect)}`
   }
 
   const signUp = async (email: string, password: string, redirectTo?: string) => {

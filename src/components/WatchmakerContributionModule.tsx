@@ -132,7 +132,10 @@ export function WatchmakerContributionModule({
   const [message, setMessage] = useState('')
   const [messageKind, setMessageKind] = useState<'success' | 'error'>('success')
   const [shopQuery, setShopQuery] = useState('')
+  const [shopSearchOpen, setShopSearchOpen] = useState(false)
+  const [selectedShop, setSelectedShop] = useState<ShopRecord | null>(null)
   const [locationQuery, setLocationQuery] = useState('')
+  const [locationSearchOpen, setLocationSearchOpen] = useState(false)
   const [locationResults, setLocationResults] = useState<NominatimResult[]>([])
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
@@ -147,7 +150,10 @@ export function WatchmakerContributionModule({
     setMessage('')
     setMessageKind('success')
     setShopQuery('')
+    setShopSearchOpen(false)
+    setSelectedShop(null)
     setLocationQuery('')
+    setLocationSearchOpen(false)
     setLocationResults([])
     setSelectedLocation(null)
     setLocationLoading(false)
@@ -157,22 +163,27 @@ export function WatchmakerContributionModule({
     setWouldReturn('Yes')
   }, [initialType, open])
 
-  const matchedShop = useMemo(() => {
-    if (type !== 'report' || shopQuery.trim().length < 3) return null
-    const best = shops
+  const shopSuggestions = useMemo(() => {
+    if (type !== 'report') return []
+
+    const normalizedQuery = normalize(shopQuery)
+    const scoredShops = shops
       .map((shop) => ({
         shop,
-        score: Math.max(
-          similarity(shopQuery, shop.name),
-          similarity(shopQuery, `${shop.name} ${shop.city}`),
-          similarity(shopQuery, shop.address),
-        ),
+        score: normalizedQuery
+          ? Math.max(
+              similarity(shopQuery, shop.name),
+              similarity(shopQuery, `${shop.name} ${shop.city}`),
+              similarity(shopQuery, shop.address),
+            )
+          : 1,
       }))
-      .sort((a, b) => b.score - a.score)[0]
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score || a.shop.name.localeCompare(b.shop.name))
 
-    return best && best.score >= 0.7 ? best.shop : null
+    return scoredShops.slice(0, 6).map(({ shop }) => shop)
   }, [shopQuery, shops, type])
-  const needsLocationSearch = type === 'watchmaker' || (type === 'report' && !matchedShop)
+  const needsLocationSearch = type === 'watchmaker' || (type === 'report' && !selectedShop)
 
   useEffect(() => {
     if (!needsLocationSearch || selectedLocation || locationQuery.trim().length < 3) {
@@ -209,7 +220,7 @@ export function WatchmakerContributionModule({
     setMessageKind('success')
 
     const formData = new FormData(event.currentTarget)
-    const shopName = shopQuery.trim()
+    const shopName = selectedShop?.name ?? shopQuery.trim()
 
     if (!shopName) {
       setMessage('Add the shop or watchmaker name before submitting.')
@@ -279,9 +290,9 @@ export function WatchmakerContributionModule({
             }
           : {}
         const { error } = await supabase.from('watchmaker_service_reports').insert({
-          watchmaker_id: matchedShop && isUuid(matchedShop.id) ? matchedShop.id : null,
-          watchmaker_slug: matchedShop ? matchedShop.id : null,
-          watchmaker_name: matchedShop ? matchedShop.name : shopName,
+          watchmaker_id: selectedShop && isUuid(selectedShop.id) ? selectedShop.id : null,
+          watchmaker_slug: selectedShop ? selectedShop.id : null,
+          watchmaker_name: selectedShop ? selectedShop.name : shopName,
           watch,
           watch_type: reportWatchType,
           work_done: workDone,
@@ -352,7 +363,11 @@ export function WatchmakerContributionModule({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setType('watchmaker')}
+              onClick={() => {
+                setType('watchmaker')
+                setSelectedShop(null)
+                setShopSearchOpen(false)
+              }}
               className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                 type === 'watchmaker' ? 'bg-quiet-slate text-white' : 'bg-quiet-aged text-quiet-slate hover:bg-quiet-border/60'
               }`}
@@ -373,23 +388,70 @@ export function WatchmakerContributionModule({
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="text-sm font-medium text-quiet-slate">
+            <div className="relative text-sm font-medium text-quiet-slate">
               Shop or watchmaker
               <input
-                value={shopQuery}
+                value={selectedShop ? selectedShop.name : shopQuery}
                 onChange={(event) => {
+                  setSelectedShop(null)
                   setShopQuery(event.target.value)
                   setSelectedLocation(null)
+                  setShopSearchOpen(type === 'report')
                 }}
+                onFocus={() => setShopSearchOpen(type === 'report')}
+                onBlur={() => window.setTimeout(() => setShopSearchOpen(false), 120)}
                 className="mt-1 h-10 w-full rounded-md border border-quiet-border bg-quiet-offwhite px-3 text-sm text-quiet-slate outline-none focus:border-quiet-accent"
-                placeholder="e.g. Van Dijk Watch Service"
+                placeholder={type === 'report' ? 'Search or choose an existing shop' : 'e.g. Van Dijk Watch Service'}
               />
-              {type === 'report' && matchedShop && (
-                <span className="mt-1 block text-xs font-medium text-emerald-700">
-                  Matched existing shop: {matchedShop.name}. This report will use shop ID {matchedShop.id}.
-                </span>
+              {type === 'report' && shopSearchOpen && !selectedShop && (
+                <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-md border border-quiet-border bg-white shadow-lg">
+                  {shopSuggestions.length > 0 ? (
+                    shopSuggestions.map((shop) => (
+                      <button
+                        key={shop.id}
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => {
+                          setSelectedShop(shop)
+                          setShopQuery(shop.name)
+                          setSelectedLocation(null)
+                          setLocationQuery('')
+                          setLocationResults([])
+                          setShopSearchOpen(false)
+                        }}
+                        className="block w-full px-3 py-2 text-left text-xs text-quiet-slate hover:bg-quiet-aged"
+                      >
+                        <span className="block font-semibold">{shop.name}</span>
+                        <span className="mt-0.5 block truncate text-quiet-muted">
+                          {shop.city} · {shop.address}
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="px-3 py-2 text-xs text-quiet-muted">No existing shop found. Keep typing and choose a location.</p>
+                  )}
+                </div>
               )}
-            </label>
+              {type === 'report' && selectedShop ? (
+                <span className="mt-1 flex items-center justify-between gap-2 text-xs font-medium text-emerald-700">
+                  <span>Selected existing shop: {selectedShop.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedShop(null)
+                      setShopQuery('')
+                    }}
+                    className="text-quiet-muted hover:text-quiet-slate"
+                  >
+                    Change
+                  </button>
+                </span>
+              ) : type === 'report' ? (
+                <span className="mt-1 block text-xs text-quiet-muted">
+                  Pick a known shop, or enter a new one and choose its location.
+                </span>
+              ) : null}
+            </div>
             {needsLocationSearch ? (
               <div className="relative text-sm font-medium text-quiet-slate">
                 Location
@@ -398,18 +460,39 @@ export function WatchmakerContributionModule({
                   onChange={(event) => {
                     setSelectedLocation(null)
                     setLocationQuery(event.target.value)
+                    setLocationSearchOpen(true)
                   }}
+                  onFocus={() => setLocationSearchOpen(true)}
+                  onBlur={() => window.setTimeout(() => setLocationSearchOpen(false), 120)}
                   className="mt-1 h-10 w-full rounded-md border border-quiet-border bg-quiet-offwhite px-3 text-sm text-quiet-slate outline-none focus:border-quiet-accent"
                   placeholder="Search street address or place"
                 />
-                <span className="mt-1 block text-xs text-quiet-muted">Choose an OpenStreetMap result. Free text is not saved.</span>
-                {(locationResults.length > 0 || locationLoading) && !selectedLocation && (
+                {selectedLocation ? (
+                  <span className="mt-1 flex items-center justify-between gap-2 text-xs font-medium text-emerald-700">
+                    <span>Selected location</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedLocation(null)
+                        setLocationQuery('')
+                        setLocationSearchOpen(true)
+                      }}
+                      className="text-quiet-muted hover:text-quiet-slate"
+                    >
+                      Change
+                    </button>
+                  </span>
+                ) : (
+                  <span className="mt-1 block text-xs text-quiet-muted">Choose a location result. Free text is not saved.</span>
+                )}
+                {(locationResults.length > 0 || locationLoading) && locationSearchOpen && !selectedLocation && (
                   <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-md border border-quiet-border bg-white shadow-lg">
                     {locationLoading && <p className="px-3 py-2 text-xs text-quiet-muted">Searching...</p>}
                     {locationResults.map((result) => (
                       <button
                         key={result.place_id}
                         type="button"
+                        onMouseDown={(event) => event.preventDefault()}
                         onClick={() => {
                           setSelectedLocation({
                             place_id: result.place_id,
@@ -420,6 +503,7 @@ export function WatchmakerContributionModule({
                           })
                           setLocationQuery(result.display_name)
                           setLocationResults([])
+                          setLocationSearchOpen(false)
                         }}
                         className="block w-full px-3 py-2 text-left text-xs text-quiet-slate hover:bg-quiet-aged"
                       >

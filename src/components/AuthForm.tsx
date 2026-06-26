@@ -10,14 +10,40 @@ interface AuthFormProps {
   onMagicLink: (email: string, redirectTo?: string) => Promise<Error | null>
   onForgotPassword: (email: string) => Promise<Error | null>
   redirectTo?: string
+  copy?: Partial<AuthFormCopy>
 }
 
 type Mode = "sign-in" | "sign-up" | "magic-link" | "forgot-password"
 
-export function AuthForm({ onSignIn, onSignUp, onMagicLink, onForgotPassword, redirectTo }: AuthFormProps) {
+type AuthFormCopy = {
+  signInTitle: string
+  signUpTitle: string
+  signUpSubtitle: string
+  magicLinkTitle: string
+  magicLinkSubtitle: string
+  forgotPasswordTitle: string
+  forgotPasswordSubtitle: string
+  signUpToggle: string
+  signInToggle: string
+}
+
+const DEFAULT_COPY: AuthFormCopy = {
+  signInTitle: "Your neighborhood, without the noise",
+  signUpTitle: "Create your account",
+  signUpSubtitle: "Join your neighborhood on Quiet Network",
+  magicLinkTitle: "Sign in with magic link",
+  magicLinkSubtitle: "We'll email you a link to sign in, no password needed",
+  forgotPasswordTitle: "Reset your password",
+  forgotPasswordSubtitle: "Enter your email and we'll send you a reset link",
+  signUpToggle: "New here? Create an account",
+  signInToggle: "Already have an account? Sign in",
+}
+
+export function AuthForm({ onSignIn, onSignUp, onMagicLink, onForgotPassword, redirectTo, copy }: AuthFormProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [mode, setMode] = useState<Mode>("sign-in")
+  const formCopy = { ...DEFAULT_COPY, ...copy }
   const [rememberMe, setRememberMe] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -146,26 +172,26 @@ export function AuthForm({ onSignIn, onSignUp, onMagicLink, onForgotPassword, re
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-semibold text-quiet-slate md:text-3xl">
           {mode === "sign-up"
-            ? "Create your account"
+            ? formCopy.signUpTitle
             : mode === "magic-link"
-              ? "Sign in with magic link"
+              ? formCopy.magicLinkTitle
               : mode === "forgot-password"
-                ? "Reset your password"
-                : "Your neighborhood, without the noise"}
+                ? formCopy.forgotPasswordTitle
+                : formCopy.signInTitle}
         </h1>
         {mode === "sign-up" && (
           <p className="mt-1 text-sm text-quiet-muted">
-            Join your neighborhood on Quiet Network
+            {formCopy.signUpSubtitle}
           </p>
         )}
         {mode === "magic-link" && (
           <p className="mt-1 text-sm text-quiet-muted">
-            We'll email you a link to sign in {"\u2014"} no password needed
+            {formCopy.magicLinkSubtitle}
           </p>
         )}
         {mode === "forgot-password" && (
           <p className="mt-1 text-sm text-quiet-muted">
-            Enter your email and we'll send you a reset link
+            {formCopy.forgotPasswordSubtitle}
           </p>
         )}
       </div>
@@ -319,8 +345,8 @@ export function AuthForm({ onSignIn, onSignUp, onMagicLink, onForgotPassword, re
           className="text-sm text-quiet-muted hover:text-quiet-slate transition-colors"
         >
           {mode === "sign-up"
-            ? "Already have an account? Sign in"
-            : "New here? Create an account"}
+            ? formCopy.signInToggle
+            : formCopy.signUpToggle}
         </button>
       </div>
     </div>
