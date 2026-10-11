@@ -69,9 +69,10 @@ function CircleCard({
   const accent      = getBannerBg(circle.banner_color, circle.name)
   const gradient    = getBannerGradient(circle.banner_color, circle.name)
   const dark        = isBannerDark(circle.banner_color)
-  const nameColor   = dark ? "#f8fafc" : undefined
-  const mutedColor  = dark ? "#cbd5e1" : undefined
-  const actionColor = dark ? "#94a3b8" : "#667eea"
+  // Cards sit on the surface colour now; the circle's tone is a thin band on top
+  void gradient; void dark
+  const nameColor: string | undefined = undefined
+  const mutedColor: string | undefined = undefined
   const detail      = circle.about || circle.description
 
   return (
@@ -104,16 +105,16 @@ function CircleCard({
       <button
         onClick={() => isMember ? onSelect(circle) : onJoin(circle)}
         disabled={joiningId === circle.id}
-        className="relative rounded-xl border overflow-hidden text-left w-full transition-colors hover:border-line-strong disabled:opacity-60"
-        style={{ borderColor: `${accent}66` }}
+        className="relative overflow-hidden rounded-[var(--radius)] border border-line bg-surface text-left w-full transition-colors hover:border-line-strong disabled:opacity-60"
+        style={{ boxShadow: `inset 0 3px 0 ${accent}` }}
       >
         {/* Tinted identity area */}
-        <div className="p-3.5 pb-3" style={{ background: gradient }}>
+        <div className="p-3.5 pb-3">
           <div className="flex items-start gap-3">
             <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="xl" />
             <div className="min-w-0 flex-1 pt-0.5">
               <div
-                className="font-semibold text-[0.82rem] leading-snug text-quiet-slate"
+                className="font-display text-base leading-snug text-ink"
                 style={nameColor ? { color: nameColor } : undefined}
               >
                 {circle.name}
@@ -130,11 +131,8 @@ function CircleCard({
           </div>
         </div>
         {/* Clean action footer */}
-        <div className="bg-white px-3.5 py-2 border-t border-quiet-border/60">
-          <span
-            className="text-[0.7rem] font-semibold tracking-wide"
-            style={{ color: actionColor }}
-          >
+        <div className="px-3.5 py-2 border-t border-line">
+          <span className="label text-accent">
             {joiningId === circle.id ? "Joining…" : isMember ? "View →" : "Join →"}
           </span>
         </div>

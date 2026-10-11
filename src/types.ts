@@ -150,26 +150,26 @@ export interface BannerColorDef {
 }
 
 export const BANNER_COLORS: BannerColorDef[] = [
-  // Pastels
-  { id: "sky",      bg: "#BAE6FD" },
-  { id: "mint",     bg: "#A7F3D0" },
-  { id: "lavender", bg: "#DDD6FE" },
-  { id: "peach",    bg: "#FED7AA" },
-  { id: "blush",    bg: "#FECDD3" },
-  { id: "lemon",    bg: "#FEF08A" },
-  { id: "slate",    bg: "#CBD5E1" },
-  { id: "lilac",    bg: "#E9D5FF" },
-  { id: "sage",     bg: "#BBF7D0" },
-  { id: "coral",    bg: "#FECACA" },
-  // Richer tones
-  { id: "ocean",    bg: "#38BDF8" },
-  { id: "emerald",  bg: "#34D399" },
-  { id: "violet",   bg: "#A78BFA" },
-  { id: "amber",    bg: "#FBBF24" },
-  { id: "rose",     bg: "#FB7185" },
-  { id: "night",    bg: "#334155" },
-  { id: "forest",   bg: "#166534" },
-  { id: "indigo",   bg: "#4F46E5" },
+  // Soft tints (ids kept so saved circle settings still resolve)
+  { id: "sky",      bg: "#D9E4E8" },
+  { id: "mint",     bg: "#DCE6DA" },
+  { id: "lavender", bg: "#E2DEE6" },
+  { id: "peach",    bg: "#EEDFD0" },
+  { id: "blush",    bg: "#ECDCD8" },
+  { id: "lemon",    bg: "#EDE5CC" },
+  { id: "slate",    bg: "#DEE1E3" },
+  { id: "lilac",    bg: "#E5DDE5" },
+  { id: "sage",     bg: "#DFE5D5" },
+  { id: "coral",    bg: "#EBD8D2" },
+  // Deeper tones
+  { id: "ocean",    bg: "#4E7A87" },
+  { id: "emerald",  bg: "#4F7A5E" },
+  { id: "violet",   bg: "#6E5E7E" },
+  { id: "amber",    bg: "#B0803A" },
+  { id: "rose",     bg: "#A6605A" },
+  { id: "night",    bg: "#2B2F2A" },
+  { id: "forest",   bg: "#2E4A36" },
+  { id: "indigo",   bg: "#3E4A6E" },
 ]
 
 export function getBannerBg(bannerColor: string | null, circleName: string): string {
@@ -321,14 +321,14 @@ export function getTagDef(tagId: string): TagDef | undefined {
 // ─── Circle icon colors ─────────────────────────────
 
 const CIRCLE_PASTELS = [
-  { bg: "#DBEAFE", text: "#1E40AF" }, // blue
-  { bg: "#D1FAE5", text: "#065F46" }, // green
-  { bg: "#FEF3C7", text: "#92400E" }, // amber
-  { bg: "#FCE7F3", text: "#9D174D" }, // pink
-  { bg: "#EDE9FE", text: "#5B21B6" }, // purple
-  { bg: "#CFFAFE", text: "#155E75" }, // cyan
-  { bg: "#FEE2E2", text: "#991B1B" }, // red
-  { bg: "#E0E7FF", text: "#3730A3" }, // indigo
+  { bg: "#D9E4E8", text: "#2F5563" }, // canal
+  { bg: "#DCE6DA", text: "#3B5A3F" }, // moss
+  { bg: "#EDE5CC", text: "#76561C" }, // ochre
+  { bg: "#ECDCD8", text: "#7E3A30" }, // brick
+  { bg: "#E2DEE6", text: "#594A66" }, // plum
+  { bg: "#DEE1E3", text: "#3E4852" }, // slate
+  { bg: "#EAE3D6", text: "#5E523C" }, // sand
+  { bg: "#DDE5E2", text: "#33574E" }, // spaarne
 ] as const
 
 export function circleColor(name: string): { bg: string; text: string } {

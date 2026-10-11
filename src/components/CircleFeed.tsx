@@ -77,10 +77,10 @@ export function CircleFeed({
             <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1">
               <button
                 onClick={() => setActiveTag(null)}
-                className={`shrink-0 rounded-full px-3 py-1 text-xs transition-colors ${
+                className={`shrink-0 rounded-[var(--radius)] border px-2.5 py-1 text-xs transition-colors ${
                   activeTag === null
-                    ? "bg-quiet-slate text-quiet-offwhite"
-                    : "bg-quiet-border/60 text-quiet-muted hover:text-quiet-slate"
+                    ? "border-ink bg-ink text-background"
+                    : "border-line text-muted hover:border-line-strong hover:text-ink"
                 }`}
               >
                 All
@@ -94,13 +94,13 @@ export function CircleFeed({
                   <button
                     key={tagId}
                     onClick={() => setActiveTag(isActive ? null : tagId)}
-                    className={`shrink-0 rounded-full px-3 py-1 text-xs transition-colors ${
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius)] border px-2.5 py-1 text-xs transition-colors ${
                       isActive
-                        ? "ring-1 ring-quiet-accent text-quiet-slate"
-                        : "text-quiet-slate hover:ring-1 hover:ring-quiet-border"
+                        ? "border-ink text-ink"
+                        : "border-line text-muted hover:border-line-strong hover:text-ink"
                     }`}
-                    style={{ backgroundColor: tag.color }}
                   >
+                    <span aria-hidden className="h-2 w-2 rounded-full border border-black/10" style={{ backgroundColor: tag.color }} />
                     {tag.label}
                   </button>
                 )

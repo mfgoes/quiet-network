@@ -56,7 +56,7 @@ export function CircleDropdown({
     <div ref={ref} className="relative inline-block">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-lg font-semibold text-quiet-slate hover:text-quiet-accent transition-colors"
+        className="flex items-center gap-1.5 font-display text-3xl text-ink hover:text-accent transition-colors"
       >
         {triggerButtonLabel}
         <ChevronDown
@@ -104,7 +104,7 @@ export function CircleDropdown({
                   aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
                   title={isFavorited ? "Remove from favorites" : "Add to favorites"}
                 >
-                  <Star className={`h-4 w-4 ${isFavorited ? "text-yellow-500 fill-current" : "text-quiet-muted"}`} />
+                  <Star className={`h-4 w-4 ${isFavorited ? "text-accent fill-current" : "text-quiet-muted"}`} />
                 </button>
               </div>
             )

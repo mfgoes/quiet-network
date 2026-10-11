@@ -30,7 +30,7 @@ export function CircleIcon({ name, avatarUrl, size = "md", className = "" }: Cir
 
   return (
     <span
-      className={`${sizeClasses[size]} inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${className}`}
+      className={`${sizeClasses[size]} inline-flex shrink-0 items-center justify-center rounded-full font-display font-medium ${className}`}
       style={{ backgroundColor: color.bg, color: color.text }}
     >
       {circleInitial(name)}

@@ -583,7 +583,7 @@ function CircleBanner({ circle, isAdminOrMod, onUploadAvatar }: { circle: Circle
 
   return (
     <div className="relative">
-      <div className="h-20 rounded-t-lg" style={{ backgroundColor: bannerBg }} />
+      <div className="h-16 border-b border-line" style={{ background: `radial-gradient(rgba(34,36,31,.16) 1px, transparent 1.4px) 0 0 / 8px 8px, ${bannerBg}` }} />
       <div className="absolute -bottom-5 left-4">
         <button
           type="button"
@@ -591,7 +591,7 @@ function CircleBanner({ circle, isAdminOrMod, onUploadAvatar }: { circle: Circle
           onClick={() => canEdit && fileInputRef.current?.click()}
           className={`group relative rounded-full ${canEdit ? "cursor-pointer" : "cursor-default"}`}
         >
-          <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="lg" className="ring-2 ring-white" />
+          <CircleIcon name={circle.name} avatarUrl={circle.avatar_url} size="lg" className="ring-2 ring-[var(--surface-raised)]" />
           {canEdit && !uploading && (
             <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 group-hover:bg-black/40 transition-colors">
               <Camera className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -624,10 +624,10 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
   // Desktop sidebar: separate cards
   if (sidebar) {
     return (
-      <div className="sticky top-8 space-y-3">
+      <div className="sticky top-8 divide-y divide-line overflow-hidden rounded-[var(--radius)] border border-line bg-surface">
         {/* Join CTA for non-members */}
         {onJoin && (
-          <div className="rounded-lg border border-quiet-border bg-white px-4 py-4 text-center">
+          <div className="px-4 py-4 text-center">
             <p className="text-sm text-quiet-muted mb-3">Join this circle to post and interact.</p>
             <Button className="w-full" disabled={joining} onClick={onJoin}>
               {joining ? "Joining..." : "Join Circle"}
@@ -636,10 +636,10 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
         )}
 
         {/* About / Rules card with banner */}
-        <div className="rounded-lg border border-quiet-border bg-white overflow-hidden">
+        <div className="overflow-hidden">
           <CircleBanner circle={circle} isAdminOrMod={isAdminOrMod} onUploadAvatar={onUploadAvatar} />
-          <div className="px-4 pt-8 pb-3 border-b border-quiet-border flex items-center justify-between">
-            <h3 className="text-sm font-medium text-quiet-slate">{circle.name}</h3>
+          <div className="px-4 pt-8 pb-3 border-b border-line flex items-center justify-between">
+            <h3 className="text-xl text-ink">{circle.name}</h3>
             {onToggleFavorite && (
               <button
                 onClick={(e) => {
@@ -651,7 +651,7 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
                 aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
                 title={isFavorited ? "Remove from favorites" : "Add to favorites"}
               >
-                <Star className={`h-4 w-4 transition-colors ${isFavorited ? "text-yellow-500 fill-current" : "text-quiet-muted"}`} />
+                <Star className={`h-4 w-4 transition-colors ${isFavorited ? "text-accent fill-current" : "text-quiet-muted"}`} />
               </button>
             )}
           </div>
@@ -661,13 +661,13 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
         </div>
 
         {/* Members card */}
-        <div className="rounded-lg border border-quiet-border bg-white">
+        <div>
           <MembersSection circleId={circle.id} creatorId={circle.created_by} />
         </div>
 
         {/* Tags management (admin/mod only) */}
         {showTagsManager && (
-          <div className="rounded-lg border border-quiet-border bg-white px-4 py-3">
+          <div className="px-4 py-3">
             <TagsManager
               tags={circleTags ?? []}
               onCreate={onCreateTag}
@@ -678,7 +678,7 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
 
         {/* Default permanent posts label */}
         {circle.default_permanent_posts && (
-          <div className="rounded-lg border border-quiet-border bg-white px-4 py-3 flex items-center gap-2">
+          <div className="px-4 py-3 flex items-center gap-2">
             <Infinity className="h-3.5 w-3.5 shrink-0 text-quiet-muted" />
             <p className="text-xs text-quiet-muted">Posts in this circle are permanent by default</p>
           </div>
@@ -691,7 +691,7 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
 
         {/* Leave circle */}
         {onLeave && (
-          <div className="rounded-lg border border-quiet-border bg-white px-4 py-3">
+          <div className="px-4 py-3">
             <LeaveButton onLeave={onLeave} />
           </div>
         )}
@@ -703,7 +703,7 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
   return (
     <>
     {onJoin && (
-      <div className="mb-4 rounded-lg border border-quiet-border bg-white px-4 py-4 text-center">
+      <div className="mb-4 rounded-[var(--radius)] border border-line bg-surface px-4 py-4 text-center">
         <p className="text-sm text-quiet-muted mb-3">Join this circle to post and interact.</p>
         <Button className="w-full" disabled={joining} onClick={onJoin}>
           {joining ? "Joining..." : "Join Circle"}
@@ -711,11 +711,11 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
       </div>
     )}
     <Collapsible open={open} onOpenChange={setOpen} className="mb-4">
-      <div className="rounded-lg border border-quiet-border bg-white overflow-hidden">
+      <div className="rounded-[var(--radius)] border border-line bg-surface overflow-hidden">
         <CircleBanner circle={circle} isAdminOrMod={isAdminOrMod} onUploadAvatar={onUploadAvatar} />
         <div className="flex items-center justify-between px-4 pt-8 pb-3">
           <CollapsibleTrigger className="flex flex-1 items-center justify-between text-sm font-medium text-quiet-slate hover:bg-quiet-aged transition-colors -mx-4 px-4 -my-3 py-3">
-            <span>{circle.name}</span>
+            <span className="label text-muted">About this circle</span>
             <ChevronDown
               className={`h-4 w-4 text-quiet-muted transition-transform ${
                 open ? "rotate-180" : ""
@@ -733,7 +733,7 @@ export function CircleAbout({ circle, userId, isAdminOrMod, onUpdate, onUploadAv
               aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
               title={isFavorited ? "Remove from favorites" : "Add to favorites"}
             >
-              <Star className={`h-4 w-4 transition-colors ${isFavorited ? "text-yellow-500 fill-current" : "text-quiet-muted"}`} />
+              <Star className={`h-4 w-4 transition-colors ${isFavorited ? "text-accent fill-current" : "text-quiet-muted"}`} />
             </button>
           )}
         </div>

@@ -370,7 +370,7 @@ export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostCom
   return (
     <div
       ref={containerRef}
-      className="rounded-lg border border-quiet-border bg-white p-4 shadow-sm"
+      className="rounded-[var(--radius)] border border-line bg-surface p-4"
       onBlur={(e) => {
         if (!text && !selectedImage && !containerRef.current?.contains(e.relatedTarget as Node)) {
           setIsActive(false)
