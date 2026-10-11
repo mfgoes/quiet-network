@@ -100,6 +100,8 @@ export interface Post {
   user_upvoted: boolean
   user_replied: boolean
   reply_count: number
+  /** Structured extras, e.g. a side-hustle announcement (see src/lib/hustle.ts) */
+  listing?: import("@/lib/hustle").Listing | null
 }
 
 export interface Reply {

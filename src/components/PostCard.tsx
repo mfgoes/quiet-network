@@ -14,6 +14,8 @@ import { isXTweetUrl, isBlueskyUrl, isRedditPostUrl } from "@/components/XEmbed"
 import { parseMarkdown, extractMarkdownUrls, extractLeadingHeader } from "@/lib/markdown"
 import { CircleIcon } from "@/components/CircleIcon"
 import { ReplySection } from "@/components/ReplySection"
+import { HustleBlock } from "@/components/HustleBlock"
+import { isHustle } from "@/lib/hustle"
 import type { Post } from "@/types"
 import { avatarUrl } from "@/types"
 import type { CircleTag } from "@/types"
@@ -41,13 +43,47 @@ function formatRelativeAge(createdAt: string): string {
   return `${days}d ago`
 }
 
+const OFFICIAL_NOTICE_HOST = "zoek.officielebekendmakingen.nl"
+
+function isOfficialNoticeUrl(url: string): boolean {
+  return url.includes(OFFICIAL_NOTICE_HOST)
+}
+
+function isOfficialNotice(content: string): boolean {
+  return content.includes(OFFICIAL_NOTICE_HOST)
+}
+
+function officialNoticeUrl(content: string): string | null {
+  const m = content.match(/https:\/\/zoek\.officielebekendmakingen\.nl\/[^\s)"<]+/)
+  return m ? m[0] : null
+}
+
+/** Drop the "[Official notice](...)" paragraph; it's rendered as its own link below the body. */
+function stripNoticeLink(html: string): string {
+  return html.replace(/<p>\s*<a[^>]*officielebekendmakingen[^>]*>[\s\S]*?<\/a>\s*<\/p>/g, "")
+}
+
+/**
+ * In the feed the whole body is a <Link> to the post. Links inside it would be
+ * nested <a> tags, which the browser "repairs" by smearing the link over every
+ * paragraph. Render them as underlined text instead; they work on the post page.
+ */
+function unlinkAnchors(html: string): string {
+  return html.replace(/<a\s[^>]*>([\s\S]*?)<\/a>/g, '<span class="post-link">$1</span>')
+}
+
 function canEdit(post: Post): boolean {
   const elapsed = Date.now() - new Date(post.created_at).getTime()
   const minutes = Math.floor(elapsed / (1000 * 60))
   return minutes < 30
 }
 
-function getExpiryInfo(post: Post): { label: string; isUrgent: boolean } | null {
+/**
+ * When a post will fade. Only shown to its author: for readers a ticking
+ * clock adds pressure, not value. Time that matters to readers (an event's
+ * date) belongs in the post itself.
+ */
+function getExpiryInfo(post: Post): { label: string } | null {
   if (post.is_welcome || post.is_permanent) return null
 
   const remaining = new Date(post.expires_at).getTime() - Date.now()
@@ -55,26 +91,27 @@ function getExpiryInfo(post: Post): { label: string; isUrgent: boolean } | null 
 
   const hours = remaining / (1000 * 60 * 60)
 
-  if (hours < 1) return { label: `expires in <1h`, isUrgent: true }
-  if (hours < 24) return { label: `expires in ${Math.round(hours)}h`, isUrgent: true }
+  if (hours < 1) return { label: `fades in <1h` }
+  if (hours < 24) return { label: `fades in ${Math.round(hours)}h` }
 
   const days = Math.floor(hours / 24)
-  return { label: `${days}d left`, isUrgent: false }
+  return { label: `fades in ${days}d` }
 }
 
 /** Subtle background tint: older posts get a very slight gray tint */
 function getAgeTint(post: Post): string {
-  if (post.is_welcome || post.is_permanent) return "bg-white"
+  if (post.is_welcome || post.is_permanent) return "bg-transparent"
 
   const elapsed = Date.now() - new Date(post.created_at).getTime()
   const original = post.original_duration_seconds * 1000
-  if (original <= 0) return "bg-white"
+  if (original <= 0) return "bg-transparent"
 
   const progress = Math.min(1, elapsed / original)
 
   // Only shift to the aged tint in the last third of the post's life
-  if (progress < 0.66) return "bg-white"
-  return "bg-quiet-aged"
+  if (progress < 0.66) return "bg-transparent"
+  // Was a tinted block; reads as "selected", not "fading". Fade comes in step 4.
+  return "bg-transparent"
 }
 
 /** Check if content looks like HTML (from rich editor) vs plain text */
@@ -163,7 +200,7 @@ function CircleBadge({ name, slug, description, avatarUrl }: { name: string; slu
       <PopoverTrigger asChild>
         <Link
           href={`/${slug}`}
-          className="flex items-center gap-1 rounded-full bg-quiet-border/40 px-2 py-0.5 text-[11px] text-quiet-muted transition-colors hover:bg-quiet-border/70 hover:text-quiet-slate"
+          className="flex items-center gap-1 rounded-[var(--radius)] px-1.5 py-0.5 text-[11px] text-quiet-muted transition-colors hover:bg-sunken hover:text-quiet-slate"
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}
         >
@@ -239,7 +276,8 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   }
   const availableTagList = (circleTags ?? []).map(t => ({ id: t.id, label: `#${t.name}`, color: t.color }))
   const age = useMemo(() => formatRelativeAge(post.created_at), [post.created_at])
-  const expiry = useMemo(() => getExpiryInfo(post), [post.expires_at, post.is_welcome])
+  const isOwnPost = !!userId && userId === post.author_id
+  const expiry = useMemo(() => (isOwnPost ? getExpiryInfo(post) : null), [isOwnPost, post.expires_at, post.is_welcome])
   const bgClass = useMemo(() => getAgeTint(post), [post])
   const [replyCountDelta, setReplyCountDelta] = useState(0)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -316,10 +354,25 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
     [post.content, isHtml]
   )
 
+  // Bulletin posts link to an official municipal notice (see bots/bulletin)
+  const isNotice = useMemo(() => isOfficialNotice(post.content), [post.content])
+  const noticeUrl = useMemo(() => (isNotice ? officialNoticeUrl(post.content) : null), [isNotice, post.content])
+  const noticeLink = noticeUrl && (
+    <a
+      href={noticeUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="label -ml-2 mt-2 inline-flex items-center gap-1 rounded-[var(--radius)] px-2 py-2 text-accent transition-colors hover:bg-sunken"
+    >
+      Official notice ↗
+    </a>
+  )
+
   // Filter to keep only the first Google Maps link to avoid clutter
   const filteredLinkUrls = useMemo(() => {
     let mapsFound = false
     return linkUrls.filter((url) => {
+      if (isOfficialNoticeUrl(url)) return false // the inline "Official notice" link is enough
       const isMaps = isGoogleMapsUrl(url)
       if (isMaps) {
         if (mapsFound) return false // Skip subsequent maps links
@@ -344,10 +397,10 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
   const isOwn = userId === post.author_id
 
   return (
-    <div className="relative">
+    <div className="relative border-b border-line px-3 py-5">
       {/* Conditional rendering to prevent extra wrapper when editing */}
       {isEditing ? (
-        <div className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`}>
+        <div className={`group relative overflow-hidden ${bgClass}`}>
           {/* Content when editing */}
           <div className="space-y-2">
             <textarea
@@ -367,7 +420,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                     type="button"
                     onClick={() => toggleEditTag(tag.id)}
                     disabled={isDisabled}
-                    className={`rounded-full px-2.5 py-0.5 text-xs transition-all ${
+                    className={`rounded-[var(--radius)] px-2 py-0.5 text-xs transition-colors ${
                       isSelected
                         ? "text-quiet-slate ring-1 ring-quiet-accent"
                         : isDisabled
@@ -400,7 +453,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
           </div>
         </div>
       ) : (
-        <div className={`group relative overflow-hidden rounded-lg border border-quiet-border p-4 shadow-sm ${bgClass}`} data-confirm-open={confirmOpen || undefined}>
+        <div className={`group relative overflow-hidden ${bgClass}`} data-confirm-open={confirmOpen || undefined}>
           {/* Header - not clickable */}
           <div className="mb-2">
             {/* First row: Avatar + Name + Circle */}
@@ -492,6 +545,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
 
               {/* Desktop action buttons */}
               <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+              {isNotice && <Badge variant="notice">Official notice</Badge>}
               {post.is_welcome && (
                 <Badge variant="pinned">
                   <Pin className="mr-1 h-3 w-3" />
@@ -505,8 +559,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                 </Badge>
               )}
               {expiry && (
-                <Badge variant={expiry.isUrgent ? "expiring" : "default"}>
-                  {expiry.isUrgent && <Clock className="mr-1 h-3 w-3" />}
+                <Badge variant="default" title="Only you see this">
                   {expiry.label}
                 </Badge>
               )}
@@ -578,6 +631,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               )}
 
               {/* Mobile badges */}
+              {isNotice && <Badge variant="notice" className="sm:hidden flex-shrink-0">Notice</Badge>}
               {post.is_welcome && (
                 <Badge variant="pinned" className="sm:hidden flex-shrink-0">
                   <Pin className="mr-1 h-3 w-3" />
@@ -591,13 +645,17 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                 </Badge>
               )}
               {expiry && (
-                <Badge variant={expiry.isUrgent ? "expiring" : "default"} className="sm:hidden flex-shrink-0">
-                  {expiry.isUrgent && <Clock className="mr-1 h-3 w-3" />}
+                <Badge variant="default" className="sm:hidden flex-shrink-0" title="Only you see this">
                   {expiry.label}
                 </Badge>
               )}
             </div>
           </div>
+
+          {/* Side hustle announcement block */}
+          {isHustle(post.listing) && (
+            <HustleBlock listing={post.listing} authorId={post.author_id} authorName={post.profiles?.display_name} userId={userId} />
+          )}
 
           {/* Content with height limiting - clickable only when not on detail page */}
           {isDedicatedPostPage ? (
@@ -605,7 +663,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               <div ref={contentRef}>
                 {/* Leading header above image */}
                 {leadingHeader && (
-                  <h2 className="text-base font-semibold text-quiet-slate mb-2">{leadingHeader}</h2>
+                  <h2 className="text-lg font-semibold text-quiet-slate mb-1.5">{leadingHeader}</h2>
                 )}
 
                 {/* Image */}
@@ -628,9 +686,11 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                 ) : (
                   <div
                     className="post-content text-sm leading-relaxed text-quiet-slate"
-                    dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(contentWithoutHeader), linkUrls) }}
+                    dangerouslySetInnerHTML={{ __html: stripNoticeLink(stripRichEmbedLinks(parseMarkdown(contentWithoutHeader), linkUrls)) }}
                   />
                 )}
+
+                {noticeLink}
 
                 {/* Link previews */}
                 {filteredLinkUrls.length > 0 && (
@@ -648,7 +708,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
               {/* Leading header above image - clickable to post detail */}
               {leadingHeader && (
                 <Link href={postDetailUrl} className="block">
-                  <h2 className="text-base font-semibold text-quiet-slate mb-2 hover:text-quiet-accent transition-colors">{leadingHeader}</h2>
+                  <h2 className="text-lg font-semibold text-quiet-slate mb-1.5 hover:text-quiet-accent transition-colors">{leadingHeader}</h2>
                 </Link>
               )}
 
@@ -675,12 +735,12 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                   {isHtml ? (
                     <div
                       className="post-content text-sm leading-relaxed text-quiet-slate group-hover/content:text-quiet-accent transition-colors"
-                      dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(post.content, linkUrls) }}
+                      dangerouslySetInnerHTML={{ __html: unlinkAnchors(stripRichEmbedLinks(post.content, linkUrls)) }}
                     />
                   ) : (
                     <div
                       className="post-content text-sm leading-relaxed text-quiet-slate group-hover/content:text-quiet-accent transition-colors"
-                      dangerouslySetInnerHTML={{ __html: stripRichEmbedLinks(parseMarkdown(contentWithoutHeader), linkUrls) }}
+                      dangerouslySetInnerHTML={{ __html: unlinkAnchors(stripNoticeLink(stripRichEmbedLinks(parseMarkdown(contentWithoutHeader), linkUrls))) }}
                     />
                   )}
                 </div>
@@ -689,11 +749,13 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                 {needsExpand && !isExpanded && (
                   <div
                     className={`absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t ${
-                      bgClass === "bg-white" ? "from-white" : "from-quiet-aged"
+                      bgClass === "bg-transparent" ? "from-background" : "from-quiet-aged"
                     } to-transparent pointer-events-none`}
                   />
                 )}
               </Link>
+
+              {noticeLink}
 
               {/* Link previews - outside Link to avoid nested anchors */}
               {filteredLinkUrls.length > 0 && (
@@ -710,7 +772,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
           {needsExpand && !isDedicatedPostPage && (
             <button
               onClick={() => setIsExpanded((prev) => !prev)}
-              className="mt-1 flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
+              className="mt-1 -ml-2 flex items-center gap-1 rounded-[var(--radius)] px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-sunken hover:text-ink"
             >
               {isExpanded ? (
                 <>
@@ -735,7 +797,7 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
                 return (
                   <span
                     key={tagId}
-                    className="rounded-full px-2 py-0.5 text-[11px] text-quiet-slate"
+                    className="rounded-[var(--radius)] px-1.5 py-0.5 text-[11px] text-quiet-slate"
                     style={{ backgroundColor: tag.color }}
                   >
                     {tag.label}
@@ -750,13 +812,13 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
 
       {/* Upvote + Reply (outside the clickable content area) */}
       {onUpvote && !post.is_welcome && (
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-1">
           <button
             onClick={() => handleUpvoteClick(post.id)}
-            className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`-ml-2 flex items-center gap-1 rounded-[var(--radius)] px-2 py-1 text-xs font-medium tabular-nums transition-colors ${
               post.user_upvoted
-                ? "bg-quiet-accent/20 text-quiet-slate"
-                : "bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
+                ? "text-accent hover:bg-sunken"
+                : "text-muted hover:bg-sunken hover:text-ink"
             }`}
           >
             <ChevronUp className={`h-3.5 w-3.5 ${upvoteAnimating ? "upvote-jump" : ""}`} />
@@ -764,10 +826,10 @@ export function PostCard({ post, userId, isMember, isAdminOrMod, onUpvote, onDel
           </button>
           <button
             onClick={() => setRepliesOpen((prev) => !prev)}
-            className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1 rounded-[var(--radius)] px-2 py-1 text-xs font-medium tabular-nums transition-colors ${
               repliesOpen
-                ? "bg-quiet-accent/20 text-quiet-slate"
-                : "bg-quiet-border/60 text-quiet-muted hover:bg-quiet-border hover:text-quiet-slate"
+                ? "text-accent hover:bg-sunken"
+                : "text-muted hover:bg-sunken hover:text-ink"
             }`}
           >
             <MessageSquare className="h-3.5 w-3.5" />

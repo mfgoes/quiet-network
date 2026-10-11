@@ -237,7 +237,7 @@ function PostPreviewCard({ post }: { post: Post }) {
   return (
     <article
       onClick={() => router.push(slug ? `/${slug}/p/${post.id}` : `/p/${post.id}`)}
-      className="cursor-pointer overflow-hidden rounded-xl border border-quiet-border bg-white transition-colors hover:bg-quiet-aged/40"
+      className="cursor-pointer overflow-hidden border-b border-line transition-colors hover:bg-sunken/60"
     >
       {/* Image: proportional, capped height, portrait images get side padding */}
       {post.image_url && (
@@ -250,7 +250,7 @@ function PostPreviewCard({ post }: { post: Post }) {
         </div>
       )}
 
-      <div className="p-4">
+      <div className="px-3 py-5">
         {/* Circle + author row */}
         <div className="mb-2 flex items-center gap-2 text-xs text-quiet-muted">
           {circle && (
@@ -342,8 +342,8 @@ export function PublicHomeFeed({ circles }: PublicHomeFeedProps) {
       {/* Two-column layout: feed + sidebar */}
       <div className="flex gap-6 items-start">
         {/* Main feed */}
-        <div className="min-w-0 flex-1 space-y-3">
-          <h2 className="text-lg font-semibold text-quiet-slate">Recent posts</h2>
+        <div className="min-w-0 flex-1">
+          <h2 className="border-b border-line pb-3 text-lg font-semibold text-quiet-slate">Recent posts</h2>
           {shuffledPosts.map((post) => (
             <PostPreviewCard key={post.id} post={post} />
           ))}

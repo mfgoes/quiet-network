@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react"
-import { Lightbulb, Send, Tag, Bold, Italic, Underline, List, Smile, Link2, Heading2, Image, X } from "lucide-react"
+import { Lightbulb, Send, Tag, Bold, Italic, Underline, List, Smile, Link2, Heading2, Image, X, Store } from "lucide-react"
 import { toast } from "sonner"
 import data from "@emoji-mart/data"
 import Picker from "@emoji-mart/react"
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { DURATION_OPTIONS, POST_SPARKS } from "@/types"
 import type { CircleTag } from "@/types"
+import { HustleFields } from "@/components/HustleFields"
+import type { HustleCategory, Listing } from "@/lib/hustle"
 import { supabase } from "@/lib/supabase"
 
 const VIDEO_RE = /\.(mp4|webm|mov|ogg)(\?.*)?$/i
@@ -54,7 +56,7 @@ function platformLabel(url: string): string {
 }
 
 interface PostComposerProps {
-  onSubmit: (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null) => Promise<unknown>
+  onSubmit: (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null, listing?: Listing | null) => Promise<unknown>
   defaultPermanent?: boolean
   circleTags?: CircleTag[]
 }
@@ -109,6 +111,8 @@ export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostCom
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [embedEnabled, setEmbedEnabled] = useState(true)
+  const [hustleOn, setHustleOn] = useState(false)
+  const [hustle, setHustle] = useState<{ title: string; category: HustleCategory; price: string }>({ title: "", category: "print3d", price: "" })
   const containerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -254,7 +258,14 @@ export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostCom
   }
 
   const handleSubmit = async () => {
-    if (!text.trim() && !selectedImage) return
+    if (!text.trim() && !selectedImage && !hustleOn) return
+    if (hustleOn && !hustle.title.trim()) {
+      toast.error("Give your side hustle a name first.")
+      return
+    }
+    const listing: Listing | null = hustleOn
+      ? { kind: "hustle", category: hustle.category, title: hustle.title.trim(), price: hustle.price.trim() || null }
+      : null
     setSubmitting(true)
     try {
       let imageUrl: string | null = null
@@ -268,7 +279,7 @@ export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostCom
         imageUrl = await uploadImage(user.id)
       }
 
-      const error = await onSubmit(text, selectedDuration.seconds, selectedTags, imageUrl)
+      const error = await onSubmit(text, selectedDuration.seconds, selectedTags, imageUrl, listing)
       if (error) {
         toast.error("Couldn't share your post. Please try again.")
       } else {
@@ -278,6 +289,8 @@ export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostCom
         setShowEmoji(false)
         setShowLink(false)
         removeImage()
+        setHustleOn(false)
+        setHustle({ title: "", category: "print3d", price: "" })
         toast.success("Shared quietly.")
       }
     } catch {
@@ -352,7 +365,7 @@ export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostCom
 
   const toolbarBtn = "rounded p-1.5 transition-colors text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-slate"
 
-  const showFull = isActive || !!text || !!selectedImage
+  const showFull = isActive || !!text || !!selectedImage || hustleOn
 
   return (
     <div
@@ -364,6 +377,14 @@ export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostCom
         }
       }}
     >
+      {hustleOn && (
+        <HustleFields
+          title={hustle.title}
+          category={hustle.category}
+          price={hustle.price}
+          onChange={(next) => setHustle((h) => ({ ...h, ...next }))}
+        />
+      )}
       <div className="relative">
         <textarea
           ref={textareaRef}
@@ -377,7 +398,7 @@ export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostCom
               handleSubmit()
             }
           }}
-          placeholder="Start a circle post..."
+          placeholder={hustleOn ? "Describe it: what you make, how to order, where to pick up..." : "Start a circle post..."}
           rows={showFull ? 3 : 1}
           className="w-full resize-none rounded-md border border-quiet-border bg-quiet-offwhite p-3 pr-10 text-sm text-quiet-slate placeholder:text-quiet-muted focus:border-quiet-accent focus:outline-none transition-all"
         />
@@ -572,6 +593,23 @@ export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostCom
             </div>
           )}
         </div>
+
+        {/* Side hustle announcement */}
+        <button
+          type="button"
+          onClick={() => {
+            const on = !hustleOn
+            setHustleOn(on)
+            if (on) setDurationIndex(2) // side hustles get the 30-day breath
+          }}
+          className={`flex items-center gap-1 rounded p-1.5 text-xs transition-colors ${
+            hustleOn ? "bg-quiet-border text-quiet-slate" : "text-quiet-muted hover:bg-quiet-border/50 hover:text-quiet-slate"
+          }`}
+          title="Announce a side hustle"
+        >
+          <Store className="h-4 w-4" />
+          <span className="hidden sm:inline">Side hustle</span>
+        </button>
       </div>}
 
       {/* Embed toggle — shown when a social/media URL is detected */}
@@ -704,7 +742,7 @@ export function PostComposer({ onSubmit, defaultPermanent, circleTags }: PostCom
           )}
           <Button
             onClick={handleSubmit}
-            disabled={(!text.trim() && !selectedImage) || submitting}
+            disabled={(!text.trim() && !selectedImage && !(hustleOn && hustle.title.trim())) || submitting}
             size="sm"
           >
             <Send className="mr-1.5 h-3.5 w-3.5" />

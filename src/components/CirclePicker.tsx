@@ -104,7 +104,7 @@ function CircleCard({
       <button
         onClick={() => isMember ? onSelect(circle) : onJoin(circle)}
         disabled={joiningId === circle.id}
-        className="relative rounded-xl border overflow-hidden text-left w-full transition-all hover:shadow-md hover:-translate-y-px active:translate-y-0 disabled:opacity-60"
+        className="relative rounded-xl border overflow-hidden text-left w-full transition-colors hover:border-line-strong disabled:opacity-60"
         style={{ borderColor: `${accent}66` }}
       >
         {/* Tinted identity area */}

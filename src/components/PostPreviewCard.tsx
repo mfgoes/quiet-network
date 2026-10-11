@@ -15,7 +15,7 @@ export function PostPreviewCard({ post }: PostPreviewCardProps) {
   return (
     <Link
       href={post.circles ? `/${post.circles.slug}/p/${post.id}` : `/p/${post.id}`}
-      className="block rounded-xl border border-quiet-border bg-white p-3 hover:border-quiet-accent/40 transition-colors"
+      className="block border-b border-line px-3 py-4 transition-colors hover:bg-sunken/60"
     >
       {post.circles && (
         <div className="flex items-center gap-1.5 mb-1.5">

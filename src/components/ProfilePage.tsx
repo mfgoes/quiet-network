@@ -377,7 +377,7 @@ export function ProfilePage({ defaultEditing = false, profile, userId, circles, 
                 {posts.length === 0 ? (
                   <p className="text-sm text-quiet-muted italic">No posts yet</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="border-t border-line">
                     {posts.map(post => (
                       <PostPreviewCard key={post.id} post={post} />
                     ))}

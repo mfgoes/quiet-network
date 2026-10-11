@@ -1,13 +1,23 @@
 import type { Metadata } from 'next'
-import { Urbanist } from 'next/font/google'
+import { Newsreader, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/Providers'
 
-const urbanist = Urbanist({
-  subsets: ['latin'],
-  weight: ['600', '700', '800'],
-  variable: '--font-urbanist',
-  display: 'swap',
+// Display: an editorial serif, like a good local paper
+const newsreader = Newsreader({
+	subsets: ['latin'],
+	style: ['normal', 'italic'],
+	axes: ['opsz'],
+	variable: '--font-newsreader',
+	display: 'swap',
+})
+
+// Labels: time, tags, roles. Mono labels things, it never says things.
+const plexMono = IBM_Plex_Mono({
+	subsets: ['latin'],
+	weight: ['400', '500'],
+	variable: '--font-plex-mono',
+	display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -30,7 +40,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={urbanist.variable}>
+    <html lang="en" className={`${newsreader.variable} ${plexMono.variable}`}>
       <body>
         <Providers>{children}</Providers>
       </body>

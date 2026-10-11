@@ -1081,7 +1081,8 @@ export function usePosts(circleId: string | undefined, userId?: string) {
     durationSeconds: number,
     authorId: string,
     tags: string[] = [],
-    imageUrl?: string | null
+    imageUrl?: string | null,
+    listing?: Post["listing"]
   ) => {
     const isPermanent = durationSeconds === 0
     const now = new Date()
@@ -1098,6 +1099,8 @@ export function usePosts(circleId: string | undefined, userId?: string) {
         is_permanent: isPermanent,
         tags,
         image_url: imageUrl,
+        // Only sent when set, so posting still works before the listing migration runs
+        ...(listing ? { listing } : {}),
       })
       .select("*, profiles!posts_author_id_fkey(display_name, avatar_emoji, username, is_bot)")
       .single()

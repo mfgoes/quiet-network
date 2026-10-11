@@ -1,420 +1,290 @@
 'use client'
 
 import { useEffect, useRef, useState } from "react"
-import { Link, Check, Shield, AlertTriangle, Send, Volume2, ChevronDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Link, Check, ArrowDown, ArrowRight } from "lucide-react"
 
 function useFadeIn() {
-  const ref = useRef<HTMLDivElement>(null)
+	const ref = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add("is-visible")
-          observer.unobserve(el)
-        }
-      },
-      { threshold: 0.15 },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
+	useEffect(() => {
+		const el = ref.current
+		if (!el) return
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				if (entry.isIntersecting) {
+					el.classList.add("is-visible")
+					observer.unobserve(el)
+				}
+			},
+			{ threshold: 0.15 },
+		)
+		observer.observe(el)
+		return () => observer.disconnect()
+	}, [])
 
-  return ref
+	return ref
 }
 
 function FadeIn({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  const ref = useFadeIn()
-  return (
-    <div ref={ref} className={`fade-in-section ${className}`}>
-      {children}
-    </div>
-  )
+	const ref = useFadeIn()
+	return (
+		<div ref={ref} className={`fade-in-section ${className}`}>
+			{children}
+		</div>
+	)
 }
 
 const features = [
-  {
-    icon: "⏱️",
-    title: "Ephemeral by Design",
-    desc: "Posts fade after 48h, 7d, or 30d. No permanent record, no regrets.",
-  },
-  {
-    icon: "🎭",
-    title: "Stay Pseudonymous",
-    desc: "Simple display names only. No real names, no social graph.",
-  },
-  {
-    icon: "📍",
-    title: "Focused Circles",
-    desc: "Neighborhoods, fan groups, hobby communities. Connect with your people.",
-  },
-  {
-    icon: "🏷️",
-    title: "Topic Tags",
-    desc: "Quick questions, Lost & Found, local events, casual chat.",
-  },
-  {
-    icon: "🔒",
-    title: "Privacy-First",
-    desc: (
-      <span className="inline-flex items-center gap-1.5 flex-wrap">
-        <span className="inline-flex items-center gap-1">
-          <span className="text-base leading-none">🇪🇺</span>
-          Hosted in the EU
-        </span>
-        — no tracking, no data selling.
-      </span>
-    ),
-  },
-  {
-    icon: "😌",
-    title: "Calm by Design",
-    desc: "No followers, no karma, no FOMO. Just your community.",
-  },
+	{ title: "Ephemeral by design", desc: "Posts fade after 48 hours, 7 days or 30 days. No permanent record, no regrets." },
+	{ title: "Stay pseudonymous", desc: "Simple display names only. No real names, no social graph." },
+	{ title: "Focused circles", desc: "Neighbourhoods, fan groups, hobby communities. Connect with your people." },
+	{ title: "Topic tags", desc: "Quick questions, lost & found, local events, casual chat." },
+	{ title: "Privacy first", desc: "Hosted in the EU. No tracking, no ads, no data selling." },
+	{ title: "Calm by design", desc: "No follower counts, no karma, no FOMO. Just your community." },
 ]
 
-function HeroCopyLink() {
-  const [copied, setCopied] = useState(false)
-  const inviteUrl = typeof window !== 'undefined' ? `${window.location.origin}/` : 'https://quiet-network.vercel.app/'
+const problems = [
+	{
+		title: "The surveillance economy",
+		desc: "Mainstream platforms treat your conversations, your location and your data as products to be sold.",
+		kicker: "Your community isn't a market; it's your space.",
+	},
+	{
+		title: "The permanent record",
+		desc: "Every post, every comment, every fleeting thought can be archived, screenshotted and used against you years later.",
+		kicker: "Who wants that pressure in their community space?",
+	},
+	{
+		title: "Loud, performative culture",
+		desc: "Algorithms stir controversy and maximise “engagement” to keep you glued to the screen, at the expense of genuine connection.",
+		kicker: "We don't need shouting matches in our communities.",
+	},
+	{
+		title: "Clutter and irrelevance",
+		desc: "Endless feeds of ads, sensational news and off-topic noise drown out what actually matters to you and your people.",
+	},
+]
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      const input = document.createElement("input")
-      input.value = inviteUrl
-      document.body.appendChild(input)
-      input.select()
-      document.execCommand("copy")
-      document.body.removeChild(input)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
+const updates = [
+	{
+		date: "Jan 31",
+		summary: "Added text styling and basic admin settings",
+		items: ["Sticky homepage button to promote posts", "YouTube and Imgur embeds", "Profile links with social icon support"],
+	},
+	{ date: "Jan 30", summary: "Set up a new explore page" },
+	{ date: "Jan 28", summary: "Started the project" },
+]
 
-  return (
-    <Button
-      onClick={handleCopy}
-      className="bg-quiet-slate text-quiet-offwhite hover:bg-quiet-accent transition-colors text-base py-6 px-10 font-semibold rounded-xl"
-    >
-      {copied ? (
-        <>
-          <Check className="mr-1.5 h-4 w-4" />
-          Link copied!
-        </>
-      ) : (
-        <>
-          <Link className="mr-1.5 h-4 w-4" />
-          Copy invite link
-        </>
-      )}
-    </Button>
-  )
+function useCopyInvite() {
+	const [copied, setCopied] = useState(false)
+	const inviteUrl = typeof window !== "undefined" ? `${window.location.origin}/` : "https://quiet-network.vercel.app/"
+
+	const copy = async () => {
+		try {
+			await navigator.clipboard.writeText(inviteUrl)
+		} catch {
+			const input = document.createElement("input")
+			input.value = inviteUrl
+			document.body.appendChild(input)
+			input.select()
+			document.execCommand("copy")
+			document.body.removeChild(input)
+		}
+		setCopied(true)
+		setTimeout(() => setCopied(false), 2000)
+	}
+
+	return { copied, copy }
 }
 
-function InviteCard() {
-  const [copied, setCopied] = useState(false)
-  const inviteUrl = typeof window !== 'undefined' ? `${window.location.origin}/` : 'https://quiet-network.vercel.app/'
+const primaryButton =
+	"inline-flex items-center justify-center gap-2 rounded-[var(--radius)] bg-ink px-6 py-3 text-sm font-medium text-background transition-colors hover:bg-accent"
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // fallback
-      const input = document.createElement("input")
-      input.value = inviteUrl
-      document.body.appendChild(input)
-      input.select()
-      document.execCommand("copy")
-      document.body.removeChild(input)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
+function CopyInviteButton({ className = "" }: { className?: string }) {
+	const { copied, copy } = useCopyInvite()
+	return (
+		<button type="button" onClick={copy} className={`${primaryButton} ${className}`}>
+			{copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+			{copied ? "Link copied" : "Copy invite link"}
+		</button>
+	)
+}
 
-  return (
-    <div className="rounded-2xl bg-gradient-to-br from-[#EDE9FE] to-[#DBEAFE] p-6 text-center space-y-3">
-      <h3 className="text-lg font-bold text-quiet-slate">
-        Invite Your People
-      </h3>
-      <p className="text-sm text-quiet-muted leading-relaxed max-w-md mx-auto">
-        Spread Quiet Network to your friends, neighbors, and like-minded folks
-        everywhere. More joiners = better, calmer connections for all. Who's next? ✨
-      </p>
-      <Button
-        onClick={handleCopy}
-        className="bg-quiet-slate text-quiet-offwhite hover:bg-quiet-accent transition-colors rounded-xl px-6"
-      >
-        {copied ? (
-          <>
-            <Check className="mr-1.5 h-4 w-4" />
-            Link copied!
-          </>
-        ) : (
-          <>
-            <Link className="mr-1.5 h-4 w-4" />
-            Copy invite link
-          </>
-        )}
-      </Button>
-    </div>
-  )
+/** Section heading: mono eyebrow + serif title, ruled underneath. */
+function SectionHead({ eyebrow, title }: { eyebrow: string; title: string }) {
+	return (
+		<div className="border-b border-line pb-3">
+			<p className="label text-accent">{eyebrow}</p>
+			<h2 className="mt-1.5 text-2xl text-ink md:text-3xl">{title}</h2>
+		</div>
+	)
 }
 
 export function AboutPage({ onJoin }: { onJoin?: () => void }) {
-  return (
-    <div className="mx-auto max-w-3xl space-y-10 pb-8">
-      {/* Hero */}
-      <FadeIn>
-        <div className="text-center space-y-5 max-w-lg mx-auto py-8 md:py-14">
-          <h2 className="text-3xl md:text-4xl font-bold text-quiet-slate leading-tight">
-            Your community, without the noise
-          </h2>
-          <p className="text-base text-quiet-muted leading-relaxed max-w-md mx-auto">
-            Quiet Network is a calm space for neighborhoods, fan communities, and
-            interest groups &mdash; without ads, drama, or permanent posts.
-          </p>
-          <div className="flex flex-col items-center gap-3 pt-2">
-            {onJoin ? (
-              <Button
-                className="bg-quiet-slate text-quiet-offwhite hover:bg-quiet-accent transition-colors text-base py-6 px-10 font-semibold rounded-xl"
-                onClick={onJoin}
-              >
-                Join your community
-              </Button>
-            ) : (
-              <HeroCopyLink />
-            )}
-            <a
-              href="#recent-updates"
-              className="inline-flex items-center gap-1.5 text-sm text-quiet-muted hover:text-quiet-slate transition-colors"
-            >
-              See recent updates
-              <ChevronDown className="h-3.5 w-3.5" />
-            </a>
-          </div>
-        </div>
-      </FadeIn>
+	return (
+		<div className="mx-auto max-w-3xl space-y-16 px-1 pb-10 md:space-y-20">
+			{/* Hero */}
+			<FadeIn>
+				<div className="pt-8 md:pt-16">
+					<p className="label text-muted">About Quiet Network</p>
+					<h1 className="mt-3 max-w-xl text-4xl leading-[1.05] text-ink md:text-6xl">
+						Your community, <span className="italic text-accent">without the noise.</span>
+					</h1>
+					<p className="mt-5 max-w-md text-base leading-relaxed text-muted">
+						A calm space for neighbourhoods, fan communities and interest groups. No ads, no drama, no permanent posts.
+					</p>
+					<div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+						{onJoin ? (
+							<button type="button" onClick={onJoin} className={primaryButton}>
+								Join your community
+								<ArrowRight className="h-4 w-4" />
+							</button>
+						) : (
+							<CopyInviteButton />
+						)}
+						<a href="#recent-updates" className="label inline-flex items-center gap-1.5 py-2 text-muted transition-colors hover:text-ink">
+							Recent updates
+							<ArrowDown className="h-3 w-3" />
+						</a>
+					</div>
+				</div>
+			</FadeIn>
 
-      {/* Feature cards — 2 cols mobile, 3 cols desktop */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {features.map((f) => (
-          <FadeIn key={f.title}>
-            <div className="rounded-xl border border-quiet-border bg-white p-4 space-y-2 h-full">
-              <span className="text-2xl">{f.icon}</span>
-              <h3 className="text-sm font-semibold text-quiet-slate">{f.title}</h3>
-              <p className="text-xs text-quiet-muted leading-relaxed">{f.desc}</p>
-            </div>
-          </FadeIn>
-        ))}
-      </div>
+			{/* Principles: open columns, no boxes */}
+			<section>
+				<FadeIn>
+					<SectionHead eyebrow="Principles" title="What makes it quiet" />
+				</FadeIn>
+				<div className="mt-2 grid grid-cols-1 gap-x-8 sm:grid-cols-2 md:grid-cols-3">
+					{features.map((f, i) => (
+						<FadeIn key={f.title}>
+							<div className="group relative py-6">
+								<span aria-hidden className="absolute left-0 top-0 h-[2px] w-10 bg-accent transition-all duration-500 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:w-full" />
+								<span className="label absolute right-0 top-4 text-faint">{String(i + 1).padStart(2, "0")}</span>
+								<h3 className="text-lg text-ink">{f.title}</h3>
+								<p className="mt-1.5 text-sm leading-relaxed text-muted">{f.desc}</p>
+							</div>
+						</FadeIn>
+					))}
+				</div>
+			</section>
 
-      {/* Our Philosophy */}
-      <FadeIn>
-        <div className="flex flex-col md:flex-row items-center gap-8">
-          <div className="flex-1 space-y-3">
-            <h2 className="text-xl font-bold text-quiet-slate">Our Philosophy</h2>
-            <p className="text-sm text-quiet-muted leading-relaxed">
-              Quiet Network is built on a simple, yet radical idea:{" "}
-              <strong className="text-quiet-slate">
-                your communities should be calm, consensual, and truly yours.
-              </strong>{" "}
-              We're here to reclaim digital space for real neighborhoods, fan groups,
-              and shared interests &mdash; prioritizing mindful connection over engagement metrics.
-            </p>
-          </div>
-          <div className="flex-shrink-0 w-full md:w-72">
-            <img
-              src="/images/about/hand transparent.jpg"
-              alt="Transparent hand reaching out"
-              className="w-full rounded-xl object-cover"
-            />
-          </div>
-        </div>
-      </FadeIn>
+			{/* Philosophy */}
+			<FadeIn>
+				<section className="grid items-center gap-8 md:grid-cols-[1fr_16rem]">
+					<div>
+						<p className="label text-accent">Philosophy</p>
+						<blockquote className="mt-3 font-display text-2xl leading-snug text-ink md:text-3xl">
+							&ldquo;Your communities should be calm, consensual and truly yours.&rdquo;
+						</blockquote>
+						<p className="mt-4 text-sm leading-relaxed text-muted">
+							We're reclaiming digital space for real neighbourhoods, fan groups and shared interests, prioritising mindful
+							connection over engagement metrics.
+						</p>
+					</div>
+					<img
+						src="/images/about/hand transparent.jpg"
+						alt="Transparent hand reaching out"
+						className="w-full rounded-[var(--radius)] border border-line object-cover"
+					/>
+				</section>
+			</FadeIn>
 
-      {/* The Problem We're Solving */}
-      <FadeIn>
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-quiet-slate">
-            The Problem We're Solving
-          </h2>
-          <div className="space-y-3">
-            {[
-              {
-                icon: Shield,
-                title: "The Surveillance Economy",
-                desc: (
-                  <>
-                    Mainstream platforms treat your conversations, your location, and your data as products to be sold.{" "}
-                    <strong className="text-quiet-slate">Your community isn't a market; it's your space.</strong>
-                  </>
-                ),
-              },
-              {
-                icon: AlertTriangle,
-                title: "The Digital Permanent Record",
-                desc: (
-                  <>
-                    Every post, every comment, every fleeting thought can be archived, screenshotted, and used against you years later.{" "}
-                    <strong className="text-quiet-slate">Who wants that kind of pressure in their community space?</strong>
-                  </>
-                ),
-              },
-              {
-                icon: Send,
-                title: "The Loud, Performative Culture",
-                desc: (
-                  <>
-                    Algorithms are designed to stir controversy, maximize "engagement," and keep you glued to your screen, often at the expense of genuine connection.{" "}
-                    <strong className="text-quiet-slate">We don't need digital shouting matches in our communities.</strong>
-                  </>
-                ),
-              },
-              {
-                icon: Volume2,
-                title: "The Clutter and Irrelevance",
-                desc: "Endless feeds packed with ads, sensationalized news, and off-topic noise, drowning out what actually matters to you and your people.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="flex items-start gap-4 rounded-xl border border-quiet-border bg-white p-5"
-              >
-                <div className="flex-shrink-0 mt-0.5">
-                  <item.icon className="h-5 w-5 text-quiet-muted" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-sm font-semibold text-quiet-slate">{item.title}</h3>
-                  <p className="text-sm text-quiet-muted leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </FadeIn>
+			{/* The problem: numbered list on hairlines */}
+			<section>
+				<FadeIn>
+					<SectionHead eyebrow="Why" title="The problem we're solving" />
+				</FadeIn>
+				<ol>
+					{problems.map((p, i) => (
+						<FadeIn key={p.title}>
+							<li className="grid grid-cols-[2.5rem_1fr] gap-x-2 border-b border-line py-5">
+								<span className="label pt-1 text-accent">{String(i + 1).padStart(2, "0")}</span>
+								<div>
+									<h3 className="text-lg text-ink">{p.title}</h3>
+									<p className="mt-1 text-sm leading-relaxed text-muted">
+										{p.desc}
+										{p.kicker && <> <span className="text-ink">{p.kicker}</span></>}
+									</p>
+								</div>
+							</li>
+						</FadeIn>
+					))}
+				</ol>
+			</section>
 
-      {/* Invite card */}
-      <FadeIn>
-        <InviteCard />
-      </FadeIn>
+			{/* Invite */}
+			<FadeIn>
+				<section className="border-y border-line py-10 text-center">
+					<p className="label text-accent">Invite your people</p>
+					<h2 className="mx-auto mt-2 max-w-md text-2xl text-ink md:text-3xl">A circle is only as good as who's in it.</h2>
+					<p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted">
+						Share Quiet Network with friends, neighbours and like-minded people. More of the right people means calmer, better conversations.
+					</p>
+					<CopyInviteButton className="mt-6" />
+				</section>
+			</FadeIn>
 
-      {/* Under development notice */}
-      <FadeIn>
-        <div className="rounded-xl border border-quiet-border bg-white p-6 flex flex-col items-center gap-4">
-          <img
-            src="/images/about/Mischa-4.jpg"
-            alt="Mischa"
-            className="h-20 w-20 rounded-full object-cover"
-          />
-          <div className="text-center space-y-2">
-            <p className="text-sm font-medium text-quiet-slate">
-              This site is under active development
-            </p>
-            <p className="text-sm text-quiet-muted leading-relaxed">
-              For support questions and feature requests, follow me on{" "}
-              <a
-                href="https://bsky.app/profile/mishotofu.bsky.social"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-quiet-accent hover:text-quiet-slate transition-colors underline"
-              >
-                Bluesky
-              </a>{" "}
-              or email{" "}
-              <a
-                href="mailto:mfgoes1@gmail.com"
-                className="text-quiet-accent hover:text-quiet-slate transition-colors underline"
-              >
-                mfgoes1@gmail.com
-              </a>
-            </p>
-          </div>
-        </div>
-      </FadeIn>
+			{/* Maker note */}
+			<FadeIn>
+				<section className="flex items-start gap-4">
+					<img src="/images/about/Mischa-4.jpg" alt="Mischa" className="h-14 w-14 flex-shrink-0 rounded-full object-cover" />
+					<div>
+						<p className="label text-muted">Under active development</p>
+						<p className="mt-1.5 text-sm leading-relaxed text-ink">
+							For support questions and feature requests, follow me on{" "}
+							<a href="https://bsky.app/profile/mishotofu.bsky.social" target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2 hover:text-ink">
+								Bluesky
+							</a>{" "}
+							or email{" "}
+							<a href="mailto:mfgoes1@gmail.com" className="text-accent underline underline-offset-2 hover:text-ink">
+								mfgoes1@gmail.com
+							</a>
+							.
+						</p>
+					</div>
+				</section>
+			</FadeIn>
 
-      {/* Recent Updates */}
-     <FadeIn>
-  <div id="recent-updates" className="scroll-mt-8 space-y-5">
-    <h2 className="text-xl font-bold text-quiet-slate">Recent Updates</h2>
+			{/* Recent updates */}
+			<FadeIn>
+				<section id="recent-updates" className="scroll-mt-8">
+					<SectionHead eyebrow="Changelog" title="Recent updates" />
+					<ol className="mt-2">
+						{updates.map((u) => (
+							<li key={u.date} className="grid grid-cols-[4.5rem_1fr] gap-x-3 border-b border-line py-4">
+								<span className="label pt-0.5 text-accent">{u.date}</span>
+								<div>
+									<p className="text-sm text-ink">{u.summary}</p>
+									{u.items && (
+										<ul className="mt-1.5 space-y-1">
+											{u.items.map((item) => (
+												<li key={item} className="text-sm text-muted before:mr-2 before:text-faint before:content-['–']">
+													{item}
+												</li>
+											))}
+										</ul>
+									)}
+								</div>
+							</li>
+						))}
+						<li className="grid grid-cols-[4.5rem_1fr] gap-x-3 py-4">
+							<span className="label pt-0.5 text-faint">Next</span>
+							<p className="text-sm italic text-muted">More coming soon</p>
+						</li>
+					</ol>
+				</section>
+			</FadeIn>
 
-    <div className="relative pl-6 border-l-2 border-quiet-border space-y-6">
-      {[
-        {
-          date: "Jan 31",
-          summary: "Added text styling and basic admin settings",
-          items: [
-            "Sticky homepage button to promote posts",
-            "YouTube and Imgur embeds",
-            "Profile links with social icon support",
-          ],
-        },
-        {
-          date: "Jan 30",
-          summary: "Set up a new explore page",
-        },
-        {
-          date: "Jan 28",
-          summary: "Started the project!",
-        },
-      ].map((entry) => (
-        <div key={entry.date} className="relative">
-          <div className="absolute -left-[1.8125rem] top-1 h-2.5 w-2.5 rounded-full bg-quiet-accent" />
-
-          <p className="text-xs font-medium text-quiet-accent">
-            {entry.date}
-          </p>
-
-          <p className="text-sm text-quiet-slate mt-0.5">
-            {entry.summary}
-          </p>
-
-          {entry.items && (
-            <ul className="mt-1.5 space-y-1">
-              {entry.items.map((item, i) => (
-                <li
-                  key={i}
-                  className="relative pl-3 text-sm text-quiet-slate"
-                >
-                  <span className="absolute left-0 top-2 h-1 w-1 rounded-full bg-quiet-muted" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ))}
-
-      <div className="relative">
-        <div className="absolute -left-[1.8125rem] top-1 h-2.5 w-2.5 rounded-full border-2 border-quiet-border bg-quiet-offwhite" />
-        <p className="text-sm text-quiet-muted italic">More coming soon...</p>
-      </div>
-    </div>
-  </div>
-</FadeIn>
-      {/* Footer */}
-      <FadeIn>
-        <div className="pt-4 border-t border-quiet-border text-center">
-          <p className="text-xs text-quiet-muted">
-            Built by{" "}
-            <a
-              href="https://mfgoes.github.io/portfolio-2026/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-quiet-accent hover:text-quiet-slate transition-colors"
-            >
-              @mischa
-            </a>
-          </p>
-        </div>
-      </FadeIn>
-    </div>
-  )
+			{/* Footer */}
+			<footer className="border-t border-line pt-4">
+				<p className="label text-muted">
+					Built by{" "}
+					<a href="https://mfgoes.github.io/portfolio-2026/" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-ink">
+						@mischa
+					</a>
+				</p>
+			</footer>
+		</div>
+	)
 }

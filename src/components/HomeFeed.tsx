@@ -7,6 +7,7 @@ import { useAllMemberPosts, usePosts, useFavorites, useAllCircles } from "@/lib/
 import { sortPostsWithFreshness } from "@/lib/feedScoring"
 import { PostComposer } from "@/components/PostComposer"
 import { PostCard } from "@/components/PostCard"
+import type { Listing } from "@/lib/hustle"
 import { CircleIcon } from "@/components/CircleIcon"
 import { Button } from "@/components/ui/button"
 import { extractLeadingHeader } from "@/lib/markdown"
@@ -203,8 +204,8 @@ function HomeComposer({
 }) {
   const { createPost } = usePosts(circle.id, userId)
 
-  const handleSubmit = async (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null) => {
-    const error = await createPost(content, durationSeconds, userId, tags, imageUrl)
+  const handleSubmit = async (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null, listing?: Listing | null) => {
+    const error = await createPost(content, durationSeconds, userId, tags, imageUrl, listing)
     if (!error) onDone()
     return error
   }
@@ -309,7 +310,7 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
               </Button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="border-t border-line">
               {filteredPosts.map((post) => (
                 <PostCard
                   key={post.id}
@@ -324,7 +325,7 @@ export function HomeFeed({ circles, userId, circleRoles = {} }: HomeFeedProps) {
                 />
               ))}
               {filteredPosts.length === 0 && (
-                <p className="text-center text-sm text-quiet-muted">No posts yet. Check back later!</p>
+                <p className="py-6 text-center text-sm text-quiet-muted">No posts yet. Check back later!</p>
               )}
             </div>
           )}

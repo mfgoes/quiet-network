@@ -1,32 +1,190 @@
 @import "tailwindcss";
 
-@theme {
-  --color-quiet-slate: #475569;
-  --color-quiet-offwhite: #F8FAFC;
-  --color-quiet-muted: #94A3B8;
-  --color-quiet-border: #E2E8F0;
-  --color-quiet-accent: #64748B;
-  --color-quiet-warm: #D97706;
-  --color-quiet-aged: #F1F5F9;
+/* ─── Design tokens ───────────────────────────────────
+	Roles, not colours. Components should reach for these
+	(via the Tailwind names in @theme below), never raw palette
+	classes. Light is the default; dark is opt-in for now via
+	<html data-theme="dark"> until components stop using
+	bg-white / slate-* directly.
+	────────────────────────────────────────────────────── */
 
-  --color-tag-blue: #DBEAFE;
-  --color-tag-green: #D1FAE5;
-  --color-tag-amber: #FEF3C7;
-  --color-tag-pink: #FCE7F3;
-  --color-tag-purple: #EDE9FE;
-  --color-tag-cyan: #CFFAFE;
+:root {
+	/* Surfaces: linen paper, a touch cooler than cream */
+	--background: #f4f2ec;
+	--surface-raised: #fbfaf6;
+	--surface-sunken: #ebe8df;
+
+	/* Ink: near-black with a green undertone (canal water, not soot) */
+	--text: #22241f;
+	--muted: #6a6c63;
+	--faint: #9a9b92;
+
+	/* Lines */
+	--border: #dcd8cc;
+	--border-strong: #8e8c80;
+
+	/* One accent: Spaarne green. Actions, active states, focus. */
+	--accent: #2e6a58;
+	--accent-hover: #24584a;
+	--on-accent: #f7f6f1;
+
+	/* Time: the one "signal" colour, only for expiry / ephemerality */
+	--time: #a8641a;
+
+	--danger: #a8321f;
+
+	/* Tags: muted, same lightness, so no single tag shouts */
+	--tag-blue: #dde5eb;
+	--tag-green: #dfe7da;
+	--tag-amber: #efe3cb;
+	--tag-pink: #efdeda;
+	--tag-purple: #e3dfe9;
+	--tag-cyan: #d8e7e4;
+
+	/* Shape */
+	--radius: 2px;
+	--hairline: 1px;
+	--content-width: 38rem;
+	--wide-width: 64rem;
+
+	/* Type */
+	--type-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	--type-display: var(--font-newsreader), "Iowan Old Style", Georgia, serif;
+	--type-label: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+	--tracking-display: -.01em;
+	--tracking-label: .08em;
+
+	/* Motion: confirms, never performs */
+	--ease-out: cubic-bezier(.2, .8, .2, 1);
+	--ease-spring: cubic-bezier(.3, 1.6, .5, 1);
+	--dur-fast: .15s;
+	--dur-base: .35s;
+	--dur-slow: .7s;
+
+	color-scheme: light;
+}
+
+[data-theme="dark"] {
+	--background: #141613;
+	--surface-raised: #1c1e1a;
+	--surface-sunken: #10120f;
+
+	--text: #e6e4dc;
+	--muted: #a3a296;
+	--faint: #6f6f66;
+
+	--border: #30332d;
+	--border-strong: #66675e;
+
+	--accent: #6fb39c;
+	--accent-hover: #86c4ae;
+	--on-accent: #0f1a16;
+
+	--time: #e0a25a;
+	--danger: #e07a66;
+
+	--tag-blue: #24303a;
+	--tag-green: #263224;
+	--tag-amber: #3a3120;
+	--tag-pink: #3a2724;
+	--tag-purple: #2f2a38;
+	--tag-cyan: #213431;
+
+	color-scheme: dark;
+}
+
+/* Tailwind names → roles. Existing quiet-* classes keep working. */
+@theme inline {
+	--color-background: var(--background);
+	--color-surface: var(--surface-raised);
+	--color-sunken: var(--surface-sunken);
+	--color-ink: var(--text);
+	--color-muted: var(--muted);
+	--color-faint: var(--faint);
+	--color-line: var(--border);
+	--color-line-strong: var(--border-strong);
+	--color-accent: var(--accent);
+	--color-accent-hover: var(--accent-hover);
+	--color-on-accent: var(--on-accent);
+	--color-time: var(--time);
+	--color-danger: var(--danger);
+
+	/* Shape: every rounded-* utility collapses to the one radius.
+		rounded-full is left alone (avatars, dots). */
+	--radius-xs: var(--radius);
+	--radius-sm: var(--radius);
+	--radius-md: var(--radius);
+	--radius-lg: var(--radius);
+	--radius-xl: var(--radius);
+	--radius-2xl: var(--radius);
+	--radius-3xl: var(--radius);
+
+	/* No elevation. Structure comes from hairlines, not shadows. */
+	--shadow-2xs: 0 0 #0000;
+	--shadow-xs: 0 0 #0000;
+	--shadow-sm: 0 0 #0000;
+	--shadow-md: 0 0 #0000;
+	--shadow-lg: 0 0 #0000;
+	--shadow-xl: 0 0 #0000;
+	--shadow-2xl: 0 0 #0000;
+
+	--font-display: var(--type-display);
+	--font-mono: var(--type-label);
+
+	/* Legacy aliases (to be phased out component by component) */
+	--color-quiet-slate: var(--text);
+	--color-quiet-offwhite: var(--background);
+	--color-quiet-muted: var(--muted);
+	--color-quiet-border: var(--border);
+	--color-quiet-accent: var(--accent);
+	--color-quiet-warm: var(--time);
+	--color-quiet-aged: var(--surface-sunken);
+
+	--color-tag-blue: var(--tag-blue);
+	--color-tag-green: var(--tag-green);
+	--color-tag-amber: var(--tag-amber);
+	--color-tag-pink: var(--tag-pink);
+	--color-tag-purple: var(--tag-purple);
+	--color-tag-cyan: var(--tag-cyan);
 }
 
 body {
-  margin: 0;
-  min-height: 100vh;
-  background-color: var(--color-quiet-offwhite);
-  color: var(--color-quiet-slate);
-  font-family: system-ui, -apple-system, sans-serif;
+	margin: 0;
+	min-height: 100vh;
+	background-color: var(--background);
+	color: var(--text);
+	font-family: var(--type-body);
+	line-height: 1.45;
 }
 
-h1, h2 {
-  font-family: var(--font-urbanist), system-ui, sans-serif;
+::selection {
+	background: var(--accent);
+	color: var(--on-accent);
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* Headings: display serif, medium weight, never heavy.
+	Unlayered on purpose so it wins over font-bold / font-extrabold
+	utilities still sitting on headings in components. */
+h1, h2, h3 {
+	font-family: var(--type-display);
+	font-weight: 500;
+	letter-spacing: var(--tracking-display);
+	font-optical-sizing: auto;
+}
+
+/* Small uppercase "section headings" are really labels: mono voice */
+h2.uppercase, h3.uppercase, .label {
+	font-family: var(--type-label);
+	font-size: .7rem;
+	font-weight: 500;
+	letter-spacing: var(--tracking-label);
+	text-transform: uppercase;
+	font-variant-numeric: tabular-nums;
 }
 
 /* Hide scrollbar (for spotlight strip) */
@@ -43,6 +201,14 @@ h1, h2 {
 .fade-in-section.is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.fade-in-section {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
 }
 
 /* ─── TipTap editor ─────────────────────────────────── */
@@ -92,7 +258,7 @@ h1, h2 {
 }
 
 .tiptap a {
-  color: #2563eb;
+  color: var(--accent);
   text-decoration: underline;
 }
 
@@ -134,12 +300,18 @@ h1, h2 {
 }
 
 .post-content a {
-  color: #2563eb;
+  color: var(--accent);
   text-decoration: underline;
 }
 
+.post-content .post-link {
+	text-decoration: underline;
+	text-decoration-color: var(--border-strong);
+	text-underline-offset: 2px;
+}
+
 .post-content a:hover {
-  color: #1d4ed8;
+  color: var(--accent-hover);
 }
 
 .post-content h1 {

@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import { usePosts, useCircleTags } from "@/lib/hooks"
 import { PostComposer } from "@/components/PostComposer"
 import { PostCard } from "@/components/PostCard"
+import type { Listing } from "@/lib/hustle"
 import { CircleAbout } from "@/components/CircleAbout"
 import type { Circle } from "@/types"
 
@@ -44,8 +45,8 @@ export function CircleFeed({
   } : undefined
   const [activeTag, setActiveTag] = useState<string | null>(null)
 
-  const handleNewPost = async (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null) => {
-    await createPost(content, durationSeconds, userId, tags, imageUrl)
+  const handleNewPost = async (content: string, durationSeconds: number, tags: string[], imageUrl?: string | null, listing?: Listing | null) => {
+    return await createPost(content, durationSeconds, userId, tags, imageUrl, listing)
   }
 
   const handleUpdatePost = async (postId: string, content: string, tags: string[]) => {
@@ -112,7 +113,7 @@ export function CircleFeed({
               Loading posts...
             </p>
           ) : (
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 border-t border-line">
               {filteredPosts.map((post) => (
                 <PostCard
                   key={post.id}
@@ -128,7 +129,7 @@ export function CircleFeed({
                 />
               ))}
               {filteredPosts.length === 0 && activeTag && (
-                <p className="text-center text-sm text-quiet-muted">
+                <p className="py-6 text-center text-sm text-quiet-muted">
                   No posts with this tag yet.
                 </p>
               )}
